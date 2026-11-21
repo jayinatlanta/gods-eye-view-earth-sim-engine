@@ -24,6 +24,7 @@ import { greatCircleKm } from './geoDistance.js';
 import { forward as toMGRS } from 'mgrs';
 import { CITY_POIS } from './cityPois.js';
 import { worldTimeFor } from './time/worldClock.js';
+import { getForkProfile } from './config/forkProfile.js';
 
 // The HUD stamps its readouts with the world time; its sun is the sky's.
 const hudTime = worldTimeFor('hud');
@@ -63,6 +64,7 @@ import {
 } from './i18n/index.js';
 import { isRtlLocale } from './i18n/locale.js';
 import { localizeLayerName } from './ui/layerPanel.js';
+import { resolveZeroCreditLocality } from './ui/worldSimDock.js';
 import { isEmbeddedInline } from './app/embed.js';
 import { subscribeSelectedVessel } from './hudReadouts.js';
 
@@ -218,6 +220,44 @@ const NEARBY_POINTS = Object.values(CITY_POIS).flatMap((city) =>
     lon: poi.lon,
   })),
 );
+
+/** Returns active simulation telemetry across all transportation modes (Drive, Rails, Flight, Boat). */
+export function getActiveSimulationTelemetry() {
+  if (typeof window === 'undefined') return null;
+  const drive = window.__gevDriveEngine?.getActiveTelemetry?.();
+  if (drive && !drive.isParked) return { ...drive, simType: 'drive' };
+  const rail = window.__gevRailEngine?.getActiveTelemetry?.();
+  if (rail) return { ...rail, simType: 'rail' };
+  const flight = window.__gevFlightEngine?.getActiveTelemetry?.();
+  if (flight) return { ...flight, simType: 'flight' };
+  const boat = window.__gevBoatEngine?.getActiveTelemetry?.();
+  if (boat) return { ...boat, simType: 'boat' };
+  const wander = window.__gevWanderEngine?.getTelemetry?.();
+  if (wander && wander.isWandering) return { ...wander, simType: 'wander' };
+  const fleet = window.__gevFleetEngine?.getActiveTelemetry?.();
+  if (fleet && fleet.isActive) return fleet;
+  const freight = window.__gevFreightEngine?.getActiveTelemetry?.();
+  if (freight && freight.isActive) return freight;
+  const city = window.__gevCityEngine?.getActiveTelemetry?.();
+  if (city && city.isActive) return { ...city, simType: 'city' };
+  const activeTransitMode = window.__gevTransitDrawer?.getActiveMode?.();
+  if (activeTransitMode === 'metro') {
+    const metro = window.__gevMetroEngine?.getActiveTelemetry?.();
+    if (metro && metro.isCameraEnabled) return metro;
+    const bus = window.__gevBusEngine?.getActiveTelemetry?.();
+    if (bus && bus.isCameraEnabled) return bus;
+    if (metro) return metro;
+    if (bus) return bus;
+  } else {
+    const bus = window.__gevBusEngine?.getActiveTelemetry?.();
+    if (bus && bus.isCameraEnabled) return bus;
+    const metro = window.__gevMetroEngine?.getActiveTelemetry?.();
+    if (metro && metro.isCameraEnabled) return metro;
+    if (bus) return bus;
+    if (metro) return metro;
+  }
+  return null;
+}
 
 /**
  * Full-screen intelligence HUD overlay rendered on top of the Cesium canvas.
@@ -609,6 +649,16 @@ export class IntelHUD {
       this._markSummaryDirty();
       this._setSummaryText(this._composeSummary(), false);
     }
+
+    // Active Transportation Simulation telemetry cadence: refresh HUD summary every ~2.5 seconds (10 ticks @ 250ms)
+    const simTelem = getActiveSimulationTelemetry();
+    if (simTelem) {
+      this._simTick = (this._simTick || 0) + 1;
+      if (this._simTick % 10 === 0) {
+        this._markSummaryDirty();
+        this._setSummaryText(this._composeSummary(), false);
+      }
+    }
   }
 
   /**
@@ -822,6 +872,156 @@ export class IntelHUD {
       LOCALIZED_LOCALITY,
     );
 
+    // Active Simulation telemetry overlay: provides real-time functional location across all transport modes
+    const simTelem = getActiveSimulationTelemetry();
+    if (simTelem) {
+      if (simTelem.simType === 'drive') {
+        const loc = simTelem.currentLocation.toUpperCase();
+        const next = simTelem.nextLocation
+          ? ` | NEXT ${simTelem.nextLocation.toUpperCase()} (${simTelem.distToNextMi}MI)`
+          : '';
+        const prog = ` | TRIP ${simTelem.progressPct}% (${simTelem.distTraveledMi}/${simTelem.totalDistMi}MI)`;
+        const speed = `${simTelem.speedMph}MPH`;
+        const mode = simTelem.isTrafficStalker
+          ? 'TRAFFIC STALKER'
+          : 'HIGHWAY CRUISER';
+        return `${mode} · ${loc} | ${speed}${next}${prog} | ${REGION_LABELS[region] ? t(REGION_LABELS[region]) : region} | ALT ${altTag}`;
+      }
+
+      if (simTelem.simType === 'rail') {
+        const loc = simTelem.currentLocation.toUpperCase();
+        const prog = ` | TRIP ${simTelem.progressPct}% (${simTelem.distTraveledMi}/${simTelem.totalDistMi}MI)`;
+        const speed = `${simTelem.speedMph}MPH`;
+        return `TRANSIT CAB · ${loc} | ${speed}${prog} | ${REGION_LABELS[region] ? t(REGION_LABELS[region]) : region} | ALT ${altTag}`;
+      }
+
+      if (simTelem.simType === 'flight') {
+        const loc = simTelem.currentLocation.toUpperCase();
+        const prog = ` | TRIP ${simTelem.progressPct}% (${simTelem.distTraveledMi}/${simTelem.totalDistMi}MI)`;
+        return `FLIGHT SIMULATOR · ${loc} | ${simTelem.speedText} | ${simTelem.altText}${prog} | ${REGION_LABELS[region] ? t(REGION_LABELS[region]) : region} | ALT ${altTag}`;
+      }
+
+      if (simTelem.simType === 'boat') {
+        const loc = simTelem.currentLocation.toUpperCase();
+        return `VESSEL CRUISE · ${loc} | ${simTelem.speedText || 'CRUISING'} | ${REGION_LABELS[region] ? t(REGION_LABELS[region]) : region} | ALT ${altTag}`;
+      }
+
+      if (simTelem.simType === 'city') {
+        const loc = (simTelem.currentLocation || 'URBAN SECTOR').toUpperCase();
+        if (simTelem.isSpectacle) {
+          const eventName = (
+            simTelem.eventName || 'URBAN SPECTACLE'
+          ).toUpperCase();
+          const lapInfo = simTelem.lapInfo ? ` | ${simTelem.lapInfo}` : '';
+          const speed = simTelem.speedMph ? ` | ${simTelem.speedMph}MPH` : '';
+          return `SPECTACLE · ${eventName} | ${loc}${lapInfo}${speed} | BROADCAST CAM | ${REGION_LABELS[region] ? t(REGION_LABELS[region]) : region} | ALT ${altTag}`;
+        }
+        const person = simTelem.personaName
+          ? `FOLLOWING ${simTelem.personaName.toUpperCase()}`
+          : 'CITY STROLL';
+        const occ = simTelem.occupation
+          ? ` (${simTelem.occupation.toUpperCase()})`
+          : '';
+        const thought = simTelem.thought
+          ? ` | "${simTelem.thought.toUpperCase()}"`
+          : '';
+        const speed = simTelem.speedKmh ? ` | ${simTelem.speedKmh} KM/H` : '';
+        const count = simTelem.activePedestrians
+          ? ` | ${simTelem.activePedestrians} PEDESTRIANS`
+          : '';
+        return `LIVING CITY · ${loc} | ${person}${occ}${thought}${speed}${count} | ${REGION_LABELS[region] ? t(REGION_LABELS[region]) : region} | ALT ${altTag}`;
+      }
+
+      if (simTelem.simType === 'wander') {
+        const wLat = simTelem.coordinates?.lat ?? m.latDeg;
+        const wLon = simTelem.coordinates?.lon ?? m.lonDeg;
+        const zeroCreditLoc = resolveZeroCreditLocality(wLat, wLon, {
+          placeSearch: this.placeSearch,
+          onResolved: () => {
+            if (this._visible) {
+              this._setSummaryText(this._composeSummary(), false);
+            }
+          },
+        });
+        const locBadge = (
+          simTelem.shortHudLocation ||
+          zeroCreditLoc?.shortHudLabel ||
+          localityTag
+        ).toUpperCase();
+        const speed = `${Math.round(simTelem.speedMph || 0)}MPH`;
+        const mode = (simTelem.cameraMode || 'ISO').toUpperCase();
+        const compName = (
+          simTelem.companionName || getForkProfile().defaultCompanionName
+        ).toUpperCase();
+        const companion = simTelem.companionActive
+          ? ` · 👯 ${compName} WITH YOU`
+          : '';
+        const sprint = simTelem.isSprinting ? ' (SPRINT)' : '';
+        return `WANDER · ${locBadge} | ${mode} · ${speed}${sprint}${companion} | ALT ${altTag}`;
+      }
+
+      if (simTelem.simType === 'transit') {
+        const badge =
+          simTelem.mode === 'METRO' ? 'RAPID TRANSIT' : 'MUNICIPAL BUS';
+        const name = (
+          simTelem.routeName ||
+          simTelem.lineName ||
+          'TRANSIT'
+        ).toUpperCase();
+        const vId = simTelem.vehicleId || simTelem.trainId || '';
+        const speed = `${simTelem.speedMph}MPH`;
+        const occ = `${simTelem.passengers}/${simTelem.capacity} PAX (${simTelem.occupancyPct}%)`;
+        const next =
+          simTelem.nextStop || simTelem.nextStation
+            ? ` | NEXT ${(simTelem.nextStop || simTelem.nextStation).toUpperCase()} (${simTelem.nextStopDistMeters || simTelem.nextStationDistMeters || 0}M)`
+            : '';
+        return `${badge} · ${name} (${vId}) | ${speed} | ${occ}${next} | ${REGION_LABELS[region] ? t(REGION_LABELS[region]) : region} | ALT ${altTag}`;
+      }
+
+      if (simTelem.simType === 'freight') {
+        const fLat = simTelem.currentLat ?? m.latDeg;
+        const fLon = simTelem.currentLon ?? m.lonDeg;
+        const zeroCreditLoc = resolveZeroCreditLocality(fLat, fLon, {
+          placeSearch: this.placeSearch,
+          onResolved: () => {
+            if (this._visible) {
+              this._setSummaryText(this._composeSummary(), false);
+            }
+          },
+        });
+        const locBadge = (
+          simTelem.shortHudLocation ||
+          zeroCreditLoc?.shortHudLabel ||
+          simTelem.currentWaypointName ||
+          localityTag
+        ).toUpperCase();
+        const carrier = (simTelem.carrierLivery || 'FREIGHT').toUpperCase();
+        const speed = `${Math.round(simTelem.speedMph || 0)}MPH`;
+        const prog = ` | TRIP ${simTelem.progressPct}% (${simTelem.milesRemaining}MI LEFT)`;
+        const cargo = simTelem.cargoDescription
+          ? ` | ${simTelem.cargoDescription.toUpperCase()}`
+          : '';
+        const stateBadge = simTelem.stateBadge
+          ? ` · ${simTelem.stateBadge.toUpperCase()}`
+          : '';
+        const cam = (simTelem.cameraMode || 'CHASE').toUpperCase();
+        return `LOGISTICS · ${carrier}${stateBadge} | ${locBadge} | ${speed}${prog}${cargo} | ${cam} CAM | ALT ${altTag}`;
+      }
+
+      if (simTelem.simType === 'fleet') {
+        const domTitle = (
+          simTelem.activeDomicileTitle || 'DOMICILE'
+        ).toUpperCase();
+        const modeBadge = (simTelem.modeName || 'FLEET').toUpperCase();
+        const speed = `${Math.round(simTelem.speedMph || 0)}MPH`;
+        const companion =
+          simTelem.companionMode === 'companion_tandem'
+            ? ` · 👯 ${(simTelem.companionName || getForkProfile().defaultCompanionName).toUpperCase()} WITH YOU`
+            : ' · 🧘 SOLO FOCUS';
+        return `ESTATE · ${domTitle} | ${modeBadge} · ${speed}${companion} | ALT ${altTag}`;
+      }
+    }
+
     const provenance = hudTelemetryProvenance(
       this._dataManager?.getAll?.() || [],
     );
@@ -881,6 +1081,14 @@ export class IntelHUD {
       this._setSummaryText(fallbackText, animate);
       return;
     }
+
+    // When an active simulation is running, keep deterministic telemetry and avoid unconfigured endpoints
+    const simTelem = getActiveSimulationTelemetry();
+    if (simTelem) {
+      this._setSummaryText(fallbackText, false);
+      return;
+    }
+
     if (!force && !this._summaryDirty) return;
     if (this.summaryPolicy.canRequest?.() === false) return;
 

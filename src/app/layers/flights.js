@@ -12,13 +12,11 @@ import * as context from '../../data/contextStore.js';
 import * as render from '../../renderGovernor.js';
 import * as recession from '../../data/aircraftRecession.js';
 
-/** Construct one layer using the application scene owners and a supplied source.
- * `placement`: a host-supplied placement for its live aircraft, or null. */
+/** Construct one layer using the application scene owners and a supplied source. */
 export function createApplicationFlights({
   surface,
   source,
   militaryRegistry,
-  placement = null,
   resolveAsset = (url) =>
     `${import.meta.env?.BASE_URL || '/'}${url.replace(/^\//, '')}`,
 }) {
@@ -43,7 +41,6 @@ export function createApplicationFlights({
       render,
       groundSnap,
       recession,
-      placement,
     },
   });
 }

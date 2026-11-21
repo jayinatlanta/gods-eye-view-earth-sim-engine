@@ -130,22 +130,61 @@ const BODIES = {
              L -3,-25 C -3,-29 -2.4,-33 0,-35 Z" fill="white" ${STROKE_BOLD}/>
     <rect x="-10.5" y="32.5" width="21" height="5" rx="1.5" fill="white" ${STROKE_BOLD}/>`,
 
-  // ── Helicopter: a SOLID translucent main-rotor disc (survives downscale as an
-  //    obvious circle, unlike a thin ring) with a bold two-blade cross, a
-  //    teardrop cabin, a tail boom, and a tail rotor. Unmistakable "disc on top"
-  //    silhouette that never reads as a fixed-wing.
+  // ── Helicopter (Airbus H145 with Fenestron): 5-blade main-rotor disc,
+  //    aerodynamic twin-engine cabin with wide cockpit chin-bubble glazing,
+  //    symmetrical horizontal stabilizer with dual vertical endplates, and the
+  //    iconic circular ducted Fenestron anti-torque fan built directly into the
+  //    vertical tail fin (zero exposed side tail rotor).
   helicopter: `
-    <circle cx="0" cy="-6" r="31" fill="white" fill-opacity="0.22"/>
-    <g transform="rotate(45 0 -6)">
-      <rect x="-30.5" y="-8.2" width="61" height="4.4" rx="2.2" fill="white" fill-opacity="0.9"/>
-      <rect x="-30.5" y="-8.2" width="61" height="4.4" rx="2.2" fill="white" fill-opacity="0.9" transform="rotate(90 0 -6)"/>
+    <circle cx="0" cy="-6" r="32" fill="white" fill-opacity="0.22"/>
+    <g transform="translate(0, -6)">
+      <rect x="-1.8" y="-32" width="3.6" height="32" rx="1.2" fill="white" fill-opacity="0.9"/>
+      <rect x="-1.8" y="-32" width="3.6" height="32" rx="1.2" fill="white" fill-opacity="0.9" transform="rotate(72)"/>
+      <rect x="-1.8" y="-32" width="3.6" height="32" rx="1.2" fill="white" fill-opacity="0.9" transform="rotate(144)"/>
+      <rect x="-1.8" y="-32" width="3.6" height="32" rx="1.2" fill="white" fill-opacity="0.9" transform="rotate(216)"/>
+      <rect x="-1.8" y="-32" width="3.6" height="32" rx="1.2" fill="white" fill-opacity="0.9" transform="rotate(288)"/>
+      <circle cx="0" cy="0" r="3.4" fill="white"/>
     </g>
-    <path d="M0,-22 C 8,-20 10.5,-13 10.5,-6 C 10.5,2 7.5,7 0,8.5
-             C -7.5,7 -10.5,2 -10.5,-6 C -10.5,-13 -8,-20 0,-22 Z" fill="white" ${STROKE}/>
-    <path d="M-2.6,8 L 2.6,8 L 1.8,32 L -1.8,32 Z" fill="white" ${STROKE}/>
-    <path d="M-8,27 L 8,27 L 8,30.6 L -8,30.6 Z" fill="white"/>
-    <circle cx="5.6" cy="35" r="6" fill="white" fill-opacity="0.6"/>
-    <circle cx="5.6" cy="35" r="2.1" fill="white"/>`,
+    <path d="M0,-23 C 7.5,-21 10.5,-14 10.5,-6 C 10.5,3 8,9 0,11
+             C -8,9 -10.5,3 -10.5,-6 C -10.5,-14 -7.5,-21 0,-23 Z" fill="white" ${STROKE}/>
+    <path d="M-5.5,-11 L 5.5,-11 L 4.5,-1 L -4.5,-1 Z" fill="white" fill-opacity="0.85"/>
+    <rect x="-11.5" y="-14" width="1.6" height="22" rx="0.8" fill="white" fill-opacity="0.7"/>
+    <rect x="9.9" y="-14" width="1.6" height="22" rx="0.8" fill="white" fill-opacity="0.7"/>
+    <path d="M-2.5,10 L 2.5,10 L 1.8,31 L -1.8,31 Z" fill="white" ${STROKE}/>
+    <rect x="-10" y="27" width="20" height="3" rx="1" fill="white"/>
+    <rect x="-10.5" y="23" width="2" height="11" rx="0.8" fill="white"/>
+    <rect x="8.5" y="23" width="2" height="11" rx="0.8" fill="white"/>
+    <path d="M-3,30 L 3,30 L 4,43 L -4,43 Z" fill="white" ${STROKE}/>
+    <circle cx="0" cy="36.5" r="5.2" fill="rgba(0,0,0,0.5)" stroke="white" stroke-width="1.3"/>
+    <circle cx="0" cy="36.5" r="1.6" fill="white"/>
+    <line x1="0" y1="32" x2="0" y2="41" stroke="white" stroke-width="0.8"/>
+    <line x1="-4.5" y1="36.5" x2="4.5" y2="36.5" stroke="white" stroke-width="0.8"/>`,
+
+  // ── Airbus H145 with Fenestron (explicit alias for personal fleet rotorcraft)
+  h145: `
+    <circle cx="0" cy="-6" r="32" fill="white" fill-opacity="0.22"/>
+    <g transform="translate(0, -6)">
+      <rect x="-1.8" y="-32" width="3.6" height="32" rx="1.2" fill="white" fill-opacity="0.9"/>
+      <rect x="-1.8" y="-32" width="3.6" height="32" rx="1.2" fill="white" fill-opacity="0.9" transform="rotate(72)"/>
+      <rect x="-1.8" y="-32" width="3.6" height="32" rx="1.2" fill="white" fill-opacity="0.9" transform="rotate(144)"/>
+      <rect x="-1.8" y="-32" width="3.6" height="32" rx="1.2" fill="white" fill-opacity="0.9" transform="rotate(216)"/>
+      <rect x="-1.8" y="-32" width="3.6" height="32" rx="1.2" fill="white" fill-opacity="0.9" transform="rotate(288)"/>
+      <circle cx="0" cy="0" r="3.4" fill="white"/>
+    </g>
+    <path d="M0,-23 C 7.5,-21 10.5,-14 10.5,-6 C 10.5,3 8,9 0,11
+             C -8,9 -10.5,3 -10.5,-6 C -10.5,-14 -7.5,-21 0,-23 Z" fill="white" ${STROKE}/>
+    <path d="M-5.5,-11 L 5.5,-11 L 4.5,-1 L -4.5,-1 Z" fill="white" fill-opacity="0.85"/>
+    <rect x="-11.5" y="-14" width="1.6" height="22" rx="0.8" fill="white" fill-opacity="0.7"/>
+    <rect x="9.9" y="-14" width="1.6" height="22" rx="0.8" fill="white" fill-opacity="0.7"/>
+    <path d="M-2.5,10 L 2.5,10 L 1.8,31 L -1.8,31 Z" fill="white" ${STROKE}/>
+    <rect x="-10" y="27" width="20" height="3" rx="1" fill="white"/>
+    <rect x="-10.5" y="23" width="2" height="11" rx="0.8" fill="white"/>
+    <rect x="8.5" y="23" width="2" height="11" rx="0.8" fill="white"/>
+    <path d="M-3,30 L 3,30 L 4,43 L -4,43 Z" fill="white" ${STROKE}/>
+    <circle cx="0" cy="36.5" r="5.2" fill="rgba(0,0,0,0.5)" stroke="white" stroke-width="1.3"/>
+    <circle cx="0" cy="36.5" r="1.6" fill="white"/>
+    <line x1="0" y1="32" x2="0" y2="41" stroke="white" stroke-width="0.8"/>
+    <line x1="-4.5" y1="36.5" x2="4.5" y2="36.5" stroke="white" stroke-width="0.8"/>`,
 
   // ── Fast jet: sharp delta/cropped-delta with a pointed nose, LERX root
   //    blend, and twin tail fins. Aggressive, all-wing.

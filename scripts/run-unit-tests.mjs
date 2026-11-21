@@ -15,9 +15,13 @@ export function isCalibratedAllocationRuntime(version = process.versions.node) {
 }
 
 /** Require a runtime on which allocation budgets are calibrated. */
-export function assertCalibratedAllocationRuntime(version = process.versions.node) {
+export function assertCalibratedAllocationRuntime(
+  version = process.versions.node,
+) {
   if (!isCalibratedAllocationRuntime(version)) {
-    throw new Error(`Allocation budgets require calibrated Node 24 or 26; received ${version}`);
+    throw new Error(
+      `Allocation budgets require calibrated Node 24 or 26; received ${version}`,
+    );
   }
   return version;
 }
@@ -53,9 +57,13 @@ export function discoverUnitTestFiles(root = process.cwd()) {
 /** Partition ordinary parallel tests from the two GC-bracketed probes. */
 export function buildUnitTestPlan(files) {
   const known = new Set(files);
-  const missingAllocationTests = ALLOCATION_TEST_FILES.filter((file) => !known.has(file));
+  const missingAllocationTests = ALLOCATION_TEST_FILES.filter(
+    (file) => !known.has(file),
+  );
   if (missingAllocationTests.length) {
-    throw new Error(`Missing allocation microbenchmarks: ${missingAllocationTests.join(', ')}`);
+    throw new Error(
+      `Missing allocation microbenchmarks: ${missingAllocationTests.join(', ')}`,
+    );
   }
   const allocationSet = new Set(ALLOCATION_TEST_FILES);
   return {
@@ -79,19 +87,47 @@ export const UNIT_TEST_NODE_FLAGS = Object.freeze([
 ]);
 
 function runTests(args) {
-  const result = spawnSync(process.execPath, [...UNIT_TEST_NODE_FLAGS, ...args], {
-    cwd: process.cwd(),
-    stdio: 'inherit',
-    env: process.env,
-  });
+  const result = spawnSync(
+    process.execPath,
+    [...UNIT_TEST_NODE_FLAGS, ...args],
+    {
+      cwd: process.cwd(),
+      stdio: 'inherit',
+      env: process.env,
+    },
+  );
   if (result.error) throw result.error;
   return result.status ?? 1;
 }
 
+// Keep each spawn under Windows' 32 KiB CreateProcess command-line limit as combined test counts grow.
+const MAX_PARALLEL_BATCH_CHARS =
+  process.platform === 'win32' ? 20_000 : 120_000;
+
+function batchFilesByArgLength(files, maxChars = MAX_PARALLEL_BATCH_CHARS) {
+  const batches = [];
+  let current = [];
+  let currentChars = 0;
+  for (const file of files) {
+    const cost = file.length + 3;
+    if (current.length > 0 && currentChars + cost > maxChars) {
+      batches.push(current);
+      current = [];
+      currentChars = 0;
+    }
+    current.push(file);
+    currentChars += cost;
+  }
+  if (current.length > 0) batches.push(current);
+  return batches;
+}
+
 export function runUnitTests() {
   const plan = buildUnitTestPlan(discoverUnitTestFiles());
-  const parallelStatus = runTests(['--test', ...plan.parallel]);
-  if (parallelStatus !== 0) return parallelStatus;
+  for (const batch of batchFilesByArgLength(plan.parallel)) {
+    const parallelStatus = runTests(['--test', ...batch]);
+    if (parallelStatus !== 0) return parallelStatus;
+  }
 
   // The GC-bracketed budgets are calibrated on every supported Node major.
   // Unsupported runtimes may still run ordinary tests, so uncalibrated runtimes skip the
@@ -102,9 +138,9 @@ export function runUnitTests() {
       assertCalibratedAllocationRuntime();
     }
     console.warn(
-      `[unit] SKIPPED ${ALLOCATION_TEST_FILES.length} allocation microbenchmarks: `
-      + `budgets are calibrated for Node 24 and 26, running ${process.versions.node}. `
-      + 'Run under Node 24 or 26 (or set GEV_REQUIRE_ALLOCATION_GATE=1 to fail instead).',
+      `[unit] SKIPPED ${ALLOCATION_TEST_FILES.length} allocation microbenchmarks: ` +
+        `budgets are calibrated for Node 24 and 26, running ${process.versions.node}. ` +
+        'Run under Node 24 or 26 (or set GEV_REQUIRE_ALLOCATION_GATE=1 to fail instead).',
     );
     return 0;
   }
@@ -115,5 +151,7 @@ export function runUnitTests() {
   return 0;
 }
 
-const invokedPath = process.argv[1] ? pathToFileURL(path.resolve(process.argv[1])).href : '';
+const invokedPath = process.argv[1]
+  ? pathToFileURL(path.resolve(process.argv[1])).href
+  : '';
 if (import.meta.url === invokedPath) process.exitCode = runUnitTests();

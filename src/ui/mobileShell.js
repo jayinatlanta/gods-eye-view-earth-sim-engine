@@ -368,8 +368,7 @@ export function initMobileShell({
         : sheet === 'search'
           ? [dock]
           : sheet === 'more'
-            ? // Visual lives in the left stack; the dock holds the presets.
-              [element('left-panel-stack'), dock]
+            ? [element('right-context-rail'), dock]
             : [element('right-context-rail')];
     return roots.find((root) => root?.contains(target));
   };

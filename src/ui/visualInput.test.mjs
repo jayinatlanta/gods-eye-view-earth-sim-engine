@@ -50,6 +50,7 @@ function shortcuts() {
   const calls = [];
   const names = [
     'setStyle',
+    'openSearch',
     'dismissSearch',
     'toggleHud',
     'toggleOrbit',
@@ -134,6 +135,30 @@ test('browser and system chords on a shortcut key run no shortcut', () => {
   f.press('c');
   f.press('Escape', new Element(), { ctrlKey: true });
   assert.deepEqual(f.calls, [['toggleCctv'], ['dismissSearch']]);
+});
+
+test('slash key invokes openSearch and prevents default when not focused in form control', () => {
+  const f = shortcuts();
+  let prevented = false;
+  f.press('/', new Element('DIV'), {
+    preventDefault: () => {
+      prevented = true;
+    },
+  });
+  assert.equal(prevented, true);
+  assert.deepEqual(f.calls, [['openSearch']]);
+});
+
+test('slash key does not invoke openSearch when focused in form control', () => {
+  const f = shortcuts();
+  let prevented = false;
+  f.press('/', new Element('INPUT'), {
+    preventDefault: () => {
+      prevented = true;
+    },
+  });
+  assert.equal(prevented, false);
+  assert.deepEqual(f.calls, []);
 });
 
 test('destroy synchronously removes shortcuts and a replacement binds once', () => {

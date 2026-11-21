@@ -75,6 +75,10 @@ test('explicit build inputs preserve browser-only defines, plugin order and loop
     'import.meta.env.GOOGLE_MAPS_API_KEY': '"browser-fixture"',
     'import.meta.env.CESIUM_ION_TOKEN': '"ion-fixture"',
     'import.meta.env.MAPILLARY_CLIENT_TOKEN': '""',
+    'import.meta.env.GEV_FORK_PROFILE': '""',
+    'import.meta.env.DEFAULT_STARTUP_CITY': '""',
+    'import.meta.env.GEV_COMPANION_NAME': '""',
+    'import.meta.env.GEV_ENABLE_LIVE_FORGE': '""',
   });
   assert.equal(
     createBrowserViteConfig({ photonUrl: '' }).define[

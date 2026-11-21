@@ -245,6 +245,40 @@ test('the viewer gets the starry sky as an option, which keeps the Sun and Moon'
   options.skyBox.destroy();
 });
 
+test('applicationViewerOptions scales MSAA and drawing buffers for mobile devices', async () => {
+  const { applicationViewerOptions, isMobileOrCoarseScreen } =
+    await import('./viewer.js');
+  const creditContainer = {};
+
+  // Default Node environment (non-mobile)
+  const desktopOptions = applicationViewerOptions(creditContainer);
+  assert.equal(desktopOptions.msaaSamples, 4);
+  assert.equal(desktopOptions.contextOptions.webgl.preserveDrawingBuffer, true);
+  desktopOptions.skyBox.destroy();
+
+  // Simulated mobile environment
+  const originalMatchMedia = globalThis.matchMedia;
+  try {
+    globalThis.matchMedia = (query) => ({
+      matches: query === '(pointer: coarse)',
+    });
+    assert.equal(isMobileOrCoarseScreen(), true);
+    const mobileOptions = applicationViewerOptions(creditContainer);
+    assert.equal(mobileOptions.msaaSamples, 1);
+    assert.equal(
+      mobileOptions.contextOptions.webgl.preserveDrawingBuffer,
+      false,
+    );
+    assert.equal(
+      mobileOptions.contextOptions.webgl.powerPreference,
+      'low-power',
+    );
+    mobileOptions.skyBox.destroy();
+  } finally {
+    globalThis.matchMedia = originalMatchMedia;
+  }
+});
+
 function pinchFixture({ zoomEventTypes } = {}) {
   const handlers = new Set();
   const relayed = [];

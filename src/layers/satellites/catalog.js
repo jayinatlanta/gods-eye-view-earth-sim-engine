@@ -1,14 +1,11 @@
 import * as Cesium from 'cesium';
-import { gstime, twoline2satrec } from 'satellite.js';
+import { twoline2satrec } from 'satellite.js';
 import { noradIdFromSatnum, tleLineLaunchYear } from '../../sources/tle.js';
-import { reckonEarthFixed, sampleOrbit } from './motion.js';
 import {
   DENSE_REFRESH_FRAMES,
   DENSE_GROUP_PATH,
-  DENSE_SAMPLES_PER_FRAME_MAX,
   POINT_STYLES,
   DENSE_CREATE_CHUNK,
-  ORBIT_SAMPLE_HORIZON_MS,
 } from './policy.js';
 
 export function createCatalog({ state: layerState, services, parts, source }) {
@@ -21,42 +18,37 @@ export function createCatalog({ state: layerState, services, parts, source }) {
   }
 
   /**
-   * Sample a small per-frame slice of the dense extras (round-robin); every
-   * point is then reckoned from its sample each frame (rendering.js
-   * _reckonPoints). At normal speed the full dense set is sampled once every
-   * ~DENSE_REFRESH_FRAMES frames (~5s at 60fps), so per-frame cost stays ~35
-   * propagations (~0.1 ms) even with 10K+ Starlink sats — spreading the work
-   * per frame avoids the once-per-second spike a tick-sized chunk (~2K props
-   * ≈ 4ms) would cause. While time plays fast, or after a seek, the slice
-   * grows so each sample stays within ORBIT_SAMPLE_HORIZON_MS of the world
-   * time, up to DENSE_SAMPLES_PER_FRAME_MAX a frame.
-   * @param {number} worldStepMs How far the world time moved since the last
-   *   frame (NaN on the first).
+   * Re-propagate a small per-frame slice of the dense extras (round-robin).
+   * Budget: the full dense set completes one pass every ~DENSE_REFRESH_FRAMES
+   * frames (~5s at 60fps ≈ 1/5 of the core cadence), so per-frame cost stays
+   * ~35 propagations (~0.1 ms) even with 10K+ Starlink sats — spreading the
+   * work per frame avoids the once-per-second spike a tick-sized chunk
+   * (~2K props ≈ 4ms) would cause.
    */
 
-  function _propagateDenseChunk(worldStepMs) {
-    const count = layerState._denseIds.length;
-    if (count === 0) return;
-    const share = Math.max(
-      1 / DENSE_REFRESH_FRAMES,
-      Number.isFinite(worldStepMs)
-        ? Math.abs(worldStepMs) / ORBIT_SAMPLE_HORIZON_MS
-        : 1,
+  function _propagateDenseChunk() {
+    if (layerState._denseIds.length === 0) return;
+    const perFrame = Math.max(
+      1,
+      Math.ceil(layerState._denseIds.length / DENSE_REFRESH_FRAMES),
     );
-    const perFrame = Math.min(
-      count,
-      DENSE_SAMPLES_PER_FRAME_MAX,
-      Math.max(1, Math.ceil(count * share)),
-    );
-    const nowMs = layerState.now();
+    const now = new Date(layerState.now());
     for (let i = 0; i < perFrame; i++) {
-      if (layerState._denseCursor >= count) layerState._denseCursor = 0;
+      if (layerState._denseCursor >= layerState._denseIds.length)
+        layerState._denseCursor = 0;
       const noradId = layerState._denseIds[layerState._denseCursor++];
       if (noradId === layerState._trackedNorad) continue; // per-frame tracked path owns it
       const sat = layerState._catalog.get(noradId);
-      if (!sat) continue;
-      const sample = sampleOrbit(sat.satrec, nowMs, sat.orbitSample);
-      if (sample) sat.orbitSample = sample;
+      const point = layerState._points.get(noradId);
+      if (!sat || !point) continue;
+      const pos = parts.orbits.propagatePosition(sat.satrec, now);
+      if (pos) {
+        point.position = Cesium.Cartesian3.fromDegrees(
+          pos.longitude,
+          pos.latitude,
+          pos.altitude,
+        );
+      }
     }
   }
 
@@ -105,8 +97,7 @@ export function createCatalog({ state: layerState, services, parts, source }) {
 
       const entries = parts.orbits.parseTLE(text);
       const style = POINT_STYLES.dense;
-      const nowMs = layerState.now();
-      const gmst = gstime(new Date(nowMs));
+      const now = new Date(layerState.now());
       let added = 0;
 
       for (let start = 0; start < entries.length; start += DENSE_CREATE_CHUNK) {
@@ -125,9 +116,8 @@ export function createCatalog({ state: layerState, services, parts, source }) {
           if (!satrec || satrec.error !== 0) continue;
           const noradId = noradIdFromSatnum(satrec.satnum);
           if (layerState._catalog.has(noradId)) continue; // core catalog keeps priority
-          // Its first sample places it now and moves it from then on.
-          const orbitSample = sampleOrbit(satrec, nowMs);
-          if (!orbitSample) continue;
+          const pos = parts.orbits.propagatePosition(satrec, now);
+          if (!pos) continue;
 
           layerState._catalog.set(noradId, {
             name: entry.name,
@@ -141,14 +131,12 @@ export function createCatalog({ state: layerState, services, parts, source }) {
             ucs: null,
             satcat: null,
             sensor: null,
-            orbitSample,
           });
           const point = layerState._pointCollection.add({
-            position: reckonEarthFixed(
-              orbitSample,
-              nowMs,
-              gmst,
-              new Cesium.Cartesian3(),
+            position: Cesium.Cartesian3.fromDegrees(
+              pos.longitude,
+              pos.latitude,
+              pos.altitude,
             ),
             pixelSize: style.pixelSize,
             color: style.color,

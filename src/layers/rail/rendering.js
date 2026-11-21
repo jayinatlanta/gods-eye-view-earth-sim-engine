@@ -1,10 +1,5 @@
 import * as Cesium from 'cesium';
-import {
-  PLACED_WAKE_MS,
-  applyDisplayCourse,
-  playbackMoving,
-  updatePlayback,
-} from '../transit/movement.js';
+import { applyDisplayCourse, updatePlayback } from '../transit/movement.js';
 import { HEIGHT_SAMPLE_MAX_ALTITUDE_M } from '../transit/policy.js';
 import {
   COLD_CELL_FLUSH_MS,
@@ -528,25 +523,9 @@ export function createRendering({ state, services, parts }) {
     );
   }
 
-  /**
-   * Whether a train's icon is drawn: shown, not drawn by its model, and no
-   * first-person view rides it (cockpitSubject.js). A held train keeps its
-   * playback; only its icon and model hide.
-   */
+  /** Whether a train's icon is drawn: shown, and not drawn by its model. */
   function markerShown(entry) {
-    return (
-      categoryShown(entry) &&
-      !entry.modelOwnsVisual &&
-      entry.key !== state._cockpitSubjectKey
-    );
-  }
-
-  /**
-   * Whether the train's playback runs: it is drawn, or a first-person view
-   * rides it, which keeps it moving, hidden, in a category turned off.
-   */
-  function playing(entry) {
-    return categoryShown(entry) || entry.key === state._cockpitSubjectKey;
+    return categoryShown(entry) && !entry.modelOwnsVisual;
   }
 
   /**
@@ -556,11 +535,8 @@ export function createRendering({ state, services, parts }) {
    */
   function place(entry) {
     const sample = entry.sample;
-    // Placed by a host-supplied placement, it is drawn where that puts it.
     const onPath =
-      !entry.placed &&
-      entry.path &&
-      placeOnPath(entry.path, sample, entry.segment, pathPoint);
+      entry.path && placeOnPath(entry.path, sample, entry.segment, pathPoint);
     const lat = onPath
       ? pathPoint.lat
       : Number.isFinite(sample?.lat)
@@ -637,26 +613,16 @@ export function createRendering({ state, services, parts }) {
     if (!entry.marker) return;
     place(entry);
     const sample = entry.sample;
-    const moving = playing(entry) && playbackMoving(entry);
+    const moving =
+      categoryShown(entry) &&
+      sample?.phase === 'playing' &&
+      sample.segmentSpeedMps > 0;
     if (moving) {
       state._moving.add(entry);
       return;
     }
     state._moving.delete(entry);
-    if (!playing(entry)) return;
-    // A train a host-supplied placement holds still is asked again every
-    // PLACED_WAKE_MS: it moves on once the placement does.
-    const monoNow = performance.now();
-    const placedWake = entry.placed === true;
-    const boundary = sample?.nextWakeMonoMs;
-    const wakeMonoMs = placedWake
-      ? Math.min(
-          Number.isFinite(boundary) ? boundary : Infinity,
-          monoNow + PLACED_WAKE_MS,
-        )
-      : boundary;
-    if (Number.isFinite(wakeMonoMs)) {
-      const atBoundary = !placedWake || boundary <= wakeMonoMs;
+    if (categoryShown(entry) && Number.isFinite(sample?.nextWakeMonoMs)) {
       entry.wakeTimer = setTimeout(
         () => {
           entry.wakeTimer = null;
@@ -664,10 +630,9 @@ export function createRendering({ state, services, parts }) {
           updatePlayback(entry, Date.now(), performance.now());
           schedulePlayback(entry);
           syncRenderHold();
-          if (atBoundary || state._moving.has(entry))
-            governorRequestRender('rail-motion-boundary');
+          governorRequestRender('rail-motion-boundary');
         },
-        Math.max(1, wakeMonoMs - monoNow),
+        Math.max(1, sample.nextWakeMonoMs - performance.now()),
       );
     }
   }
@@ -779,9 +744,7 @@ export function createRendering({ state, services, parts }) {
     }
     item.position = entry.marker.position;
     item.headingDeg = Number.isFinite(entry.courseDeg) ? entry.courseDeg : 0;
-    // A train a first-person view rides draws no model: the camera is inside
-    // it (cockpitSubject.js).
-    item.show = categoryShown(entry) && entry.key !== state._cockpitSubjectKey;
+    item.show = categoryShown(entry);
     return item;
   }
 
@@ -870,8 +833,7 @@ export function createRendering({ state, services, parts }) {
       place(entry);
       if (
         entry.sample.phase !== 'playing' ||
-        entry.sample.segmentSpeedMps === 0 ||
-        (entry.placed === true && entry.placedMoving !== true)
+        entry.sample.segmentSpeedMps === 0
       )
         schedulePlayback(entry);
     }

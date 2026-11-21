@@ -202,9 +202,7 @@ export function createSelection({
         confidence: components.model.confidenceBucket(fire.confidence),
         age:
           fire.acqMs > 0
-            ? components.model.formatAge(
-                components.model.ageReferenceMs() - fire.acqMs,
-              )
+            ? components.model.formatAge(Date.now() - fire.acqMs)
             : 'unknown',
         sensor: fire.sensor || 'unknown',
       },

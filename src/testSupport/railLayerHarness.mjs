@@ -4,7 +4,6 @@
 // height, layer stats, selected route lines).
 import * as Cesium from 'cesium';
 import { createRailLayer } from '../layers/rail/index.js';
-import { layerPlacement } from '../data/placementProvider.js';
 import { CAMERA_DEBOUNCE_MS } from '../layers/rail/policy.js';
 import { WORLD_FOCUS_FRAMING } from '../worldFocus.js';
 import { publicRailCatalog } from '../data/railFeeds.js';
@@ -12,24 +11,6 @@ import { publicRailCatalog } from '../data/railFeeds.js';
 /** The tests' wall clock at the start: 2026-09-10T00:26:40Z. */
 export const RAIL_HARNESS_T0 = 1_789_000_000_000;
 export const BOSTON = Object.freeze({ lat: 42.3601, lon: -71.0589 });
-
-/** A camera's frame looking straight down from `altitude` over `at`. */
-function lookingDown(at, altitude) {
-  const position = Cesium.Cartesian3.fromDegrees(at.lon, at.lat, altitude);
-  const up = Cesium.Ellipsoid.WGS84.geodeticSurfaceNormal(
-    position,
-    new Cesium.Cartesian3(),
-  );
-  return {
-    directionWC: Cesium.Cartesian3.negate(up, new Cesium.Cartesian3()),
-    upWC: Cesium.Cartesian3.UNIT_Z,
-    frustum: {
-      computeCullingVolume: () => ({
-        computeVisibility: () => Cesium.Intersect.INSIDE,
-      }),
-    },
-  };
-}
 
 /** A train as the rail proxy sends it. */
 export function railTrain(id, lat, lon, extra = {}) {
@@ -83,8 +64,7 @@ const headersOf = (values = {}) => ({
  *   catalog?: object[]|Promise<object[]>|Function|false,
  *   ground?: object,
  *   stops?: object|null, scheduleStops?: boolean,
- *   paths?: Record<string, object>|null, fleet?: object|null,
- *   placement?: object|null}} [options]
+ *   paths?: Record<string, object>|null}} [options]
  *   `ground`: a floor service in place of the always-cold stub; `catalog`:
  *   the server's feed catalog (it may list fewer feeds than are bundled; a
  *   promise answers when it settles, a function is called per request and
@@ -94,10 +74,7 @@ const headersOf = (values = {}) => ({
  *   layer's own provider, its schedule tier, in its place;
  *   `paths`: feed id → the path pack the proxy serves, or a
  *   failure status it answers with (404 for any other feed; without it the
- *   source has no path route at all); `fleet`: the fleet-model services
- *   (testSupport/fleetModelFakes.mjs), with a camera that looks straight
- *   down for them (none by default: trains stay icons); `placement`: a
- *   host-supplied placement provider (../data/placementProvider.js).
+ *   source has no path route at all).
  */
 export function railLayerHarness(
   t,
@@ -109,8 +86,6 @@ export function railLayerHarness(
     stops = null,
     scheduleStops = false,
     paths = null,
-    fleet = null,
-    placement = null,
   } = {},
 ) {
   const T0 = RAIL_HARNESS_T0;
@@ -204,8 +179,6 @@ export function railLayerHarness(
       cancelFlight() {
         this.flightsCancelled += 1;
       },
-      // What the fleet models' eligibility reads: a camera looking down.
-      ...(fleet ? lookingDown(at, altitude) : {}),
     },
     scene: {
       canvas: { addEventListener() {}, removeEventListener() {} },
@@ -335,8 +308,6 @@ export function railLayerHarness(
         cachedGroundFloor: () => null,
         warmGroundFloor() {},
       },
-      ...(fleet ? { fleet } : {}),
-      ...(placement ? { placement: layerPlacement(placement, 'rail') } : {}),
       camera: {
         framing: WORLD_FOCUS_FRAMING.train,
         requestWorldFocus(detail) {

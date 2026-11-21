@@ -16,6 +16,8 @@ import { CITY_POIS } from './cityPois.js';
 /** Newest landmark arrival; an older post-arrival ground guard yields to it. */
 let arrivalGeneration = 0;
 
+export { CITY_POIS } from './cityPois.js';
+
 /**
  * Absolute full-earth camera preset for the zoom_to_globe voice tool. The height
  * must stay inside the app's 'global' view-scale band (>12,000 km — classifyViewScale

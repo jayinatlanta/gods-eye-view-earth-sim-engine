@@ -14,7 +14,9 @@ function makeViewer() {
   const scene = {
     requestRenderMode: false,
     maximumRenderTimeChange: 0,
-    requestRender() { calls.requestRender += 1; },
+    requestRender() {
+      calls.requestRender += 1;
+    },
   };
   return { viewer: { scene }, scene, calls };
 }
@@ -48,7 +50,11 @@ test('holds are identity-keyed: double-hold cannot leak, double-release cannot c
   holdContinuousRender('traffic');
   holdContinuousRender('traffic');
   releaseContinuousRender('traffic');
-  assert.equal(scene.requestRenderMode, true, 'single release clears an idempotent double-hold');
+  assert.equal(
+    scene.requestRenderMode,
+    true,
+    'single release clears an idempotent double-hold',
+  );
   releaseContinuousRender('traffic');
   releaseContinuousRender('never-held');
   assert.equal(scene.requestRenderMode, true);
@@ -72,7 +78,10 @@ test('governorRequestRender forwards to the scene and records reasons only in id
   const baseline = calls.requestRender;
   governorRequestRender('layer-tick:earthquakes');
   assert.equal(calls.requestRender, baseline + 1);
-  assert.equal(getRenderGovernorDiagnostics().recentRequests.at(-1).reason, 'layer-tick:earthquakes');
+  assert.equal(
+    getRenderGovernorDiagnostics().recentRequests.at(-1).reason,
+    'layer-tick:earthquakes',
+  );
   holdContinuousRender('flights');
   const idleRequests = getRenderGovernorDiagnostics().recentRequests.length;
   governorRequestRender('slider');
@@ -94,7 +103,74 @@ test('holds registered before install apply at install time', () => {
   holdContinuousRender('flights');
   const { viewer, scene } = makeViewer();
   installRenderGovernor(viewer);
-  assert.equal(scene.requestRenderMode, false, 'pre-install hold keeps continuous mode');
+  assert.equal(
+    scene.requestRenderMode,
+    false,
+    'pre-install hold keeps continuous mode',
+  );
   releaseContinuousRender('flights');
   assert.equal(scene.requestRenderMode, true);
+});
+
+function createFakeEvent() {
+  const listeners = new Set();
+  return {
+    addEventListener(fn) {
+      listeners.add(fn);
+      return () => listeners.delete(fn);
+    },
+    raise(...args) {
+      for (const fn of [...listeners]) fn(...args);
+    },
+  };
+}
+
+test('active 3D tileset streaming holds continuous render and wakes idle frames on tile loads', () => {
+  const calls = { requestRender: 0 };
+  const loadProgress = createFakeEvent();
+  const tileLoad = createFakeEvent();
+  const allTilesLoaded = createFakeEvent();
+  const primitiveAdded = createFakeEvent();
+  const moveEnd = createFakeEvent();
+
+  const fakeTileset = {
+    show: true,
+    tilesLoaded: false,
+    loadProgress,
+    tileLoad,
+    allTilesLoaded,
+  };
+
+  const scene = {
+    requestRenderMode: false,
+    maximumRenderTimeChange: 0,
+    primitives: {
+      length: 1,
+      get: () => fakeTileset,
+      primitiveAdded,
+    },
+    requestRender() {
+      calls.requestRender += 1;
+    },
+  };
+
+  installRenderGovernor({ scene, camera: { moveEnd } });
+  // Initial unloaded tileset kicks a bounded settle hold
+  assert.equal(scene.requestRenderMode, false);
+
+  // Streaming progress holds continuous render until allTilesLoaded settles
+  loadProgress.raise(4, 1);
+  assert.equal(scene.requestRenderMode, false);
+  assert.ok(getRenderGovernorDiagnostics().holds.includes('tileset-streaming'));
+
+  // Completion releases streaming & settle holds and requests a settling frame
+  fakeTileset.tilesLoaded = true;
+  allTilesLoaded.raise();
+  assert.equal(scene.requestRenderMode, true);
+  assert.deepEqual(getRenderGovernorDiagnostics().holds, []);
+
+  // Subsequent single tileLoad wakes idle scene via requestRender
+  const baseline = calls.requestRender;
+  tileLoad.raise({});
+  assert.equal(calls.requestRender, baseline + 1);
 });

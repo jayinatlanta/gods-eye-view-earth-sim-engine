@@ -151,6 +151,22 @@ export function installTrackpadPinchZoom(
 }
 
 /**
+ * Detect mobile or touch-coarse displays to scale memory, framebuffers and gestures.
+ */
+export function isMobileOrCoarseScreen() {
+  if (typeof globalThis.matchMedia === 'function') {
+    if (globalThis.matchMedia('(pointer: coarse)').matches) return true;
+    if (globalThis.matchMedia('(max-width: 768px)').matches) return true;
+  }
+  if (typeof globalThis.navigator !== 'undefined') {
+    if ((globalThis.navigator.maxTouchPoints || 0) > 1) return true;
+    if (/Android|iPhone|iPad|iPod/i.test(globalThis.navigator.userAgent || ''))
+      return true;
+  }
+  return false;
+}
+
+/**
  * Allow Cesium's free look only below `maxHeight` and return its disposer.
  * Orbit, tilt and zoom stay available at every height. A value other code
  * sets later is kept as the one to allow below that height, and restored on
@@ -375,15 +391,9 @@ export function installGlobeInViewRecovery(
   };
 }
 
-/**
- * Cesium.Viewer options of the standard globe viewer. `showRenderLoopErrors`
- * false leaves render errors to the caller's own notice instead of Cesium's
- * panel.
- */
-export function applicationViewerOptions(
-  creditContainer,
-  { showRenderLoopErrors = true } = {},
-) {
+/** Cesium.Viewer options of the standard globe viewer. */
+export function applicationViewerOptions(creditContainer) {
+  const isMobile = isMobileOrCoarseScreen();
   return {
     timeline: false,
     animation: false,
@@ -401,30 +411,31 @@ export function applicationViewerOptions(
     // which would also stop CesiumWidget from creating the Sun and Moon.
     skyBox: new StarrySky(),
     creditContainer,
-    msaaSamples: 4,
-    contextOptions: { webgl: { preserveDrawingBuffer: true } },
-    showRenderLoopErrors,
+    msaaSamples: isMobile ? 1 : 4,
+    useBrowserRecommendedResolution: true,
+    contextOptions: {
+      webgl: {
+        preserveDrawingBuffer: !isMobile,
+        powerPreference: isMobile ? 'low-power' : 'high-performance',
+      },
+    },
   };
 }
 
 /** Create the standard globe viewer in caller-owned, visible containers. */
-export function createApplicationViewer({
-  container,
-  creditContainer,
-  showRenderLoopErrors,
-}) {
+export function createApplicationViewer({ container, creditContainer }) {
   if (!container || !creditContainer)
     throw new TypeError('Viewer and credit containers are required');
   const viewer = new Cesium.Viewer(
     container,
-    applicationViewerOptions(creditContainer, { showRenderLoopErrors }),
+    applicationViewerOptions(creditContainer),
   );
   try {
     viewer.targetFrameRate = 60;
     // A phone pinch spans fewer screen pixels than desktop zoom gestures.
     // Keep Cesium's distance-aware zoom and collision limits, with less travel
     // required on touch-first screens. Mouse/trackpad sensitivity stays native.
-    if (globalThis.matchMedia?.('(pointer: coarse)').matches)
+    if (isMobileOrCoarseScreen())
       viewer.scene.screenSpaceCameraController.zoomFactor *= 3;
     limitZoomOut(viewer);
     // Before any tile builds a draw command: Cesium's per-vertex model

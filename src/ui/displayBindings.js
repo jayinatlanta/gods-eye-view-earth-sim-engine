@@ -55,6 +55,15 @@ export class DisplayBindings {
       searchInput: this._locationSearch,
       actions: {
         setStyle: (style) => this.setStyle(style, { userInitiated: true }),
+        openSearch: () => {
+          if (this._locationSearch) {
+            if (!this._locationSearch.classList.contains('expanded')) {
+              this._locationSearch.classList.add('expanded');
+            }
+            this._locationSearch.focus();
+            this._locationSearch.select();
+          }
+        },
         dismissSearch: () => this._closeLocationSearch?.({ ifOpen: true }),
         toggleHud: () => {
           this.shareLinkManager?.claimRestoreLane?.('visual');
@@ -103,11 +112,6 @@ export class DisplayBindings {
       setScopeFeather: (value) => {
         this.shareLinkManager?.claimRestoreLane?.('visual');
         this._setScope({ featherPct: value });
-        this._syncShareState();
-      },
-      setScopeOpacity: (value) => {
-        this.shareLinkManager?.claimRestoreLane?.('visual');
-        this._setScope({ opacityPct: Number(value) });
         this._syncShareState();
       },
       setSharpenIntensity: (pct) => {
@@ -173,28 +177,6 @@ export class DisplayBindings {
         this._syncModels3dModeRow();
       },
       setModelsMode: (mode) => this._setModels3dMode(mode),
-      // Back to the out-of-the-box look: Normal style, the global post
-      // defaults (bloom, sharpen, HUD, labels, celestial), scope on at full
-      // feather and opacity, 3D aircraft on in Proximity.
-      resetVisual: () => {
-        this.shareLinkManager?.claimRestoreLane?.('visual');
-        this.setStyle('normal', { userInitiated: true });
-        // The HUD layout follows the Normal style, as choosing it does: the
-        // Cyber HUD stays Cyber.
-        this._applyGlobalPostDefaults({ keepHudVariant: true });
-        this._setDetectionAllocation('ELASTIC');
-        this._setScope({ enabled: true, featherPct: 100, opacityPct: 100 });
-        this._setModels3dEnabled(true);
-        this._setModels3dMode('proximity');
-        this._syncModels3dModeRow?.();
-        // Inside Contacts the detection shown is lent for the session, and
-        // leaving puts back the state from before. A reset there is the user's
-        // choice, so the defaults become what leaving puts back and what a
-        // share link carries.
-        this.claimDetection();
-        this._adoptDetectionAsRestore?.();
-        this._syncShareState();
-      },
     });
     this._detachDisplayControls = () => store.detach(token);
   }

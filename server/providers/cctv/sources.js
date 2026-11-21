@@ -102,6 +102,17 @@ import {
   DEFAULT_VEGVESEN_MAX_SOURCES,
   VEGVESEN_MAX_CATALOG_BYTES,
   NORWAY_ANCHORS,
+  GDOT_CAMERAS_URL,
+  GDOT_IMAGE_ORIGIN,
+  DEFAULT_GDOT_MAX_SOURCES,
+  GEORGIA_ANCHORS,
+  FL511_CAMERAS_URL,
+  FL511_IMAGE_ORIGIN,
+  DEFAULT_FL511_MAX_SOURCES,
+  NCDOT_CAMERAS_URL,
+  NCDOT_IMAGE_ORIGIN,
+  DEFAULT_NCDOT_MAX_SOURCES,
+  NORTH_CAROLINA_ANCHORS,
   KARTVERKET_HEIGHT_URL,
   KARTVERKET_MAX_POINTS,
   KARTVERKET_CONCURRENCY,
@@ -141,6 +152,7 @@ import {
   DEFAULT_ICELAND_MAX_SOURCES,
   ICELAND_ANCHORS,
 } from './constants.js';
+import { haversineKm } from '../common/geo.js';
 import {
   toFiniteNumber,
   extractAustinCoords,
@@ -3005,6 +3017,413 @@ export async function loadVegvesenSourcesFromOpenData() {
   }
 }
 
+const GDOT_REGIONS = [
+  {
+    name: 'Atlanta',
+    cityId: 'atlanta',
+    lat: 33.749,
+    lon: -84.388,
+    radiusKm: 45,
+    elevM: 300,
+  },
+  {
+    name: 'Macon',
+    cityId: 'macon',
+    lat: 32.8407,
+    lon: -83.6324,
+    radiusKm: 35,
+    elevM: 115,
+  },
+  {
+    name: 'Savannah',
+    cityId: 'savannah',
+    lat: 32.0809,
+    lon: -81.0912,
+    radiusKm: 35,
+    elevM: 15,
+  },
+  {
+    name: 'Augusta',
+    cityId: 'augusta',
+    lat: 33.4735,
+    lon: -82.0105,
+    radiusKm: 35,
+    elevM: 45,
+  },
+  {
+    name: 'Columbus',
+    cityId: 'columbus',
+    lat: 32.461,
+    lon: -84.9877,
+    radiusKm: 35,
+    elevM: 110,
+  },
+  {
+    name: 'Athens',
+    cityId: 'athens',
+    lat: 33.9519,
+    lon: -83.3576,
+    radiusKm: 30,
+    elevM: 230,
+  },
+  {
+    name: 'Dalton / Ringgold',
+    cityId: 'dalton',
+    lat: 34.7698,
+    lon: -84.9702,
+    radiusKm: 35,
+    elevM: 220,
+  },
+  {
+    name: 'Tifton',
+    cityId: 'tifton',
+    lat: 31.4505,
+    lon: -83.5085,
+    radiusKm: 35,
+    elevM: 105,
+  },
+  {
+    name: 'Valdosta',
+    cityId: 'valdosta',
+    lat: 30.8327,
+    lon: -83.2785,
+    radiusKm: 35,
+    elevM: 65,
+  },
+  {
+    name: 'Brunswick / Golden Isles',
+    cityId: 'brunswick',
+    lat: 31.1499,
+    lon: -81.4915,
+    radiusKm: 35,
+    elevM: 5,
+  },
+];
+
+export function formatGdotImageUrl(rawId) {
+  const cleanId = String(rawId || '').trim();
+  if (!cleanId) return '';
+  return `${GDOT_IMAGE_ORIGIN}${encodeURIComponent(cleanId)}`;
+}
+
+export async function loadGdotSourcesFromOpenData({
+  all = false,
+  fetchImpl = fetch,
+} = {}) {
+  const endpoint = process.env.CCTV_GDOT_URL || GDOT_CAMERAS_URL;
+  try {
+    const resp = await fetchImpl(endpoint, {
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': 'gods-eye-view-cctv-proxy/1.0',
+      },
+      signal: AbortSignal.timeout(CCTV_SOURCE_FETCH_TIMEOUT_MS),
+    });
+    if (!resp.ok) {
+      console.warn('[CCTV] GDOT 511 camera download failed:', resp.status);
+      return [];
+    }
+    const payload = await resp.json();
+    const rows = Array.isArray(payload?.item2)
+      ? payload.item2
+      : Array.isArray(payload)
+        ? payload
+        : [];
+    if (!rows.length) return [];
+
+    const cameras = [];
+    for (const item of rows) {
+      const rawId = String(item?.itemId || item?.id || '').trim();
+      if (!rawId) continue;
+      const loc = item?.location;
+      const lat = toFiniteNumber(
+        Array.isArray(loc) ? loc[0] : (loc?.lat ?? item?.lat),
+      );
+      const lon = toFiniteNumber(
+        Array.isArray(loc) ? loc[1] : (loc?.lon ?? item?.lon),
+      );
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+
+      if (lat < 30.0 || lat > 35.5 || lon < -86.0 || lon > -80.5) continue;
+
+      let matchedRegion = null;
+      let minDistance = Infinity;
+      for (const region of GDOT_REGIONS) {
+        const d = haversineKm(lat, lon, region.lat, region.lon);
+        if (d < minDistance) {
+          minDistance = d;
+          matchedRegion = region;
+        }
+      }
+
+      const city =
+        matchedRegion && minDistance <= (matchedRegion.radiusKm || 35)
+          ? matchedRegion.name
+          : 'Georgia';
+      const cityId =
+        matchedRegion && minDistance <= (matchedRegion.radiusKm || 35)
+          ? matchedRegion.cityId
+          : 'georgia';
+      const groundElevationM =
+        matchedRegion && minDistance <= (matchedRegion.radiusKm || 35)
+          ? matchedRegion.elevM
+          : 150;
+
+      const cameraId = `gdot-${rawId}`;
+      const title = String(item?.title || item?.description || '').trim();
+      const label = title || `GDOT Cam ${rawId} (${city})`;
+      const imageUrl = formatGdotImageUrl(rawId);
+
+      cameras.push({
+        id: cameraId,
+        name: label,
+        city,
+        cityId,
+        provider: 'Georgia DOT (511GA)',
+        lat,
+        lon,
+        headingDeg: fallbackHeadingFromId(cameraId),
+        headingConfidence: 'low',
+        pitchDeg: -18,
+        fovDeg: 52,
+        rangeM: 190,
+        mountHeightM: 12,
+        groundElevationM,
+        feedType: 'image',
+        url: imageUrl,
+        snapshotUrl: imageUrl,
+        sourceKind: 'gdot-open-data',
+        license: 'Public Georgia DOT traffic camera frame',
+      });
+    }
+
+    const unique = Array.from(new Map(cameras.map((c) => [c.id, c])).values());
+
+    if (all) {
+      console.log(
+        `[CCTV] Loaded GDOT statewide camera sources: ${unique.length} total`,
+      );
+      return unique;
+    }
+
+    const maxRaw = Number(
+      process.env.CCTV_GDOT_MAX_SOURCES || DEFAULT_GDOT_MAX_SOURCES,
+    );
+    const maxCount = Number.isFinite(maxRaw)
+      ? Math.max(8, Math.min(1200, Math.floor(maxRaw)))
+      : DEFAULT_GDOT_MAX_SOURCES;
+    const prioritized = prioritizeSources(unique, maxCount, GEORGIA_ANCHORS);
+    console.log(
+      `[CCTV] Loaded GDOT camera sources: ${unique.length} (using nearest ${prioritized.length})`,
+    );
+    return prioritized;
+  } catch (error) {
+    console.warn('[CCTV] GDOT camera download error:', error?.message || error);
+    return [];
+  }
+}
+
+const FL511_REGIONS = [
+  {
+    name: 'Miami',
+    cityId: 'miami',
+    lat: 25.7617,
+    lon: -80.1918,
+    radiusKm: 45,
+    elevM: 5,
+  },
+  {
+    name: 'Fort Lauderdale',
+    cityId: 'fort-lauderdale',
+    lat: 26.1224,
+    lon: -80.1373,
+    radiusKm: 35,
+    elevM: 5,
+  },
+  {
+    name: 'Orlando',
+    cityId: 'orlando',
+    lat: 28.5383,
+    lon: -81.3792,
+    radiusKm: 45,
+    elevM: 25,
+  },
+  {
+    name: 'Tampa',
+    cityId: 'tampa',
+    lat: 27.9506,
+    lon: -82.4572,
+    radiusKm: 40,
+    elevM: 10,
+  },
+  {
+    name: 'Jacksonville',
+    cityId: 'jacksonville',
+    lat: 30.3322,
+    lon: -81.6557,
+    radiusKm: 45,
+    elevM: 5,
+  },
+  {
+    name: 'Tallahassee',
+    cityId: 'tallahassee',
+    lat: 30.4383,
+    lon: -84.2807,
+    radiusKm: 35,
+    elevM: 60,
+  },
+  {
+    name: 'Fort Myers',
+    cityId: 'fort-myers',
+    lat: 26.6406,
+    lon: -81.8723,
+    radiusKm: 40,
+    elevM: 5,
+  },
+  {
+    name: 'Daytona Beach',
+    cityId: 'daytona-beach',
+    lat: 29.2108,
+    lon: -81.0228,
+    radiusKm: 35,
+    elevM: 5,
+  },
+  {
+    name: 'Pensacola',
+    cityId: 'pensacola',
+    lat: 30.4213,
+    lon: -87.2169,
+    radiusKm: 35,
+    elevM: 15,
+  },
+];
+
+export function formatFl511ImageUrl(rawId) {
+  const cleanId = String(rawId || '').trim();
+  if (!cleanId) return '';
+  return `${FL511_IMAGE_ORIGIN}${encodeURIComponent(cleanId)}`;
+}
+
+export async function loadFl511SourcesFromOpenData({
+  all = false,
+  fetchImpl = fetch,
+} = {}) {
+  const endpoint = process.env.CCTV_FL511_URL || FL511_CAMERAS_URL;
+  try {
+    const resp = await fetchImpl(endpoint, {
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': 'gods-eye-view-cctv-proxy/1.0',
+      },
+      signal: AbortSignal.timeout(CCTV_SOURCE_FETCH_TIMEOUT_MS),
+    });
+    if (!resp.ok) {
+      console.warn('[CCTV] FL511 camera download failed:', resp.status);
+      return [];
+    }
+    const payload = await resp.json();
+    const rows = Array.isArray(payload?.item2)
+      ? payload.item2
+      : Array.isArray(payload)
+        ? payload
+        : [];
+    if (!rows.length) return [];
+
+    const cameras = [];
+    for (const item of rows) {
+      const rawId = String(item?.itemId || item?.id || '').trim();
+      if (!rawId) continue;
+      const loc = item?.location;
+      const lat = toFiniteNumber(
+        Array.isArray(loc) ? loc[0] : (loc?.lat ?? item?.lat),
+      );
+      const lon = toFiniteNumber(
+        Array.isArray(loc) ? loc[1] : (loc?.lon ?? item?.lon),
+      );
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+
+      if (lat < 24.4 || lat > 31.1 || lon < -87.7 || lon > -79.9) continue;
+
+      let matchedRegion = null;
+      let minDistance = Infinity;
+      for (const region of FL511_REGIONS) {
+        const d = haversineKm(lat, lon, region.lat, region.lon);
+        if (d < minDistance) {
+          minDistance = d;
+          matchedRegion = region;
+        }
+      }
+
+      const city =
+        matchedRegion && minDistance <= (matchedRegion.radiusKm || 35)
+          ? matchedRegion.name
+          : 'Florida';
+      const cityId =
+        matchedRegion && minDistance <= (matchedRegion.radiusKm || 35)
+          ? matchedRegion.cityId
+          : 'florida';
+      const groundElevationM =
+        matchedRegion && minDistance <= (matchedRegion.radiusKm || 35)
+          ? matchedRegion.elevM
+          : 10;
+
+      const cameraId = `fl511-${rawId}`;
+      const title = String(item?.title || item?.description || '').trim();
+      const label = title || `FL511 Cam ${rawId} (${city})`;
+      const imageUrl = formatFl511ImageUrl(rawId);
+
+      cameras.push({
+        id: cameraId,
+        name: label,
+        city,
+        cityId,
+        provider: 'Florida DOT (FL511)',
+        lat,
+        lon,
+        headingDeg: fallbackHeadingFromId(cameraId),
+        headingConfidence: 'low',
+        pitchDeg: -18,
+        fovDeg: 52,
+        rangeM: 190,
+        mountHeightM: 12,
+        groundElevationM,
+        feedType: 'image',
+        url: imageUrl,
+        snapshotUrl: imageUrl,
+        sourceKind: 'fl511-open-data',
+        license: 'Public Florida DOT traffic camera frame',
+      });
+    }
+
+    const unique = Array.from(new Map(cameras.map((c) => [c.id, c])).values());
+
+    if (all) {
+      console.log(
+        `[CCTV] Loaded FL511 statewide camera sources: ${unique.length} total`,
+      );
+      return unique;
+    }
+
+    const maxRaw = Number(
+      process.env.CCTV_FL511_MAX_SOURCES || DEFAULT_FL511_MAX_SOURCES,
+    );
+    const maxCount = Number.isFinite(maxRaw)
+      ? Math.max(8, Math.min(1500, Math.floor(maxRaw)))
+      : DEFAULT_FL511_MAX_SOURCES;
+    const prioritized = prioritizeSources(unique, maxCount, FLORIDA_ANCHORS);
+    console.log(
+      `[CCTV] Loaded FL511 camera sources: ${unique.length} (using nearest ${prioritized.length})`,
+    );
+    return prioritized;
+  } catch (error) {
+    console.warn(
+      '[CCTV] FL511 camera download error:',
+      error?.message || error,
+    );
+    return [];
+  }
+}
+
 /**
  * Kartverket answers by rounded position: `{z, expires}`, where z is metres or
  * null for "no height there". Heights never expire (camera positions barely
@@ -3629,6 +4048,180 @@ export async function loadTorontoSourcesFromOpenData() {
   } catch (error) {
     console.warn(
       '[CCTV] Toronto camera download error:',
+      error?.message || error,
+    );
+    return [];
+  }
+}
+
+const NCDOT_REGIONS = [
+  {
+    name: 'Charlotte',
+    cityId: 'charlotte',
+    lat: 35.2271,
+    lon: -80.8431,
+    radiusKm: 40,
+    elevM: 230,
+  },
+  {
+    name: 'Raleigh',
+    cityId: 'raleigh',
+    lat: 35.7796,
+    lon: -78.6382,
+    radiusKm: 40,
+    elevM: 95,
+  },
+  {
+    name: 'Greensboro',
+    cityId: 'greensboro',
+    lat: 36.0726,
+    lon: -79.792,
+    radiusKm: 35,
+    elevM: 270,
+  },
+  {
+    name: 'Asheville',
+    cityId: 'asheville',
+    lat: 35.5951,
+    lon: -82.5515,
+    radiusKm: 35,
+    elevM: 650,
+  },
+  {
+    name: 'Wilmington',
+    cityId: 'wilmington',
+    lat: 34.2257,
+    lon: -77.9447,
+    radiusKm: 35,
+    elevM: 10,
+  },
+];
+
+export function formatNcdotImageUrl(rawId) {
+  const cleanId = String(rawId || '').trim();
+  if (!cleanId) return '';
+  return `${NCDOT_IMAGE_ORIGIN}${encodeURIComponent(cleanId)}`;
+}
+
+export async function loadNcdotSourcesFromOpenData({
+  all = false,
+  fetchImpl = fetch,
+} = {}) {
+  const endpoint = process.env.CCTV_NCDOT_URL || NCDOT_CAMERAS_URL;
+  try {
+    const resp = await fetchImpl(endpoint, {
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': 'gods-eye-view-cctv-proxy/1.0',
+      },
+      signal: AbortSignal.timeout(CCTV_SOURCE_FETCH_TIMEOUT_MS),
+    });
+    if (!resp.ok) {
+      console.warn('[CCTV] NCDOT camera download failed:', resp.status);
+      return [];
+    }
+    const payload = await resp.json();
+    const rows = Array.isArray(payload?.item2)
+      ? payload.item2
+      : Array.isArray(payload)
+        ? payload
+        : [];
+    if (!rows.length) return [];
+
+    const cameras = [];
+    for (const item of rows) {
+      const rawId = String(item?.itemId || item?.id || '').trim();
+      if (!rawId) continue;
+      const loc = item?.location;
+      const lat = toFiniteNumber(
+        Array.isArray(loc) ? loc[0] : (loc?.lat ?? item?.lat),
+      );
+      const lon = toFiniteNumber(
+        Array.isArray(loc) ? loc[1] : (loc?.lon ?? item?.lon),
+      );
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+
+      // North Carolina approximate WGS84 bounding box (bounds sanity check)
+      if (lat < 33.5 || lat > 37.0 || lon < -84.5 || lon > -75.0) continue;
+
+      let matchedRegion = null;
+      let minDistance = Infinity;
+      for (const region of NCDOT_REGIONS) {
+        const d = haversineKm(lat, lon, region.lat, region.lon);
+        if (d < minDistance) {
+          minDistance = d;
+          matchedRegion = region;
+        }
+      }
+
+      const city =
+        matchedRegion && minDistance <= (matchedRegion.radiusKm || 35)
+          ? matchedRegion.name
+          : 'North Carolina';
+      const cityId =
+        matchedRegion && minDistance <= (matchedRegion.radiusKm || 35)
+          ? matchedRegion.cityId
+          : 'north-carolina';
+      const groundElevationM =
+        matchedRegion && minDistance <= (matchedRegion.radiusKm || 35)
+          ? matchedRegion.elevM
+          : 150;
+
+      const cameraId = `ncdot-${rawId}`;
+      const title = String(item?.title || item?.description || '').trim();
+      const label = title || `NCDOT Cam ${rawId} (${city})`;
+      const imageUrl = formatNcdotImageUrl(rawId);
+
+      cameras.push({
+        id: cameraId,
+        name: label,
+        city,
+        cityId,
+        provider: 'North Carolina DOT (DriveNC)',
+        lat,
+        lon,
+        headingDeg: fallbackHeadingFromId(cameraId),
+        headingConfidence: 'low',
+        pitchDeg: -18,
+        fovDeg: 52,
+        rangeM: 190,
+        mountHeightM: 12,
+        groundElevationM,
+        feedType: 'image',
+        url: imageUrl,
+        snapshotUrl: imageUrl,
+        sourceKind: 'ncdot-open-data',
+        license: 'Public North Carolina DOT traffic camera frame',
+      });
+    }
+
+    const unique = Array.from(new Map(cameras.map((c) => [c.id, c])).values());
+
+    if (all) {
+      console.log(
+        `[CCTV] Loaded NCDOT statewide camera sources: ${unique.length} total`,
+      );
+      return unique;
+    }
+
+    const maxRaw = Number(
+      process.env.CCTV_NCDOT_MAX_SOURCES || DEFAULT_NCDOT_MAX_SOURCES,
+    );
+    const maxCount = Number.isFinite(maxRaw)
+      ? Math.max(8, Math.min(1200, Math.floor(maxRaw)))
+      : DEFAULT_NCDOT_MAX_SOURCES;
+    const prioritized = prioritizeSources(
+      unique,
+      maxCount,
+      NORTH_CAROLINA_ANCHORS,
+    );
+    console.log(
+      `[CCTV] Loaded NCDOT camera sources: ${unique.length} (using nearest ${prioritized.length})`,
+    );
+    return prioritized;
+  } catch (error) {
+    console.warn(
+      '[CCTV] NCDOT camera download error:',
       error?.message || error,
     );
     return [];

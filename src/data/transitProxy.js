@@ -19,7 +19,6 @@ import {
   decodeVehiclePositions,
 } from './gtfsRealtime.js';
 import { getTransitFeed } from './transitFeeds.js';
-export { transitModeFor, transitRouteType } from './transitFeeds.js';
 
 /** Fresh window: a snapshot younger than this is served without refetching. */
 export const TRANSIT_PROXY_TTL_MS = 15_000;

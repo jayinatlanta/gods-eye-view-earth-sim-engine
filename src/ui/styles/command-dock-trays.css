@@ -12,6 +12,25 @@
   --dock-presets-open: max(34rem, calc(var(--dock-unified-width) + 0.75rem));
 }
 
+#command-dock:has(#location-bar:not(.collapsed)),
+#command-dock:has(#control-panel:not(.collapsed)) {
+  z-index: 10004;
+}
+
+#command-dock
+  :is(
+    .dock-tray-toggle,
+    .dock-pin-btn,
+    .style-btn,
+    .map-stack-chip,
+    .location-pill,
+    .poi-pill,
+    .location-go-btn,
+    .panel-collapse-btn
+  ) {
+  touch-action: manipulation;
+}
+
 #command-dock .panel-title,
 #command-dock .location-toolbar-label {
   display: inline-flex;

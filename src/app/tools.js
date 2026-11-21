@@ -17,6 +17,42 @@ import { createLibraryBrowser } from '../ui/libraryBrowser.js';
 import { useDataLibraryStore } from '../ui/stores/dataLibrary.js';
 import { localGeoJsonServices } from './localGeojsonServices.js';
 import { initGevVoiceCommands } from '../voice/gevRealtime.js';
+import { initAgentBridge } from '../agent/agentBridge.js';
+import { createSightseeingEngine } from '../discovery/sightseeingEngine.js';
+import { createSyntheticFlightEngine } from '../flight/syntheticFlightEngine.js';
+import { createFlightDrawer } from '../flight/flightDrawer.js';
+import { createCompositeTravelEngine } from '../flight/compositeTravelEngine.js';
+import { createRailwayEngine } from '../layers/transit/railwayEngine.js';
+import { createRailDrawer } from '../transit/railDrawer.js';
+import { createDriveEngine } from '../layers/drive/driveEngine.js';
+import { createDriveDrawer } from '../drive/driveDrawer.js';
+import { createBoatEngine } from '../layers/vessels/boatEngine.js';
+import { createBoatDrawer } from '../vessels/boatDrawer.js';
+import { createPedestrianEngine } from '../layers/citylife/pedestrianEngine.js';
+import { createAvatarWanderEngine } from '../layers/citylife/avatarWanderEngine.js';
+import { createTourAndPlayEngine } from '../layers/citylife/tourAndPlayEngine.js';
+import { createWanderDrawer } from '../citylife/wanderDrawer.js';
+import { createCityDrawer } from '../citylife/cityDrawer.js';
+import { createSelfModifyingAgentPanel } from '../ui/selfModifyingAgentPanel.js';
+import { createEarthSimTourOverlay } from '../ui/earthSimTourOverlay.js';
+import { createSyntheticBusEngine } from '../layers/citylife/syntheticBusEngine.js';
+import { createSyntheticMetroEngine } from '../layers/citylife/syntheticMetroEngine.js';
+import { createPassengerFlow } from '../layers/citylife/passengerFlow.js';
+import { createMotormanControls } from '../citylife/motormanControls.js';
+import { createTransitControllerDrawer } from '../citylife/transitControllerDrawer.js';
+import { createFreightSimEngine } from '../layers/freight/freightSimEngine.js';
+import { createFreightLogisticsDrawer } from '../citylife/freightLogisticsDrawer.js';
+import { createPropertyClaimScout } from '../layers/estates/propertyClaimScout.js';
+import { createPersonalFleetEngine } from '../layers/estates/personalFleetEngine.js';
+import { createProceduralEstateAudio } from '../layers/estates/proceduralEstateAudio.js';
+import { createEstateDrawer } from '../citylife/estateDrawer.js';
+import { createWildernessDrawer } from '../citylife/wildernessDrawer.js';
+import { createSandboxDrawer } from '../citylife/sandboxDrawer.js';
+import { createProceduralCampfireAudio } from '../layers/wilderness/proceduralCampfireAudio.js';
+import { createWorldSandboxEngine } from '../layers/sandbox/worldSandboxEngine.js';
+import { createCorridorVisualizer } from '../corridor/corridorVisualizer.js';
+import { createCorridorDrawer } from '../corridor/corridorDrawer.js';
+import { getGlobalDrawerCoordinator } from '../ui/worldSimDock.js';
 import { installViews, isEmbeddedInline } from './embed.js';
 import {
   installScopeMask,
@@ -291,6 +327,288 @@ export function createApplicationTools({
       delete window.__gevVoiceCommands;
   });
   debug.voiceCommands = voiceCommands;
+  const sightseeingEngine = createSightseeingEngine({
+    viewer,
+    dataManager,
+    operations,
+  });
+  defer(() => sightseeingEngine.destroy());
+  debug.sightseeingEngine = sightseeingEngine;
+  window.__gevSightseeing = sightseeingEngine;
+  const flightEngine = createSyntheticFlightEngine({
+    viewer,
+    operations,
+    cockpitController: window.__gevCockpit || null,
+  });
+  defer(() => flightEngine.destroy());
+  debug.flightEngine = flightEngine;
+  window.__gevFlightEngine = flightEngine;
+
+  const railwayEngine = createRailwayEngine({
+    viewer,
+    operations,
+  });
+  defer(() => railwayEngine.destroy());
+  debug.railwayEngine = railwayEngine;
+  window.__gevRailEngine = railwayEngine;
+
+  const driveEngine = createDriveEngine({
+    viewer,
+    operations,
+    trafficLayer: dataManager.layers.get('traffic')?.module,
+  });
+  defer(() => driveEngine.destroy());
+  debug.driveEngine = driveEngine;
+  window.__gevDriveEngine = driveEngine;
+
+  const boatEngine = createBoatEngine({
+    viewer,
+    operations,
+  });
+  defer(() => boatEngine.destroy());
+  debug.boatEngine = boatEngine;
+  window.__gevBoatEngine = boatEngine;
+
+  const cityEngine = createPedestrianEngine({
+    viewer,
+    container: typeof document !== 'undefined' ? document.body : null,
+  });
+  defer(() => cityEngine.destroy());
+  debug.cityEngine = cityEngine;
+  window.__gevCityEngine = cityEngine;
+  window.__gevViewer = viewer;
+
+  let corridorDrawer = null;
+  const agentBridge = initAgentBridge({
+    runner: (name, args) => voiceCommands.runner(name, args, { signal }),
+    operations,
+    viewer,
+    styleManager,
+    sightseeingEngine,
+    flightEngine,
+    railwayEngine,
+    driveEngine,
+    boatEngine,
+    cityEngine,
+    getCorridorDrawer: () => corridorDrawer,
+  });
+  defer(() => agentBridge.destroy());
+  debug.agentBridge = agentBridge;
+
+  const flightDrawer = createFlightDrawer({
+    flightEngine,
+  });
+  defer(() => flightDrawer.destroy());
+  debug.flightDrawer = flightDrawer;
+
+  const railDrawer = createRailDrawer({
+    railwayEngine,
+  });
+  defer(() => railDrawer.destroy());
+  debug.railDrawer = railDrawer;
+  window.__gevRailDrawer = railDrawer;
+
+  const driveDrawer = createDriveDrawer({
+    driveEngine,
+  });
+  defer(() => driveDrawer.destroy());
+  debug.driveDrawer = driveDrawer;
+  window.__gevDriveDrawer = driveDrawer;
+
+  const boatDrawer = createBoatDrawer({
+    boatEngine,
+  });
+  defer(() => boatDrawer.destroy());
+  debug.boatDrawer = boatDrawer;
+  window.__gevBoatDrawer = boatDrawer;
+
+  const wanderEngine = createAvatarWanderEngine({
+    viewer,
+    container: typeof document !== 'undefined' ? document.body : null,
+  });
+  defer(() => wanderEngine.destroy());
+  debug.wanderEngine = wanderEngine;
+  window.__gevWanderEngine = wanderEngine;
+
+  const tourAndPlayEngine = createTourAndPlayEngine({
+    wanderEngine,
+    cityEngine,
+  });
+  defer(() => tourAndPlayEngine.destroy());
+  debug.tourAndPlayEngine = tourAndPlayEngine;
+  window.__gevTourAndPlayEngine = tourAndPlayEngine;
+
+  const wanderDrawer = createWanderDrawer({
+    wanderEngine,
+    cityEngine,
+    tourAndPlayEngine,
+    viewer,
+  });
+  defer(() => wanderDrawer.destroy());
+  debug.wanderDrawer = wanderDrawer;
+  window.__gevWanderDrawer = wanderDrawer;
+
+  const cityDrawer = createCityDrawer({
+    cityEngine,
+    wanderEngine,
+    tourAndPlayEngine,
+    viewer,
+  });
+  defer(() => cityDrawer.destroy());
+  debug.cityDrawer = cityDrawer;
+  window.__gevCityDrawer = cityDrawer;
+
+  const agentForgePanel = createSelfModifyingAgentPanel({
+    viewer,
+    container: typeof document !== 'undefined' ? document.body : null,
+  });
+  defer(() => agentForgePanel.destroy());
+  debug.agentForgePanel = agentForgePanel;
+  window.__gevAgentForgePanel = agentForgePanel;
+
+  const passengerFlow = createPassengerFlow({ viewer });
+  defer(() => passengerFlow.clearStops());
+  debug.passengerFlow = passengerFlow;
+  window.__gevPassengerFlow = passengerFlow;
+
+  const busEngine = createSyntheticBusEngine({
+    viewer,
+    passengerFlow,
+  });
+  defer(() => busEngine.destroy());
+  debug.busEngine = busEngine;
+  window.__gevBusEngine = busEngine;
+
+  const metroEngine = createSyntheticMetroEngine({
+    viewer,
+    passengerFlow,
+  });
+  defer(() => metroEngine.destroy());
+  debug.metroEngine = metroEngine;
+  window.__gevMetroEngine = metroEngine;
+
+  const motormanControls = createMotormanControls();
+  defer(() => motormanControls.destroy());
+  debug.motormanControls = motormanControls;
+  window.__gevMotormanControls = motormanControls;
+
+  const transitDrawer = createTransitControllerDrawer({
+    busEngine,
+    metroEngine,
+    passengerFlow,
+    motormanControls,
+  });
+  defer(() => transitDrawer.destroy());
+  debug.transitDrawer = transitDrawer;
+  window.__gevTransitDrawer = transitDrawer;
+
+  const freightEngine = createFreightSimEngine({ viewer });
+  defer(() => freightEngine.destroy());
+  debug.freightEngine = freightEngine;
+  window.__gevFreightEngine = freightEngine;
+
+  const freightDrawer = createFreightLogisticsDrawer({
+    freightEngine,
+    viewer,
+  });
+  defer(() => freightDrawer.destroy());
+  debug.freightDrawer = freightDrawer;
+  window.__gevFreightDrawer = freightDrawer;
+
+  const estateAudio = createProceduralEstateAudio();
+  defer(() => estateAudio.destroy());
+
+  const claimScout = createPropertyClaimScout({ viewer });
+  defer(() => claimScout.destroy());
+  debug.claimScout = claimScout;
+  window.__gevClaimScout = claimScout;
+
+  const fleetEngine = createPersonalFleetEngine({
+    viewer,
+    audioEngine: estateAudio,
+    claimScout,
+  });
+  defer(() => fleetEngine.destroy());
+  debug.fleetEngine = fleetEngine;
+  window.__gevFleetEngine = fleetEngine;
+
+  const estateDrawer = createEstateDrawer({
+    claimScout,
+    fleetEngine,
+    audioEngine: estateAudio,
+    viewer,
+  });
+  defer(() => estateDrawer.destroy());
+  debug.estateDrawer = estateDrawer;
+  window.__gevEstateDrawer = estateDrawer;
+
+  const compositeTravel = createCompositeTravelEngine({
+    viewer,
+    flightEngine,
+    driveEngine,
+    fleetEngine,
+  });
+  debug.compositeTravel = compositeTravel;
+  window.__gevCompositeTravel = compositeTravel;
+
+  const wildernessAudio = createProceduralCampfireAudio();
+  defer(() => wildernessAudio.destroy());
+  debug.wildernessAudio = wildernessAudio;
+
+  const wildernessDrawer = createWildernessDrawer({
+    viewer,
+    audioEngine: wildernessAudio,
+  });
+  defer(() => wildernessDrawer.destroy());
+  debug.wildernessDrawer = wildernessDrawer;
+  window.__gevWildernessDrawer = wildernessDrawer;
+
+  const sandboxEngine = createWorldSandboxEngine({
+    viewer,
+  });
+  defer(() => sandboxEngine.destroy());
+  debug.sandboxEngine = sandboxEngine;
+  window.__gevSandboxEngine = sandboxEngine;
+
+  const sandboxDrawer = createSandboxDrawer({
+    viewer,
+    sandboxEngine,
+  });
+  defer(() => sandboxDrawer.destroy());
+  debug.sandboxDrawer = sandboxDrawer;
+  window.__gevSandboxDrawer = sandboxDrawer;
+
+  const corridorVisualizer = createCorridorVisualizer({ viewer });
+  defer(() => corridorVisualizer.destroy());
+  debug.corridorVisualizer = corridorVisualizer;
+
+  corridorDrawer = createCorridorDrawer({
+    viewer,
+    visualizer: corridorVisualizer,
+    driveEngine,
+    flightEngine,
+    railwayEngine,
+    boatEngine,
+    placeSearch,
+  });
+  defer(() => corridorDrawer.destroy());
+  debug.corridorDrawer = corridorDrawer;
+  window.__gevCorridorDrawer = corridorDrawer;
+
+  const customUxToggle = getGlobalDrawerCoordinator().mountCustomUxToggle({
+    container: typeof document !== 'undefined' ? document.body : null,
+  });
+  defer(() => customUxToggle.destroy());
+  debug.customUxToggle = customUxToggle;
+
+  const earthSimIntro = createEarthSimTourOverlay({
+    coordinator: getGlobalDrawerCoordinator(),
+    agentPanel: agentForgePanel,
+  });
+  defer(() => earthSimIntro.destroy());
+  debug.earthSimIntro = earthSimIntro;
+  window.__gevEarthSimIntro = earthSimIntro;
+
   defer(
     installViews({
       shell: styleManager,
@@ -309,6 +627,34 @@ export function createApplicationTools({
     sceneDirector,
     annotations,
     voiceCommands,
+    agentBridge,
+    sightseeingEngine,
+    flightEngine,
+    railwayEngine,
+    driveEngine,
+    boatEngine,
+    cityEngine,
+    wanderEngine,
+    tourAndPlayEngine,
+    wanderDrawer,
+    agentForgePanel,
+    busEngine,
+    metroEngine,
+    passengerFlow,
+    motormanControls,
+    transitDrawer,
+    freightEngine,
+    freightDrawer,
+    claimScout,
+    fleetEngine,
+    estateDrawer,
+    estateAudio,
+    wildernessDrawer,
+    wildernessAudio,
+    sandboxEngine,
+    sandboxDrawer,
+    corridorVisualizer,
+    corridorDrawer,
     pointer: {
       claim: claimPointer,
       release: releasePointer,

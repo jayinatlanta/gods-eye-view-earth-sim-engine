@@ -224,6 +224,28 @@ when adding an export or expanding a component. See
 [formatting and component boundaries](docs/CODE-BOUNDARIES.md) for the current
 ownership and adoption process.
 
+## Fork synchronization & OSS guardrails
+
+Private deployments keep personal or runtime overrides in ignored `.env` /
+`pinokio/ENVIRONMENT` via `src/config/forkProfile.js` (`GEV_FORK_PROFILE=sovereign`)
+while leaving the source tree cleanly defaulted to the public baseline (`public`,
+Austin startup, generic Companion, Dev Forge disabled unless opted in).
+
+Before committing features or exporting changes to a public community fork:
+
+1. Register any new `registerDrawer(...)` panel in
+   `src/ui/earthSimFeatureCatalog.js` and keep visible UI strings wrapped in
+   `msg()` / `t()` across all 13 `src/i18n/locales/*.json` catalogs.
+2. Run `npm run check:oss` (hygiene scanner, import directions, package
+   boundaries, i18n completeness, Earth Sim catalog/overlay/Material Symbols
+   contracts, and formatting check; pass `--full` to also run the full test
+   suite and production build).
+3. Never run a raw `git merge` from a private fork branch containing legacy
+   pre-sanitization history into the public fork. Export verified updates using
+   `npm run oss:sync` (`scripts/sync-public-fork.mjs`), which verifies clean
+   ancestry, strips any paths listed in `scripts/oss-exclude.json`, runs
+   `check:oss`, and blocks pushes targeting `upstream` or `origin`.
+
 ## Pull requests
 
 1. Branch off `main`.

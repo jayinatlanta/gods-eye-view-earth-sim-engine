@@ -1,0 +1,274 @@
+/* Earth Sim Engine Welcome Pop-Over & Feature Catalog (sits above #first-run-launcher) */
+
+#gev-earth-sim-intro-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10010;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(2, 6, 16, 0.56);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+#gev-earth-sim-intro-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#gev-earth-sim-intro-overlay[hidden] {
+  display: none;
+}
+
+.gev-earth-sim-intro-card {
+  width: min(720px, calc(100vw - 24px));
+  max-height: min(82vh, 720px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 22px;
+  border-radius: 14px;
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  background: linear-gradient(
+    145deg,
+    rgba(9, 19, 34, 0.98),
+    rgba(6, 12, 22, 0.97)
+  );
+  color: #e2e8f0;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.78),
+    0 0 36px rgba(34, 211, 238, 0.14);
+}
+
+.gev-earth-sim-intro-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.gev-earth-sim-intro-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #38bdf8;
+  margin-bottom: 4px;
+}
+
+.gev-earth-sim-intro-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #f8fafc;
+  line-height: 1.25;
+}
+
+.gev-earth-sim-intro-subtitle {
+  margin: 5px 0 0;
+  font-size: 12.5px;
+  color: #94a3b8;
+  line-height: 1.45;
+}
+
+.gev-earth-sim-credit-link {
+  color: #7dd3fc;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.gev-earth-sim-credit-link:hover {
+  color: #bae6fd;
+}
+
+.gev-earth-sim-intro-close {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 8px;
+  color: #cbd5e1;
+  font-size: 15px;
+  line-height: 1;
+  padding: 6px 9px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.gev-earth-sim-intro-close:hover {
+  color: #ffffff;
+  border-color: rgba(56, 189, 248, 0.65);
+}
+
+.gev-earth-sim-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.gev-earth-sim-filter-pill {
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(15, 23, 42, 0.72);
+  color: #cbd5e1;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gev-earth-sim-filter-pill:hover {
+  border-color: rgba(56, 189, 248, 0.55);
+  color: #f8fafc;
+}
+
+.gev-earth-sim-filter-pill.active {
+  border-color: #22d3ee;
+  background: rgba(14, 116, 144, 0.35);
+  color: #e0f2fe;
+}
+
+.gev-earth-sim-catalog-list {
+  flex: 1 1 auto;
+  min-height: 180px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 10px;
+  padding-right: 4px;
+}
+
+.gev-earth-sim-feature-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 11px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.78);
+  transition:
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.gev-earth-sim-feature-card:hover {
+  border-color: rgba(56, 189, 248, 0.55);
+  transform: translateY(-1px);
+}
+
+.gev-earth-sim-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.gev-earth-sim-card-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.gev-earth-sim-hotkey {
+  font-size: 10px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  color: #7dd3fc;
+  background: rgba(14, 116, 144, 0.28);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 5px;
+  padding: 2px 6px;
+}
+
+.gev-earth-sim-card-summary {
+  margin: 0;
+  font-size: 11.5px;
+  color: #94a3b8;
+  line-height: 1.42;
+}
+
+.gev-earth-sim-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.gev-earth-sim-try-btn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  background: rgba(14, 116, 144, 0.25);
+  color: #bae6fd;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.gev-earth-sim-try-btn:hover {
+  background: rgba(14, 116, 144, 0.48);
+  color: #ffffff;
+}
+
+.gev-earth-sim-intro-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid rgba(148, 163, 184, 0.16);
+  padding-top: 10px;
+}
+
+.gev-earth-sim-suppress-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: #cbd5e1;
+  cursor: pointer;
+  user-select: none;
+}
+
+.gev-earth-sim-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gev-earth-sim-version-tag {
+  font-size: 10.5px;
+  color: #64748b;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.gev-earth-sim-explore-btn {
+  padding: 7px 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(34, 211, 238, 0.65);
+  background: linear-gradient(135deg, #0284c7, #0e7490);
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.gev-earth-sim-explore-btn:hover {
+  filter: brightness(1.1);
+}

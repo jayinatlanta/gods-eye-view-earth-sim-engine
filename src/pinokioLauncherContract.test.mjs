@@ -28,7 +28,17 @@ const RATE_LIMIT_FIELDS = [
   'GEV_RATELIMIT_OPENAI_CHAT_PER_MIN',
   'GEV_RATELIMIT_GEMINI_CHAT_PER_MIN',
 ];
-const APP_VALUE_FIELDS = [...PROVIDER_FIELDS, ...RATE_LIMIT_FIELDS];
+const FORK_PROFILE_FIELDS = [
+  'GEV_FORK_PROFILE',
+  'DEFAULT_STARTUP_CITY',
+  'GEV_COMPANION_NAME',
+  'GEV_ENABLE_LIVE_FORGE',
+];
+const APP_VALUE_FIELDS = [
+  ...PROVIDER_FIELDS,
+  ...RATE_LIMIT_FIELDS,
+  ...FORK_PROFILE_FIELDS,
+];
 const SHARING_FIELDS = [
   'PINOKIO_SHARE_CLOUDFLARE',
   'PINOKIO_SHARE_LOCAL',
@@ -107,7 +117,9 @@ test('Pinokio menu resolves the nested install marker and exposes each lifecycle
     running: (href) => runtime.running === href,
     local: () => runtime.url ? { url: runtime.url } : {},
   };
-  const { menu } = require(launcherPath);
+  const launcher = require(launcherPath);
+  assert.equal(launcher.title, "God's Eye View (Earth Sim Engine Edition)");
+  const { menu } = launcher;
   const render = async ({ installed, running = null, url = null }) => {
     if (installed) await writeFile(markerPath, 'ready\n');
     else await rm(markerPath, { force: true });
@@ -116,8 +128,8 @@ test('Pinokio menu resolves the nested install marker and exposes each lifecycle
     const items = await menu(kernel, info);
     assert.equal(items.filter((item) => item.default).length, 1);
     const ready = installed && running === 'start.js' && Boolean(url);
-    assert.equal(items[0].popout, ready ? true : undefined);
-    assert.ok(items.slice(1).every((item) => item.popout === undefined));
+    assert.equal(items[0].popout, undefined);
+    assert.ok(items.every((item) => item.popout === undefined));
     return items.map(({ text, href, default: isDefault = false }) => ({ text, href, default: isDefault }));
   };
 
@@ -146,7 +158,11 @@ test('Pinokio menu resolves the nested install marker and exposes each lifecycle
     running: 'start.js',
     url: 'http://127.0.0.1:4173/',
   }), [
-    { text: "Open God's Eye View", href: 'http://127.0.0.1:4173/', default: true },
+    {
+      text: "Open God's Eye View (Earth Sim Engine Edition)",
+      href: 'http://127.0.0.1:4173/',
+      default: true,
+    },
     { text: 'Server', href: 'start.js', default: false },
   ]);
   assert.ok(existsCalls.length >= 7);

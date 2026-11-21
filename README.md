@@ -1,6 +1,64 @@
 <div align="center">
 
-# 🌐 God's Eye View
+# 🌍 God's Eye View — Earth Sim Engine
+
+### Infinite play with a living Earth — and a self-modifying engine to simulate anything else you can imagine on Earth (or beyond).
+
+_An open-source World & Earth Simulation fork built on [God's Eye View](https://github.com/bilawalsidhu/gods-eye-view). Drop from orbit straight onto any street, highway, runway, railway, waterway, or wilderness trail on the planet — then reshape the simulator itself with your local AI coding agent._
+
+**[Earth Sim Feature Catalog](#-earth-sim-feature-catalog) · [Self-Modifying Dev Forge](#-simulate-anything-earth--beyond-opt-in-dev-forge) · [Quick Start](#-quick-start) · [Upstream Core](#-upstream-core-gods-eye-view) · [Keys & Costs](#-api-keys) · [Contributing](CONTRIBUTING.md)**
+
+</div>
+
+---
+
+## ✨ Infinite Play on a Living Planet
+
+Upstream **God's Eye View** turns real public telemetry into an explorable 3D planet. **Earth Sim Engine** turns that live globe into an interactive, infinitely playable world sandbox:
+
+- **Zero-to-Street-Level Play Anywhere:** Zoom from orbital satellite view straight into living neighborhoods across 29+ global megacities on all 7 continents — or drop into any small town, mountain pass, coastline, or trailhead on Earth with environment-aware Play activities.
+- **Seamless Multi-Modal Travel:** Connect any two places on Earth to see their true geodesic & topographic relationship, then launch directly into a road trip, rotorcraft hop, regional jet flight, high-speed rail corridor, metro ride, freight yard, or coastal sail.
+- **Persistent Personal World (Local-Only):** Claim custom homes, cabins, or builder hubs anywhere on Earth and create your own multi-stop city tours — saved privately in your browser's `localStorage` so your world stays yours.
+- **Florida Keys Starter Easter Egg:** Look in the Florida Keys for a starter coastal house & island scooter tour nodding to the world's most popular game launching the same month as Earth Sim Engine Edition — click it to walk, scooter with your companion, drive, boat, fly choppers, or ask the AI Agent to add new activities.
+- **One-Click Clean Cockpit:** Toggle every custom launcher and overlay off/on anytime with **`Alt+H`** (or `"Hide Custom UI"`) while active simulations keep running, and recall the interactive **Earth Sim Feature Tour** pop-over anytime from the lower-left dock pill.
+
+---
+
+## 🧭 Earth Sim Feature Catalog
+
+Mirrors the live in-app welcome catalog (`src/ui/earthSimFeatureCatalog.js`, version `2026.11`):
+
+| Category | Module | Hotkey | What You Can Do |
+| :--- | :--- | :---: | :--- |
+| **Living World** | 🏙️ **Living City Simulation** | — | Street-level pedestrians, weather adaptation (rain pace & umbrellas), buses, regional rail, urban spectacles, and city ambience. |
+| **Living World** | 🚶 **Avatar Wander & Scooter Tours** | `W` | Walk or take 15 mph electric scooter landmark tours across 29+ global cities with a companion charm dot, local Play activities, and a built-in **Custom Tour & Stop Creator**. |
+| **Living World** | 🚇 **Metro & Surface Transit Sim** | — | Interactive metro line controller with real-time station pacing, operator controls, and camera follow. |
+| **Travel & Fleet** | 🔗 **Place Relationship & Corridors** | `K` | Connect any two cities, landmarks, or domiciles with geodesic distance, bearing, timezone delta, live mode feasibility, and 1-click multi-modal launches. |
+| **Travel & Fleet** | ✈️ **Flight Simulator & Airfields** | — | Fly custom point-to-point routes, rotorcraft hops (Airbus H145 with Fenestron tail rotor), and regional jet corridors over live 3D terrain. |
+| **Travel & Fleet** | 🚗 **Highway Cruiser & OSRM Routes** | — | Surface-clamped road drives, multi-leg OSRM subdivisions, chase/cockpit cameras, and live traffic latching. |
+| **Travel & Fleet** | 🚄 **High-Speed & Regional Rail** | — | Ride famous rail corridors and metro connectors with station stops, speed profiles, and cab views. |
+| **Travel & Fleet** | ⛵ **World of Sails & Waterways** | — | Hydrodynamic coastal passages, inland waterways, and harbor charters with zero-credit nautical telemetry. |
+| **Travel & Fleet** | 🚂 **Freight Logistics & Intermodal Yard** | — | Heavy-haul rail corridors, intermodal yards, and procedural diesel-electric locomotive audio. |
+| **Places & Sandbox** | 🏡 **Domiciles, Estates & Personal Fleet** | `H` | Claim custom havens anywhere on Earth, switch walk/bike/scooter/EV modes, and travel solo or in companion tandem. |
+| **Places & Sandbox** | 🏕️ **Wilderness Trails & Campfire** | — | Backcountry trail pathfinding, biome wildlife ambiance, and procedural campfire soundscapes. |
+| **Places & Sandbox** | 🧱 **3D World Sandbox Builder** | — | Place 3D structures, overlooks, and custom scene props directly on Google 3D Tiles and terrain. |
+| **AI & Controls** | 👁️ **Hide / Show Custom UI Toggle** | `Alt+H` | Collapse all Earth Sim launchers and overlays in one click while keeping active simulations running. |
+| **AI & Controls** | 🤖 **Multi-Provider AI Assistant & Guide** | — | Ask live Earth, city, landmark, and space questions via `agy`, `claude`, `codex`, `gemini` CLIs, or OpenAI / Gemini API keys. |
+
+---
+
+## 🧬 Simulate Anything — Earth & Beyond (Opt-In Dev Forge)
+
+Every Earth Sim session includes the floating lower-left **AI Assistant (`🤖`)**:
+
+- **Ask Guide (Default, Read-Only):** Grounded in your live camera coordinates, active city, and tour stop — ask about neighborhood history, geography, aviation, orbital passes, or deep space using auto-detected local CLIs (`agy`, `claude`, `codex`, `gemini`) or your own OpenAI / Gemini API key.
+- **Dev Forge (Opt-In Self-Modifying Engine):** Want to simulate hot-air balloons over Cappadocia, submarine canyons, antique tram loops, lunar orbital hops, or a brand-new world game mode? Start the app with `GEV_ENABLE_LIVE_FORGE=1` (loopback-only, disabled by default in public builds) and switch the assistant to **Dev Forge**. It hands your prompt + live camera context + GEV's extensible data-structure registry directly to your local coding agent, modifies your local checkout, runs verification gates (`npm run check:oss`), and provides **1-click revert** if you want to roll back an experiment.
+
+---
+
+## 🌐 Upstream Core: God's Eye View
+
+<div align="center">
 
 [![CI](https://github.com/bilawalsidhu/gods-eye-view/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/bilawalsidhu/gods-eye-view/actions/workflows/ci.yml) [![Reached #1 on GitHub Trending](https://img.shields.io/badge/%231_GitHub_Trending-thank_you!-F0A63C?style=flat-square&logo=github)](https://x.com/bilawalsidhu/status/2093798887815348521)
 
@@ -57,10 +115,15 @@ Start with the included data sources, then add your own. Each layer is a separat
 ## 🎛️ What This Thing Does
 
 - **🛩️ Cockpit view:** Ride inside a tracked flight — the camera holds the terrain under you all the way down.
+- **🏙️ Living City Simulation, Scooter Tours & Non-Metro Play:** Step into street-level urban life across major global cities (Los Angeles, Atlanta, New York, Tokyo, London, Paris, San Francisco, Monaco, Singapore, Chicago, Sydney). Features sidewalk-projected pedestrian kinematics, zero-token demographic thought & persona bubbles, randomized **15 mph Electric Scooter Landmark Tours** (20-second autonomous walking dwell + lore bubbles at each landmark with instant normal-speed walking take-over), **Environment-Aware Non-Metro 'Play' Mode** (combining Living World biome suggestions like Mountain Hike, Farmland Hike, and Harbor Pier Walk with Beach, Movie, Dine Out, and Shopping), weather adaptations (rain pace & umbrellas), urban spectacles, altitude depth gating (<=1500m trigger / >2000m sleep pruning), and interactive drawers (`🌍` / `🚶`).
+- **🌍 Earth Sim Feature Tour Pop-Over & Hideable Custom UI:** First-run overlay summarizing every Earth Sim Engine drawer & overlay from a live feature catalog (`src/ui/earthSimFeatureCatalog.js`), with `"Don't show this on startup"`, instant drawer launches, and a persistent lower-left `"Show Earth Sim"` recall pill alongside `"Hide Custom UI"`.
+- **🤖 Multi-Provider AI Assistant (`🤖`):** Floating lower-left assistant offering **Ask Guide** Q&A over the live viewport via auto-detected local CLIs (`agy`, `claude`, `codex`, `gemini`) or configured OpenAI / Gemini API keys, an inline **"Don't have AGY?" Setup Guide**, and an opt-in **Dev Forge** mode (`GEV_ENABLE_LIVE_FORGE=1`) for local source edits with test verification and 1-click revert. Supports `GEV_FORK_PROFILE=public|sovereign` defaults in `src/config/forkProfile.js`.
+- **🏡 Domiciles, Estates & Personal Fleet Terminal:** Claim custom havens across primary residences, mountain cabins, coastal cottages, and builder hubs anywhere on Earth (defaulting cleanly to Austin, TX presets) with dynamic cadastral boundaries, a 4-tier personal fleet (walking, bicycle, electric scooter, EV), solo vs. companion tandem mode, unified departure handoffs, procedural Web Audio soundscapes, and interactive drawer (`🏡` / shortcut `H`).
+- **⛵ World of Sails & Highway Cruiser:** Autonomous hydrodynamic vessel cruising and interstate highway driving with zero-credit telemetry HUDs.
 - **📡 Contacts:** A 250 km roster of everything near your target — step through live aircraft and drop into any cockpit.
 - **🎯 Click-to-track anything:** Camera locks on, draws a fading trail, surfaces full metadata — and a tracked fire or vessel hands you off to the nearest live camera in one click.
 - **🖊️ Voice whiteboard:** Speak annotations onto the world — real boundary polygons, marks, and routes.
-- **🛫 3D fleet:** 122 procedural models drawn life size by type — airliners, business jets, helicopters, drones, ships, buses, trams and trains — and every contact swaps from glyph to 3D model as you close in.
+- **🛫 3D fleet:** 121 procedural models drawn life size by type — airliners, business jets, helicopters, drones, ships, buses, trams and trains — and every contact swaps from glyph to 3D model as you close in.
 - **🎨 Reskin reality:** GLSL sensor looks over the normal globe — CRT, NVG, FLIR/thermal, Noir.
 - **🟩 Detection overlay:** Screen-space bounding boxes and IDs on everything in view.
 - **🎖️ Military HUD:** Tactical heads-up display with intelligence-style telemetry.
@@ -578,9 +641,9 @@ names it.
 Nine keys. Six have a free tier. Of the three 🔴 ones, Google Maps and OpenAI are
 metered and Liveuamap is a paid subscription:
 
-|     | Key             | Why                                                                                                                                                                                  | Get it                                                                                                                                                               |
-| --- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 🟡  | **Cesium ion**  | 🗺️ Google Photorealistic 3D, world terrain, and additional ion-hosted imagery stacks. The free Community plan is for eligible individual, personal/non-commercial use and has quotas | [cesium.com/ion](https://cesium.com/ion) — use a public `assets:read` token and check current [pricing/eligibility](https://cesium.com/platform/cesium-ion/pricing/) |
+|     | Key             | Why                                                                                                                                                                                           | Get it                                                                                                                                                               |
+| --- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🟡  | **Cesium ion**  | 🗺️ Google Photorealistic 3D, world terrain, and additional ion-hosted imagery stacks. The free Community plan is for eligible individual, personal/non-commercial use and has quotas          | [cesium.com/ion](https://cesium.com/ion) — use a public `assets:read` token and check current [pricing/eligibility](https://cesium.com/platform/cesium-ion/pricing/) |
 | 🔴  | **Google Maps** | Direct Google Photorealistic 3D, Google place search and Street View ([Map Tiles API](https://developers.google.com/maps/documentation/tile); Street View also needs the Maps JavaScript API) | [Google Cloud Console](https://console.cloud.google.com/) — URL-restrict it                                                                                          |
 | 🔴  | **OpenAI**      | 🎙️ Voice + AI HUD summary through an API key. Provider Settings also offers **USE CHATGPT OAUTH** for cloud voice without removing the API-key option                              | [platform.openai.com](https://platform.openai.com) — API-key usage is metered, see costs below                                                                       |
 | 🟡  | **AISStream**   | 🚢 Live global ships                                                                                                                                                                 | [aisstream.io](https://aisstream.io) — free signup                                                                                                                   |
@@ -596,9 +659,9 @@ _What the TomTom key buys you: rush-hour density painted on the city — then di
 
 ### Cherry on top
 
-|     | Key                  | Why                                                           | Get it                                             |
-| --- | -------------------- | ------------------------------------------------------------- | -------------------------------------------------- |
-| 🟡  | **OpenSky**          | ✈️ More flight-polling credits (🟢 anonymous works without)   | [opensky-network.org](https://opensky-network.org) |
+|     | Key                  | Why                                                                           | Get it                                                           |
+| --- | -------------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| 🟡  | **OpenSky**          | ✈️ More flight-polling credits (🟢 anonymous works without)                   | [opensky-network.org](https://opensky-network.org)               |
 | 🔴  | **Launch Library 2** | 🚀 Optional paid token for higher limits (🟢 no key needed for public access) | [thespacedevs.com/supportus](https://thespacedevs.com/supportus) |
 
 Add these if you need higher polling allowances.

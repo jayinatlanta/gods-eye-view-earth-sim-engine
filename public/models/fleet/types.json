@@ -983,14 +983,6 @@
   "SHIP": [
    "blimp",
    75.0
-  ],
-  "ZVEH": [
-   "car",
-   4.61
-  ],
-  "GRND": [
-   "radio_mast",
-   1.9
   ]
  },
  "helicopters": {
@@ -1151,41 +1143,12 @@
    5.0
   ]
  },
- "aircraft_callsign": {
-  "ZVEH": [
-   {
-    "prefixes": [
-     "FIRE"
-    ],
-    "model": "fire_truck",
-    "length": 11.01
-   },
-   {
-    "prefixes": [
-     "PUSH",
-     "TUG"
-    ],
-    "model": "pushback",
-    "length": 6.0
-   },
-   {
-    "prefixes": [
-     "DEICER",
-     "SQUID",
-     "SQB"
-    ],
-    "model": "van",
-    "length": 5.51
-   }
-  ]
- },
  "vessels": [
   {
    "types": [
     70,
     79
    ],
-   "typical_len": 300,
    "rules": [
     {
      "min_len": 70,
@@ -1225,7 +1188,6 @@
     80,
     89
    ],
-   "typical_len": 250,
    "rules": [
     {
      "name_re": "\\bLNG\\b|\\bGAS\\b",
@@ -1252,7 +1214,6 @@
     60,
     69
    ],
-   "typical_len": 140,
    "rules": [
     {
      "min_len": 70,
@@ -1282,7 +1243,6 @@
     37,
     37
    ],
-   "typical_len": 19,
    "rules": [
     {
      "min_len": 35,
@@ -1313,7 +1273,6 @@
     30,
     30
    ],
-   "typical_len": 24,
    "rules": [
     {
      "min_len": 15,
@@ -1384,7 +1343,6 @@
     55,
     55
    ],
-   "typical_len": 40,
    "rules": [
     {
      "min_len": 25,
@@ -1400,7 +1358,6 @@
     40,
     49
    ],
-   "typical_len": 40,
    "rules": [
     {
      "min_len": 20,
@@ -1416,7 +1373,6 @@
     33,
     33
    ],
-   "typical_len": 100,
    "rules": [
     {
      "min_len": 50,

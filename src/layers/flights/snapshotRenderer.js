@@ -9,12 +9,10 @@ import {
 import { aircraftIcon } from '../../data/aircraftIcons.js';
 import { POSITION_HISTORY_LIMIT } from './recordPolicy.js';
 import { followsClock } from './policy.js';
-import { observeLiveAircraft } from './placed.js';
 
 /** Apply reconciled aircraft records to Cesium resources and follow state. */
 export function createFlightSnapshotRenderer({
   flightState,
-  placement = null,
   records,
   militaryRegistry,
   groundFloor,
@@ -67,7 +65,6 @@ export function createFlightSnapshotRenderer({
           flightState._billboards.delete(icao24);
           rendering._releaseModel(icao24); // military-suppression: drop any 3D model too
           records.forget(icao24);
-          placement?.forget(icao24);
           flightState._cullPositions.delete(icao24);
           flightState._positionHistory.delete(icao24);
           flightState._displayCourse.delete(icao24);
@@ -100,17 +97,6 @@ export function createFlightSnapshotRenderer({
           : null,
       );
       const isTracked = icao24 === flightState._trackedIcao;
-
-      // A host-supplied placement, if any, is told every fix as taken.
-      observeLiveAircraft(
-        flightState,
-        placement,
-        icao24,
-        fixEpochMs,
-        meta,
-        meta.velocity,
-        meta.true_track,
-      );
 
       // Append to position history stamped with the FEED's fix epoch
       // (time_position), not client receipt time — OpenSky positions arrive
@@ -325,7 +311,6 @@ export function createFlightSnapshotRenderer({
       flightState._billboards.delete(icao24);
       rendering._releaseModel(icao24); // aged-out aircraft: drop its 3D model (no orphan / cap leak)
       records.forget(icao24);
-      placement?.forget(icao24);
       flightState._cullPositions.delete(icao24);
       flightState._positionHistory.delete(icao24);
       flightState._displayCourse.delete(icao24);

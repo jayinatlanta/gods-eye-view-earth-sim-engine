@@ -33,6 +33,9 @@ import {
   loadKingCountySourcesFromOpenData,
   loadWsdotSourcesFromOpenData,
   loadVegvesenSourcesFromOpenData,
+  loadGdotSourcesFromOpenData,
+  loadFl511SourcesFromOpenData,
+  loadNcdotSourcesFromOpenData,
   loadNycSourcesFromOpenData,
   loadTorontoSourcesFromOpenData,
   loadFloridaSourcesFromOpenData,
@@ -154,6 +157,21 @@ const LIVE_PACKS = [
     load: loadVegvesenSourcesFromOpenData,
   },
   {
+    name: 'gdot',
+    enabled: () => envEnabled('CCTV_GDOT_ENABLED'),
+    load: loadGdotSourcesFromOpenData,
+  },
+  {
+    name: 'fl511',
+    enabled: () => envEnabled('CCTV_FL511_ENABLED'),
+    load: loadFl511SourcesFromOpenData,
+  },
+  {
+    name: 'ncdot',
+    enabled: () => envEnabled('CCTV_NCDOT_ENABLED'),
+    load: loadNcdotSourcesFromOpenData,
+  },
+  {
     // NYC DOT requires a data-sharing agreement for this feed, so the pack is
     // off unless the operator opts in (see DATA_SOURCES.md).
     name: 'nyc',
@@ -258,6 +276,8 @@ export function createCctvCatalog({ sourceRoot = process.cwd() } = {}) {
   /** @type {Promise<Array<object>>|null} In-flight refresh, shared by concurrent
    * callers so a post-TTL burst launches ONE refetch, not one per request. */
   let _cctvSourceInflight = null;
+  /** @type {Array<object>} Master unpruned collection for spatial queries. */
+  let _allSourcesCache = [];
   /** @type {WeakMap<Array<object>, Array<{pack: string, available: number, served: number}>>}
    * Packs that serve fewer cameras than they offer, keyed by the source list
    * they describe, so a request served the old list during a background
@@ -272,44 +292,61 @@ export function createCctvCatalog({ sourceRoot = process.cwd() } = {}) {
    * packs, and caches for CCTV_SOURCE_CACHE_MS. Past that, the cached list is
    * returned while a background refresh replaces it; only a first load waits.
    *
+   * @param {object} [options]
+   * @param {Array<number>} [options.bbox] [south, west, north, east] bounds filter
+   * @param {number} [options.max] maximum items to return
+   * @param {boolean} [options.all] return full unpruned collection
    * @returns {Promise<Array<object>>} Deduplicated, capped source list.
    */
-  async function getCctvSources() {
+  async function getCctvSources(options = {}) {
+    const { bbox = null, max = null, all = false } = options || {};
     const now = Date.now();
+    let currentCache = _cctvSourceCache;
     if (
-      _cctvSourceCache.length &&
-      now - _cctvSourceCacheAt <= CCTV_SOURCE_CACHE_MS
+      !_cctvSourceCache.length ||
+      now - _cctvSourceCacheAt > CCTV_SOURCE_CACHE_MS
     ) {
-      return _cctvSourceCache;
-    }
-    // Single-flight: a burst of requests arriving past the TTL shares ONE refresh
-    // instead of each launching the full multi-provider refetch. The `.finally`
-    // clears the ref so the next post-TTL cycle starts fresh.
-    if (!_cctvSourceInflight) {
-      _cctvSourceInflight = refreshCctvSources().finally(() => {
-        _cctvSourceInflight = null;
-      });
-      // A background refresh has no caller waiting on it: report its failure
-      // here, once per refresh rather than once per request it serves. Keep
-      // the old catalog for another TTL, as an empty refresh does, so a refresh
-      // that keeps failing is retried once per TTL, not back to back.
-      if (_cctvSourceCache.length) {
-        _cctvSourceInflight.catch((error) => {
-          _cctvSourceCacheAt = Date.now();
-          console.warn(
-            '[CCTV] background catalog refresh failed; serving',
-            _cctvSourceCache.length,
-            'cameras from the last catalog:',
-            error?.message || error,
-          );
+      if (!_cctvSourceInflight) {
+        _cctvSourceInflight = refreshCctvSources().finally(() => {
+          _cctvSourceInflight = null;
         });
+        if (_cctvSourceCache.length) {
+          _cctvSourceInflight.catch((error) => {
+            _cctvSourceCacheAt = Date.now();
+            console.warn(
+              '[CCTV] background catalog refresh failed; serving',
+              _cctvSourceCache.length,
+              'cameras from the last catalog:',
+              error?.message || error,
+            );
+          });
+        }
       }
+      currentCache = _cctvSourceCache.length
+        ? _cctvSourceCache
+        : await _cctvSourceInflight;
     }
-    // With a catalog in hand, answer with it while the refresh runs: the
-    // refresh lasts as long as the slowest pack (Tarktee's DATEX feeds take up
-    // to its 30 s timeout), and every /api/cctv request would otherwise wait
-    // for it. Only the first load, with nothing to serve yet, waits.
-    return _cctvSourceCache.length ? _cctvSourceCache : _cctvSourceInflight;
+
+    if (all) {
+      return _allSourcesCache.length ? _allSourcesCache : currentCache;
+    }
+
+    if (bbox && Array.isArray(bbox) && bbox.length === 4) {
+      const [south, west, north, east] = bbox;
+      const base = _allSourcesCache.length ? _allSourcesCache : currentCache;
+      const filtered = base.filter(
+        (src) =>
+          src.lat >= south &&
+          src.lat <= north &&
+          src.lon >= west &&
+          src.lon <= east,
+      );
+      return Number.isFinite(max) && max > 0
+        ? filtered.slice(0, max)
+        : filtered;
+    }
+
+    return currentCache;
   }
 
   /**
@@ -371,6 +408,7 @@ export function createCctvCatalog({ sourceRoot = process.cwd() } = {}) {
       normalizePack('file', fromFile),
       normalizePack('env', fromEnv),
     ];
+    _allSourcesCache = packs.flatMap((p) => p.sources);
     const maxCount = resolveCatalogCap(process.env.CCTV_MAX_SOURCES);
     const allocation = allocateSourceCap(packs, maxCount);
     // Shipped ground heights (src/data/local_data/cctv_ground_heights/, produced by

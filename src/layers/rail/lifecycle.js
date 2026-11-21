@@ -35,7 +35,6 @@ export function createLifecycle({ state, services, parts, timetable }) {
     for (const entry of state._trains.values()) {
       parts.rendering.cancelWake(entry);
       destroyTrack(entry.track);
-      entry.placement?.forget(entry.key);
     }
     state._trains.clear();
     state._moving.clear();
@@ -127,8 +126,6 @@ export function createLifecycle({ state, services, parts, timetable }) {
       parts.ingestion.abortAllInFlight();
       state._activeFeeds.clear();
       state._heldFeedId = null;
-      state._cockpitSubjectKey = null;
-      state._cockpitLostFeedId = null;
       state._feedStatus.clear();
       dropAllTrains();
       parts.rendering.stopModels();

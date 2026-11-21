@@ -26,6 +26,7 @@ import { googlePlacesContextProxy } from './places.js';
 import { mapillaryProxy } from './mapillary.js';
 import { keySetupEndpoint } from '../standalone/key-setup.js';
 import { weatherProxy } from './weather.js';
+import { windProxy } from './wind.js';
 import { firePerimetersProxy } from './firePerimeters.js';
 import { gnssIntegrityProxy } from './gnssIntegrity.js';
 import { ghostMapsProxy } from './ghostMaps.js';
@@ -35,7 +36,9 @@ import { newsProxy } from './news.js';
 import { inaturalistProxy } from './inaturalist/observations.js';
 import { acartiaProxy } from './acartia.js';
 import { cycloneProxy } from './cyclones.js';
-import { windProxy } from './wind.js';
+import { agentDispatchProxy } from './agentDispatch.js';
+import { agyProxy } from './agy.js';
+import { sightseeingDiscoveryProxy } from './discovery/sightseeing.js';
 import { libraryProxy } from './library.js';
 
 /**
@@ -85,6 +88,9 @@ function localProviderPlugins({
     cycloneProxy(),
     mapillaryProxy(),
     firePerimetersProxy(),
+    agentDispatchProxy(),
+    agyProxy(),
+    sightseeingDiscoveryProxy(),
     gnssIntegrityProxy(),
     libraryProxy(),
     ghostMapsProxy(),

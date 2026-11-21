@@ -1,0 +1,4 @@
+[
+  "scripts/private-hygiene-rules.json",
+  "src/tooling/privateHygieneRules.test.mjs"
+]

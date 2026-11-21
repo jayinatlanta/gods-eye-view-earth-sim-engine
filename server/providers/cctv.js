@@ -264,12 +264,27 @@ export function cctvProxy({ sourceRoot = process.cwd() } = {}) {
         // keyless gate keeps the routes reachable behind a reverse proxy; the
         // key-bearing Street View fallback below has its own check.
         if (admitSameSiteKeyless(req, res)) return;
-        const sources = await getCctvSources();
+        const allSources = await getCctvSources({ all: true });
         const sourceById = new Map(
-          sources.map((source) => [source.id, source]),
+          allSources.map((source) => [source.id, source]),
         );
 
         if (url.pathname === '/sources') {
+          const bboxParam = url.searchParams.get('bbox');
+          const maxParam = Number(url.searchParams.get('max'));
+          let bbox = null;
+          if (bboxParam) {
+            const parts = bboxParam.split(',').map((s) => Number(s.trim()));
+            if (parts.length === 4 && parts.every(Number.isFinite)) {
+              bbox = parts;
+            }
+          }
+          const sources = bbox
+            ? await getCctvSources({
+                bbox,
+                max: Number.isFinite(maxParam) ? maxParam : null,
+              })
+            : await getCctvSources();
           const quebecVideo = quebecBrowserVideoEnabled();
           const body = {
             trimmedPacks: getCctvSources.trimmedPacks?.(sources) ?? [],

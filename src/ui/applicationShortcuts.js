@@ -36,6 +36,12 @@ export function bindApplicationShortcuts({
     )
       return;
 
+    if (event.key === '/') {
+      event.preventDefault?.();
+      actions.openSearch?.() ?? actions.focusSearch?.();
+      return;
+    }
+
     if (STYLE_KEYS[event.key]) actions.setStyle(STYLE_KEYS[event.key]);
     if (event.key === 'Escape') actions.dismissSearch();
     const key = event.key.toLowerCase();

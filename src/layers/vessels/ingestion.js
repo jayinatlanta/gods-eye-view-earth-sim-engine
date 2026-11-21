@@ -218,7 +218,6 @@ export function createIngestion({
       speed: record.speedMps == null ? null : record.speedMps / 0.514444,
       course: record.courseDeg,
       heading: record.headingDeg,
-      virtual: record.virtual === true,
       last_position_epoch:
         record.observedAtMs == null ? null : record.observedAtMs / 1000,
       last_position_UTC:

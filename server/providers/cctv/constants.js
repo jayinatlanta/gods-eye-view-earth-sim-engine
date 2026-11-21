@@ -129,6 +129,7 @@ export const FLORIDA_MAX_CATALOG_BYTES = 2 * 1024 * 1024;
 export const FLORIDA_MAX_CATALOG_PAGES = 40;
 export const FLORIDA_ANCHORS = [
   { lat: 25.7617, lon: -80.1918 }, // Miami
+  { lat: 24.5551, lon: -81.78 }, // Key West / Florida Keys
   { lat: 28.5384, lon: -81.3789 }, // Orlando
   { lat: 27.9506, lon: -82.4572 }, // Tampa
   { lat: 30.3322, lon: -81.6557 }, // Jacksonville
@@ -581,6 +582,38 @@ export const DELDOT_ANCHORS = [
   { lat: 39.7459, lon: -75.5466 }, // Wilmington (New Castle)
   { lat: 39.1582, lon: -75.5244 }, // Dover (Kent)
   { lat: 38.6906, lon: -75.3877 }, // Georgetown (Sussex)
+];
+
+/** Georgia DOT (511GA): 2,000+ highway cameras across Georgia. */
+export const GDOT_CAMERAS_URL = 'https://511ga.org/map/mapIcons/Cameras';
+export const GDOT_IMAGE_ORIGIN = 'https://511ga.org/map/Cctv/';
+export const DEFAULT_GDOT_MAX_SOURCES = 400;
+export const GEORGIA_ANCHORS = [
+  { lat: 33.749, lon: -84.388 }, // Atlanta (I-75/I-85/I-20 Downtown Connector)
+  { lat: 32.0809, lon: -81.0912 }, // Savannah (I-16 Coast & Port of Savannah)
+  { lat: 33.4735, lon: -82.0105 }, // Augusta (I-20 East border)
+  { lat: 32.8407, lon: -83.6324 }, // Macon (I-75/I-16 Central Hub)
+  { lat: 32.4609, lon: -84.9877 }, // Columbus (US-80 West border)
+  { lat: 34.2979, lon: -83.8241 }, // Gainesville / Lake Lanier
+  { lat: 34.8021, lon: -85.1844 }, // Ringgold / Dalton (I-75 North border)
+  { lat: 30.8327, lon: -83.2785 }, // Valdosta (I-75 South border)
+];
+
+/** Florida DOT (FL511): 4,900+ highway cameras across Florida. */
+export const FL511_CAMERAS_URL = 'https://fl511.com/map/mapIcons/Cameras';
+export const FL511_IMAGE_ORIGIN = 'https://fl511.com/map/Cctv/';
+export const DEFAULT_FL511_MAX_SOURCES = 400;
+
+/** North Carolina DOT (DriveNC / NCDOT): 1,100+ highway cameras across North Carolina. */
+export const NCDOT_CAMERAS_URL = 'https://drivenc.gov/map/mapIcons/Cameras';
+export const NCDOT_IMAGE_ORIGIN = 'https://drivenc.gov/map/Cctv/';
+export const DEFAULT_NCDOT_MAX_SOURCES = 300;
+export const NORTH_CAROLINA_ANCHORS = [
+  { lat: 35.2271, lon: -80.8431 }, // Charlotte (I-77/I-85)
+  { lat: 35.7796, lon: -78.6382 }, // Raleigh / Durham (Research Triangle)
+  { lat: 36.0726, lon: -79.792 }, // Greensboro / Winston-Salem (Piedmont Triad)
+  { lat: 35.5951, lon: -82.5515 }, // Asheville (Blue Ridge / I-40)
+  { lat: 34.2257, lon: -77.9447 }, // Wilmington (Coast / I-40)
 ];
 
 /** King County, WA road cameras: keyless public ArcGIS FeatureServer layer

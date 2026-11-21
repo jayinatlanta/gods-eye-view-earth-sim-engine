@@ -376,6 +376,7 @@ export async function geocodeKeylessWithOutcome(
     signal,
     cache = photonCache,
     endpoint = PHOTON_ENDPOINT,
+    timeoutMs = PHOTON_TIMEOUT_MS,
   } = {},
 ) {
   signal?.throwIfAborted();
@@ -393,7 +394,11 @@ export async function geocodeKeylessWithOutcome(
   const ask = async (url) => {
     try {
       signal?.throwIfAborted();
-      const deadline = AbortSignal.timeout(PHOTON_TIMEOUT_MS);
+      const effectiveTimeout =
+        Number.isFinite(timeoutMs) && timeoutMs > 0
+          ? timeoutMs
+          : PHOTON_TIMEOUT_MS;
+      const deadline = AbortSignal.timeout(effectiveTimeout);
       const requestSignal = signal
         ? AbortSignal.any([signal, deadline])
         : deadline;

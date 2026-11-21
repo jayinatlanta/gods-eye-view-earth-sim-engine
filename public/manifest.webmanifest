@@ -1,8 +1,8 @@
 {
   "id": ".",
-  "name": "God's Eye View",
-  "short_name": "God's Eye",
-  "description": "Live spatial intelligence in the browser.",
+  "name": "God's Eye View (Earth Sim Engine Edition)",
+  "short_name": "GEV Earth Sim",
+  "description": "Live 3D Earth simulation engine & self-modifying world sandbox.",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",

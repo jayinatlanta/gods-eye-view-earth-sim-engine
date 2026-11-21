@@ -171,6 +171,10 @@ export function createBrowserViteConfig({
   cesiumToken,
   photonUrl,
   mapillaryToken,
+  forkProfile,
+  defaultStartupCity,
+  companionName,
+  enableLiveForge,
   host = 'localhost',
   port = 4173,
   allowedHosts = DEFAULT_ALLOWED_HOSTS,
@@ -256,6 +260,14 @@ export function createBrowserViteConfig({
       // Mapillary client tokens are public by design (see SECURITY.md).
       'import.meta.env.MAPILLARY_CLIENT_TOKEN': JSON.stringify(
         mapillaryToken ?? '',
+      ),
+      'import.meta.env.GEV_FORK_PROFILE': JSON.stringify(forkProfile ?? ''),
+      'import.meta.env.DEFAULT_STARTUP_CITY': JSON.stringify(
+        defaultStartupCity ?? '',
+      ),
+      'import.meta.env.GEV_COMPANION_NAME': JSON.stringify(companionName ?? ''),
+      'import.meta.env.GEV_ENABLE_LIVE_FORGE': JSON.stringify(
+        enableLiveForge ?? '',
       ),
     },
     build: { chunkSizeWarningLimit: 1500 },

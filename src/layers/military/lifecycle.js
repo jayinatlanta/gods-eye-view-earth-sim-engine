@@ -1,6 +1,5 @@
 import * as Cesium from 'cesium';
 import { loadFleetModelSet } from '../../data/fleetModels.js';
-import { forgetPlacedAircraft } from '../flights/placed.js';
 
 export function createLifecycle({
   flightState,
@@ -67,10 +66,6 @@ export function createLifecycle({
       flightState._cullPositions.clear();
       flightState._detectionObjects = new Map();
       flightState.records.data = new Map();
-      forgetPlacedAircraft(
-        services.placement,
-        flightState._positionHistory.keys(),
-      );
       flightState._positionHistory = new Map();
       flightState._displayCourse.clear();
       flightState._groundSnap.clear();
@@ -269,10 +264,6 @@ export function createLifecycle({
       flightState._cullPositions.clear();
       flightState._detectionObjects.clear();
       flightState.records.data.clear();
-      forgetPlacedAircraft(
-        services.placement,
-        flightState._positionHistory.keys(),
-      );
       flightState._positionHistory.clear();
       flightState._displayCourse.clear();
       flightState._groundSnap.clear();

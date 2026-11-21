@@ -322,8 +322,18 @@ export function createControls({ state: layerState, services, parts, source }) {
     visitMotionDots(visitor) {
       for (let i = 0; i < layerState._dots.length; i++) {
         const dot = layerState._dots[i];
-        visitor(dot.id, dot.road.key, dot.point, dot.road);
+        visitor(dot.id, dot.road?.key, dot.point, dot.road, dot);
       }
+    },
+
+    /** Return active synthetic traffic dots for simulation latching. */
+    getTrafficDots() {
+      return layerState._dots;
+    },
+
+    /** Return specific synthetic traffic dot by ID. */
+    getTrafficDot(id) {
+      return layerState._dots.find((d) => d.id === id) || null;
     },
 
     /**

@@ -457,7 +457,8 @@ test('a panel keeps drawing from a timer while animation frames stop', () => {
   assert.equal(frame, null);
 });
 
-test('a panel stops drawing while its render loop is stopped', () => {
+test('a panel reports a render error in full and stops drawing', () => {
+  let listener = null;
   let tick = null;
   const windowRef = {
     requestAnimationFrame: () => 1,
@@ -466,19 +467,31 @@ test('a panel stops drawing while its render loop is stopped', () => {
     clearInterval() {},
   };
   const drawn = [];
-  const viewer = { resize() {}, render: () => drawn.push('render') };
-  let clock = 0;
-  const stop = keepPanelRendering(viewer, { windowRef, now: () => clock });
-  // Cesium stops its render loop after a render error.
-  viewer.useDefaultRenderLoop = false;
-  clock = 1000;
-  tick();
-  assert.deepEqual(drawn, []);
-  // Retry restarts it, and the timer draws again.
-  viewer.useDefaultRenderLoop = true;
-  tick();
-  assert.deepEqual(drawn, ['render']);
-  stop();
+  const viewer = {
+    resize() {},
+    render: () => drawn.push('render'),
+    scene: {
+      renderError: {
+        addEventListener: (fn) => ((listener = fn), () => (listener = null)),
+      },
+    },
+  };
+  const logged = [];
+  const original = console.error;
+  console.error = (...args) => logged.push(args.join(' '));
+  try {
+    let clock = 0;
+    const stop = keepPanelRendering(viewer, { windowRef, now: () => clock });
+    listener(viewer.scene, { name: 'RuntimeError', message: 'worker failed' });
+    assert.match(logged[0], /render error: .*"message":"worker failed"/);
+    clock = 1000;
+    tick();
+    assert.deepEqual(drawn, []);
+    stop();
+    assert.equal(listener, null);
+  } finally {
+    console.error = original;
+  }
 });
 
 test('a followed aircraft owns the camera, and cockpit view is entered after it', async () => {

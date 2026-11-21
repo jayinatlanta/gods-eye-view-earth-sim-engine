@@ -275,6 +275,7 @@ export class MapSourceController {
     this._showTileset(tileset);
     this.viewer.scene.globe.show = false;
     // Terrain is intentionally untouched while the globe is hidden.
+    this._requestRender('map-stack-tileset');
   }
 
   _showTileset(active) {

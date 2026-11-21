@@ -31,8 +31,7 @@ export function createCards({
   function rebuildAmbientLabels() {
     if (!layerState._viewer) return;
     const scene = layerState._viewer.scene;
-    // Ages count back from the time shown: the window's end, or now when live.
-    const now = components.model.ageReferenceMs();
+    const now = Date.now();
     const entries = [];
     /** @type {Array<{x: number, y: number}>} Screen positions of accepted labels. */
     const accepted = [];

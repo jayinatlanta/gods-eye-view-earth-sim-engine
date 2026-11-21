@@ -79,4 +79,17 @@ export {
   CCTV_PROJECTION_OVERLAY_SOURCE_ID,
   CCTV_PROJECTION_OVERLAY_SOURCE_OPTIONS,
 } from '../layers/cctv/index.js';
+
+export async function loadCameraSources(bbox = null, max = null) {
+  let url = '/api/cctv/sources';
+  const params = new URLSearchParams();
+  if (bbox) params.set('bbox', bbox);
+  if (max) params.set('max', String(max));
+  const queryString = params.toString();
+  if (queryString) url += `?${queryString}`;
+  const resp = await fetch(url);
+  const data = await resp.json();
+  return data.sources || [];
+}
+
 export default layer;

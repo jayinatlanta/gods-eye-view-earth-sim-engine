@@ -1,6 +1,5 @@
 <script setup>
 import { vClassToggle } from '../rail/classToggle.js';
-import UiPanelEdge from './UiPanelEdge.vue';
 import UiPanelToggle from './UiPanelToggle.vue';
 
 // Core's panel, with a name, title, slots and v-model:collapsed. It draws Core's panel markup
@@ -58,7 +57,6 @@ const emit = defineEmits(['update:collapsed']);
         <slot name="badge" />
         <span class="panel-divider"></span>
         <slot name="actions" />
-        <UiPanelEdge v-if="props.collapsible" />
         <UiPanelToggle
           v-if="props.collapsible"
           :target="props.id"

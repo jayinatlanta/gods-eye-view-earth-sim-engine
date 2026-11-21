@@ -302,23 +302,7 @@ const layers = [
   },
   {
     id: 'transit',
-    aliases: [
-      'buses',
-      'trains',
-      'public transit',
-      'trams',
-      'subway',
-      'trolleybus',
-      'trolleybuses',
-      'gondola',
-      'gondolas',
-      'cable car',
-      'cable cars',
-      'funicular',
-      'funiculars',
-      'monorail',
-      'monorails',
-    ],
+    aliases: ['buses', 'trains', 'public transit', 'trams', 'subway'],
     context: false,
     query: {
       fields: {

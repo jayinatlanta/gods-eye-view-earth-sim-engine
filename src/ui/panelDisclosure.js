@@ -3,9 +3,11 @@ function listenerScope() {
   const removers = [];
   return {
     listen(target, type, callback, options) {
-      if (!target) return;
+      if (!target || typeof target.addEventListener !== 'function') return;
       target.addEventListener(type, callback, options);
-      removers.push(() => target.removeEventListener(type, callback, options));
+      removers.push(() =>
+        target.removeEventListener?.(type, callback, options),
+      );
     },
     destroy() {
       for (const remove of removers.splice(0)) remove();
@@ -109,6 +111,7 @@ export function createHoverDisclosure({
   let lastWheelTime = 0;
   let disclosureFocusTimer = null;
   let focusRequest = 0;
+  let lastPointerType = '';
 
   const cancelPendingFocus = () => {
     clearTimeout(disclosureFocusTimer);
@@ -208,10 +211,23 @@ export function createHoverDisclosure({
     scheduleClose();
   });
 
-  listen(panelEl, 'pointerdown', () => {
+  listen(panelEl, 'pointerdown', (event) => {
+    lastPointerType = event.pointerType || '';
     cancelPendingFocus();
     clearOpen();
     clearClose();
+  });
+
+  listen(document, 'pointerdown', (event) => {
+    lastPointerType = event.pointerType || '';
+    if (destroyed || !isActive()) return;
+    if (panelEl.contains(event.target)) return;
+    if (panelEl.classList.contains('collapsed')) return;
+    if (panelEl.classList.contains('dock-pinned')) return;
+    cancelPendingFocus();
+    clearOpen();
+    clearClose();
+    onChange(true);
   });
 
   const focusContent = () => {
@@ -282,9 +298,11 @@ export function createHoverDisclosure({
   listen(panelEl, 'focusout', (event) => {
     cancelPendingFocus();
     if (panelEl.contains(event.relatedTarget)) return;
+    if (lastPointerType === 'touch' && event.relatedTarget == null) return;
     scheduleClose();
   });
   listen(panelEl, 'keydown', (event) => {
+    lastPointerType = '';
     if (event.key !== 'Escape') return;
     if (!event.defaultPrevented) onEscape(event);
     cancelPendingFocus();

@@ -312,6 +312,74 @@ export async function nearPlace(lat, lon, radiusKm) {
   return best ? best.name : null;
 }
 
+function normalizePlaceToken(value) {
+  return String(value ?? '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[.,-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Look up a populated place by exact normalized name from the bundled 7,342-city
+ * Natural Earth dataset (`populated_places.json`) and enrich with offline country/division.
+ * Supports optional `, <country|state|ISO2>` qualification when `qualify: true`.
+ * @param {string} query
+ * @param {{qualify?: boolean}} [options]
+ * @returns {Promise<{name:string, lat:number, lon:number, scalerank:number, rankMax:number, country:?string, countryCode:?string, division:?string}|null>}
+ */
+export async function searchPopulatedPlaceByName(
+  query,
+  { qualify = false } = {},
+) {
+  const raw = String(query ?? '').trim();
+  if (!raw) return null;
+  const commaIdx = raw.indexOf(',');
+  const cityRaw = commaIdx >= 0 ? raw.slice(0, commaIdx) : raw;
+  const qualRaw = commaIdx >= 0 ? raw.slice(commaIdx + 1) : '';
+  const cityKey = normalizePlaceToken(cityRaw);
+  const qualKey = normalizePlaceToken(qualRaw);
+  if (!cityKey) return null;
+  if (qualKey && !qualify) return null;
+
+  const places = await loadPopulatedPlaces();
+  const matches = [];
+  for (const [name, lat, lon, scalerank = 10, rankMax = 0] of places) {
+    if (normalizePlaceToken(name) === cityKey) {
+      matches.push({ name, lat, lon, scalerank, rankMax });
+    }
+  }
+  if (!matches.length) return null;
+  matches.sort((a, b) => b.rankMax - a.rankMax || a.scalerank - b.scalerank);
+
+  const candidates = matches.slice(0, qualKey ? 8 : 1);
+  for (const cand of candidates) {
+    const info = await orNull(() =>
+      findPlaceBelow(cand.lat, cand.lon, { nearKm: null }),
+    );
+    if (qualKey) {
+      if (!info) continue;
+      const hay = [info.name, info.countryCode, info.division]
+        .filter(Boolean)
+        .map(normalizePlaceToken);
+      const matchesQual =
+        hay.includes(qualKey) ||
+        (qualKey === 'usa' && hay.includes('us')) ||
+        (qualKey === 'uk' && hay.includes('gb'));
+      if (!matchesQual) continue;
+    }
+    return {
+      ...cand,
+      country: info?.kind === 'country' ? info.name : null,
+      countryCode: info?.countryCode || null,
+      division: info?.division || null,
+    };
+  }
+  return null;
+}
+
 /** The division and near-place lookups `placeBelow` adds on land. */
 const DETAIL_LOOKUPS = Object.freeze({ division: divisionAt, near: nearPlace });
 

@@ -39,6 +39,231 @@ const _holds = new Set();
 const _recentRequests = [];
 const RECENT_REQUEST_CAP = 16;
 
+const TILESET_STREAMING_HOLD = 'tileset-streaming';
+const TILESET_SETTLE_HOLD = 'tileset-settle';
+const TILESET_STREAM_MAX_MS = 4500;
+const TILESET_SETTLE_MS = 350;
+
+let _tilesetSubscriptions = new Map();
+let _sceneRemovers = [];
+let _streamingWatchdog = null;
+let _settleTimer = null;
+let _postIdleTimer = null;
+
+function clearPumpTimers() {
+  if (_streamingWatchdog) {
+    clearTimeout(_streamingWatchdog);
+    _streamingWatchdog = null;
+  }
+  if (_settleTimer) {
+    clearTimeout(_settleTimer);
+    _settleTimer = null;
+  }
+  if (_postIdleTimer) {
+    clearTimeout(_postIdleTimer);
+    _postIdleTimer = null;
+  }
+}
+
+function detachAllTilesetSubscriptions() {
+  clearPumpTimers();
+  for (const unsub of _tilesetSubscriptions.values()) {
+    unsub();
+  }
+  _tilesetSubscriptions.clear();
+  for (const remove of _sceneRemovers.splice(0)) {
+    remove();
+  }
+}
+
+function hasVisibleUnloadedTileset(viewer) {
+  const primitives = viewer?.scene?.primitives;
+  if (!primitives || typeof primitives.length !== 'number') return false;
+  for (let i = 0; i < primitives.length; i++) {
+    const p = primitives.get?.(i);
+    if (
+      p &&
+      p.show !== false &&
+      (p.loadProgress || p.tileLoad || p.allTilesLoaded) &&
+      p.tilesLoaded !== true
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function bumpTilesetSettle(reason = 'tileset-settle') {
+  if (!_installed || !_viewer?.scene) return;
+  if (_settleTimer) clearTimeout(_settleTimer);
+  holdContinuousRender(TILESET_SETTLE_HOLD);
+  governorRequestRender(reason);
+  _settleTimer = setTimeout(() => {
+    _settleTimer = null;
+    releaseContinuousRender(TILESET_SETTLE_HOLD);
+    governorRequestRender(`${reason}-done`);
+  }, TILESET_SETTLE_MS);
+}
+
+function attachTilesetPump(primitive) {
+  if (!primitive || _tilesetSubscriptions.has(primitive)) return;
+  const hasEvents =
+    typeof primitive.loadProgress?.addEventListener === 'function' ||
+    typeof primitive.tileLoad?.addEventListener === 'function' ||
+    typeof primitive.allTilesLoaded?.addEventListener === 'function';
+  if (!hasEvents) return;
+
+  // Ensure live Google 3D / 3D Tiles primitives refine promptly during street-level motion
+  // instead of waiting on foveation delays or aggressively culling moving-camera requests.
+  if ('foveatedTimeDelay' in primitive) {
+    primitive.foveatedTimeDelay = 0.0;
+  }
+  if (
+    typeof primitive.cullRequestsWhileMovingMultiplier === 'number' &&
+    primitive.cullRequestsWhileMovingMultiplier > 18.0
+  ) {
+    primitive.cullRequestsWhileMovingMultiplier = 18.0;
+  }
+
+  const removers = [];
+  if (typeof primitive.loadProgress?.addEventListener === 'function') {
+    const off = primitive.loadProgress.addEventListener(
+      (pending = 0, processing = 0) => {
+        if (!_installed) return;
+        if (primitive.show === false) {
+          releaseContinuousRender(TILESET_STREAMING_HOLD);
+          return;
+        }
+        if (pending > 0 || processing > 0) {
+          if (_postIdleTimer) {
+            clearTimeout(_postIdleTimer);
+            _postIdleTimer = null;
+          }
+          if (_streamingWatchdog) clearTimeout(_streamingWatchdog);
+          holdContinuousRender(TILESET_STREAMING_HOLD);
+          // Bounded safety release so an unreachable/stalled tile server never pins GPU forever.
+          _streamingWatchdog = setTimeout(() => {
+            _streamingWatchdog = null;
+            releaseContinuousRender(TILESET_STREAMING_HOLD);
+            governorRequestRender('tileset-watchdog');
+          }, TILESET_STREAM_MAX_MS);
+        } else {
+          if (_streamingWatchdog) {
+            clearTimeout(_streamingWatchdog);
+            _streamingWatchdog = null;
+          }
+          releaseContinuousRender(TILESET_STREAMING_HOLD);
+          governorRequestRender('tileset-idle');
+          // Async Model/glTF image decoding can settle one tick after counts drop to 0;
+          // request one bounded follow-up render if the tileset isn't allTilesLoaded yet.
+          if (primitive.tilesLoaded === false && !_postIdleTimer) {
+            _postIdleTimer = setTimeout(() => {
+              _postIdleTimer = null;
+              governorRequestRender('tileset-post-idle');
+            }, 120);
+          }
+        }
+      },
+    );
+    if (typeof off === 'function') removers.push(off);
+  }
+  if (typeof primitive.tileLoad?.addEventListener === 'function') {
+    const off = primitive.tileLoad.addEventListener(() => {
+      if (!_installed || primitive.show === false) return;
+      governorRequestRender('tileset-tile-load');
+    });
+    if (typeof off === 'function') removers.push(off);
+  }
+  if (typeof primitive.allTilesLoaded?.addEventListener === 'function') {
+    const off = primitive.allTilesLoaded.addEventListener(() => {
+      if (!_installed) return;
+      if (_streamingWatchdog) {
+        clearTimeout(_streamingWatchdog);
+        _streamingWatchdog = null;
+      }
+      if (_postIdleTimer) {
+        clearTimeout(_postIdleTimer);
+        _postIdleTimer = null;
+      }
+      if (_settleTimer) {
+        clearTimeout(_settleTimer);
+        _settleTimer = null;
+      }
+      releaseContinuousRender(TILESET_SETTLE_HOLD);
+      releaseContinuousRender(TILESET_STREAMING_HOLD);
+      governorRequestRender('tileset-all-loaded');
+    });
+    if (typeof off === 'function') removers.push(off);
+  }
+
+  _tilesetSubscriptions.set(primitive, () => {
+    for (const r of removers) r();
+  });
+}
+
+function installSceneTilesetMonitor(viewer) {
+  detachAllTilesetSubscriptions();
+  const primitives = viewer?.scene?.primitives;
+  if (primitives) {
+    if (
+      typeof primitives.length === 'number' &&
+      typeof primitives.get === 'function'
+    ) {
+      for (let i = 0; i < primitives.length; i++) {
+        attachTilesetPump(primitives.get(i));
+      }
+    }
+    if (typeof primitives.primitiveAdded?.addEventListener === 'function') {
+      const offAdd = primitives.primitiveAdded.addEventListener((primitive) => {
+        attachTilesetPump(primitive);
+        if (primitive?.show !== false && primitive?.tilesLoaded !== true) {
+          bumpTilesetSettle('tileset-added');
+        }
+      });
+      if (typeof offAdd === 'function') _sceneRemovers.push(offAdd);
+    }
+    if (typeof primitives.primitiveRemoved?.addEventListener === 'function') {
+      const offRem = primitives.primitiveRemoved.addEventListener(
+        (primitive) => {
+          const unsub = _tilesetSubscriptions.get(primitive);
+          if (unsub) {
+            unsub();
+            _tilesetSubscriptions.delete(primitive);
+          }
+        },
+      );
+      if (typeof offRem === 'function') _sceneRemovers.push(offRem);
+    }
+  }
+  if (typeof viewer?.camera?.moveEnd?.addEventListener === 'function') {
+    const offMoveEnd = viewer.camera.moveEnd.addEventListener(() => {
+      if (hasVisibleUnloadedTileset(viewer)) {
+        bumpTilesetSettle('camera-move-end');
+      }
+    });
+    if (typeof offMoveEnd === 'function') _sceneRemovers.push(offMoveEnd);
+  }
+  if (
+    typeof window !== 'undefined' &&
+    typeof window.addEventListener === 'function'
+  ) {
+    const win = window;
+    const onStackChanged = (evt) => {
+      const detail = evt?.detail;
+      if (detail?.status === 'ready' && viewer?.scene?.globe?.show === false) {
+        bumpTilesetSettle('map-stack-changed');
+      }
+    };
+    win.addEventListener('gev:map-stack-changed', onStackChanged);
+    _sceneRemovers.push(() =>
+      win?.removeEventListener?.('gev:map-stack-changed', onStackChanged),
+    );
+  }
+  if (hasVisibleUnloadedTileset(viewer)) {
+    bumpTilesetSettle('tileset-init');
+  }
+}
+
 function applyMode() {
   if (!_installed || !_viewer?.scene) return;
   const continuous = _holds.size > 0;
@@ -70,6 +295,23 @@ export function installRenderGovernor(viewer) {
   // explicit requests.
   viewer.scene.maximumRenderTimeChange = Infinity;
   applyMode();
+  installSceneTilesetMonitor(viewer);
+}
+
+/**
+ * Nudge active 3D tilesets through a brief continuous-render settle burst
+ * so post-flight/post-switch LOD refinement does not stall in requestRenderMode.
+ */
+export function nudgeTilesetStreaming(
+  reason = 'tileset-nudge',
+  { force = false } = {},
+) {
+  if (!_installed || !_viewer?.scene) return;
+  if (force || hasVisibleUnloadedTileset(_viewer)) {
+    bumpTilesetSettle(reason);
+  } else {
+    governorRequestRender(reason);
+  }
 }
 
 /**
@@ -132,6 +374,7 @@ export function getRenderGovernorDiagnostics() {
 /** Release the installed viewer after its animation owners have stopped. */
 export function uninstallRenderGovernor(viewer) {
   if (_viewer !== viewer) return;
+  detachAllTilesetSubscriptions();
   _viewer = null;
   _installed = false;
   _holds.clear();
@@ -140,6 +383,7 @@ export function uninstallRenderGovernor(viewer) {
 
 /** Test seam: reset module state between unit tests. */
 export function _resetRenderGovernorForTest() {
+  detachAllTilesetSubscriptions();
   _viewer = null;
   _installed = false;
   _holds.clear();

@@ -218,7 +218,7 @@
 
 .hud-summary-wrap {
   margin-top: 6px;
-  max-width: 420px;
+  max-width: 540px;
 }
 
 .hud-summary-label {
@@ -231,11 +231,14 @@
   margin-top: 2px;
   min-height: 16px;
   font-size: 11px;
-  letter-spacing: 1.2px;
-  opacity: 0.88;
-  white-space: nowrap;
+  line-height: 1.38;
+  letter-spacing: 1px;
+  opacity: 0.92;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .hud-rec {
@@ -310,10 +313,8 @@
   bottom: 12vh;
 }
 
-/* Minimal keeps its coordinates in the corner block, where the other layouts
-   have them; the full-width strip would only repeat the same position. */
 #intel-hud[data-variant='minimal'] .hud-bottom-bar {
-  display: none;
+  display: flex;
   bottom: calc(12vh + 4rem);
 }
 
@@ -435,4 +436,146 @@
   #title-bar
   .frame-rate-readout {
   margin-top: 6px;
+}
+
+/* ── Living World & Ground Wander Ambient Action Pills (Responsive & Collision-Free) ── */
+.gev-city-ambient-container {
+  --ambient-pills-base-bottom: 128px; /* Elevated cleanly above 44px circular toolbar buttons at bottom: 74px (top edge 118px) to prevent covering left-hand launcher buttons */
+  --ambient-pills-shift-y: 0px;
+  position: fixed;
+  bottom: var(--ambient-pills-base-bottom);
+  left: 50%;
+  transform: translateX(-50%)
+    translateY(calc(16px + var(--ambient-pills-shift-y)));
+  display: none;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  z-index: 10001;
+  opacity: 0;
+  transition:
+    transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+    bottom 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.22s ease;
+  pointer-events: none;
+  max-width: calc(100vw - 32px);
+  flex-wrap: wrap;
+}
+
+.gev-city-ambient-container.visible {
+  display: flex;
+  opacity: 1;
+  transform: translateX(-50%) translateY(var(--ambient-pills-shift-y));
+}
+
+.gev-city-ambient-container button {
+  pointer-events: auto;
+  background: rgba(13, 17, 23, 0.94);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-radius: 24px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  color: #e6edf3;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    transform 0.16s ease,
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.gev-city-ambient-container button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.75);
+}
+
+.gev-ambient-living-btn {
+  border: 1px solid rgba(6, 182, 212, 0.5);
+}
+.gev-ambient-living-btn:hover {
+  border-color: rgba(6, 182, 212, 0.85);
+  background: rgba(18, 25, 38, 0.96);
+}
+
+.gev-ambient-wander-btn {
+  border: 1px solid rgba(16, 185, 129, 0.5);
+}
+.gev-ambient-wander-btn:hover {
+  border-color: rgba(16, 185, 129, 0.85);
+  background: rgba(18, 38, 28, 0.96);
+}
+
+.gev-city-ambient-container kbd {
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 10px;
+}
+
+/* ── Dynamic Collision Avoidance: Shift Above Active Command Dock Trays ── */
+body:has(#command-dock #control-panel:not(.collapsed))
+  .gev-city-ambient-container,
+body:has(#command-dock #control-panel.dock-pinned) .gev-city-ambient-container,
+body:has(#command-dock #control-panel:hover) .gev-city-ambient-container,
+body:has(#command-dock #location-bar:not(.collapsed))
+  .gev-city-ambient-container,
+body:has(#command-dock #location-bar.dock-pinned) .gev-city-ambient-container,
+body:has(#command-dock #location-bar:hover) .gev-city-ambient-container,
+body:has(#command-dock.dock-has-pinned-tray) .gev-city-ambient-container,
+.gev-city-ambient-container.dock-active,
+.gev-city-ambient-container.dock-hover {
+  --ambient-pills-shift-y: -340px;
+}
+
+@media (max-height: 860px) {
+  body:has(#command-dock #control-panel:not(.collapsed))
+    .gev-city-ambient-container,
+  body:has(#command-dock #control-panel.dock-pinned)
+    .gev-city-ambient-container,
+  body:has(#command-dock #control-panel:hover) .gev-city-ambient-container,
+  body:has(#command-dock #location-bar:not(.collapsed))
+    .gev-city-ambient-container,
+  body:has(#command-dock #location-bar.dock-pinned) .gev-city-ambient-container,
+  body:has(#command-dock.dock-has-pinned-tray) .gev-city-ambient-container,
+  .gev-city-ambient-container.dock-active,
+  .gev-city-ambient-container.dock-hover {
+    --ambient-pills-shift-y: -290px;
+    transform: translateX(-50%) translateY(var(--ambient-pills-shift-y))
+      scale(0.92);
+  }
+}
+
+@media (max-height: 720px) {
+  body:has(#command-dock #control-panel:not(.collapsed))
+    .gev-city-ambient-container,
+  body:has(#command-dock #location-bar:not(.collapsed))
+    .gev-city-ambient-container,
+  .gev-city-ambient-container.dock-active {
+    opacity: 0.15;
+    pointer-events: none;
+  }
+}
+
+/* ── Narrow / Phone Travel Bar Wrapping ── */
+@media (max-width: 720px) {
+  .gev-drive-hud-strip,
+  .gev-flight-hud-strip,
+  .gev-boat-hud-strip {
+    max-width: calc(100vw - 24px);
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px 8px;
+    padding: 8px 10px;
+    bottom: 120px !important;
+  }
 }

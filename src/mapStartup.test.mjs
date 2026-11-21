@@ -311,3 +311,29 @@ test('a server without tokens falls back to ion', async () => {
   assert.equal(result.errors.length, 1);
   assert.equal(Cesium.calls.length, 1);
 });
+
+test('photorealistic tileset options scale memory cache budgets on mobile', async () => {
+  const { isMobileScreen, getPhotorealisticTilesetOptions } =
+    await import('./maps/google3d.js');
+
+  // Desktop
+  const desktopOpts = getPhotorealisticTilesetOptions();
+  assert.equal(desktopOpts.cacheBytes, 1536 * 1024 * 1024);
+  assert.equal(desktopOpts.maximumCacheOverflowBytes, 1024 * 1024 * 1024);
+  assert.equal(desktopOpts.maximumScreenSpaceError, 16);
+
+  // Mobile
+  const originalMatchMedia = globalThis.matchMedia;
+  try {
+    globalThis.matchMedia = (query) => ({
+      matches: query === '(pointer: coarse)',
+    });
+    assert.equal(isMobileScreen(), true);
+    const mobileOpts = getPhotorealisticTilesetOptions();
+    assert.equal(mobileOpts.cacheBytes, 192 * 1024 * 1024);
+    assert.equal(mobileOpts.maximumCacheOverflowBytes, 128 * 1024 * 1024);
+    assert.equal(mobileOpts.maximumScreenSpaceError, 24);
+  } finally {
+    globalThis.matchMedia = originalMatchMedia;
+  }
+});

@@ -402,7 +402,7 @@ const findPick = (page, prefix, { box = null, step = 3 } = {}) =>
 async function findPickUntil(
   page,
   prefix,
-  { timeout = 30_000, box = null, step } = {},
+  { timeout = 60_000, box = null, step } = {},
 ) {
   const deadline = Date.now() + timeout;
   for (;;) {

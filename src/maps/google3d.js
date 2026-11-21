@@ -62,14 +62,60 @@ export async function loadPhotorealisticTileset(
   return { tileset: null, route: 'osm', errors };
 }
 
+/**
+ * Detect mobile or touch-coarse displays to scale 3D tile cache budgets.
+ */
+export function isMobileScreen() {
+  if (typeof globalThis.matchMedia === 'function') {
+    if (globalThis.matchMedia('(pointer: coarse)').matches) return true;
+    if (globalThis.matchMedia('(max-width: 768px)').matches) return true;
+  }
+  if (typeof globalThis.navigator !== 'undefined') {
+    if ((globalThis.navigator.maxTouchPoints || 0) > 1) return true;
+    if (/Android|iPhone|iPad|iPod/i.test(globalThis.navigator.userAgent || ''))
+      return true;
+  }
+  return false;
+}
+
+/**
+ * Photorealistic 3D Tiles cache and refinement options scaled to client platform.
+ * Mobile devices clamp cache to 192MB + 128MB overflow and higher screen space error (24)
+ * to prevent browser tab WebGL / out-of-memory crash.
+ */
+export function getPhotorealisticTilesetOptions(overrides = {}) {
+  const isMobile = isMobileScreen();
+  return {
+    cacheBytes: isMobile ? 192 * 1024 * 1024 : 1536 * 1024 * 1024,
+    maximumCacheOverflowBytes: isMobile
+      ? 128 * 1024 * 1024
+      : 1024 * 1024 * 1024,
+    maximumScreenSpaceError: isMobile ? 24 : 16,
+    enableCollision: true,
+    asynchronouslyLoadImagery: true,
+    // Do not defer building child tiles behind a 200ms motion timer; under
+    // requestRenderMode the scene can settle before that timer elapses.
+    foveatedTimeDelay: 0.0,
+    ...overrides,
+  };
+}
+
 /** Pass credentials to the source instead of changing SDK-wide defaults. */
-export function createGoogleDirectTileset(Cesium, key) {
+export function createGoogleDirectTileset(Cesium, key, options = {}) {
   key = clean(key);
   if (!key) throw new Error('Google 3D requires an explicit browser key');
+  const isMobile = isMobileScreen();
+  const tilesetOptions = isMobile
+    ? getPhotorealisticTilesetOptions(options)
+    : {
+        asynchronouslyLoadImagery: true,
+        foveatedTimeDelay: 0.0,
+        ...options,
+      };
   // Tiles keep drawing their own texture while draped weather loads.
   return Cesium.createGooglePhotorealistic3DTileset(
     { key, onlyUsingWithGoogleGeocoder: true },
-    { asynchronouslyLoadImagery: true },
+    tilesetOptions,
   );
 }
 
@@ -78,7 +124,7 @@ export function createGoogleDirectTileset(Cesium, key) {
  * carries the token as a header; a tile refused for an expired token gets
  * the renewed one and is tried once more.
  */
-export async function createGoogleTokenTileset(Cesium, tokens) {
+export async function createGoogleTokenTileset(Cesium, tokens, options = {}) {
   const token = await tokens.token();
   if (!token) throw new Error('Google 3D tokens are not offered');
   const credit = Cesium.GoogleMaps.getDefaultCredit?.();
@@ -97,19 +143,16 @@ export async function createGoogleTokenTileset(Cesium, tokens) {
     },
   });
   // The settings Cesium's Google helper applies to the key route.
-  return Cesium.Cesium3DTileset.fromUrl(resource, {
-    cacheBytes: 1536 * 1024 * 1024,
-    maximumCacheOverflowBytes: 1024 * 1024 * 1024,
-    enableCollision: true,
-    // Tiles keep drawing their own texture while draped weather loads.
-    asynchronouslyLoadImagery: true,
-  });
+  return Cesium.Cesium3DTileset.fromUrl(
+    resource,
+    getPhotorealisticTilesetOptions(options),
+  );
 }
 
 export async function createGoogleIonTileset(
   Cesium,
   accessToken,
-  { signal } = {},
+  { signal, ...options } = {},
 ) {
   accessToken = clean(accessToken);
   if (!accessToken)
@@ -120,11 +163,8 @@ export async function createGoogleIonTileset(
   });
   signal?.throwIfAborted();
   // Match the installed SDK's Google helper rendering/cache defaults.
-  return Cesium.Cesium3DTileset.fromUrl(resource, {
-    cacheBytes: 1536 * 1024 * 1024,
-    maximumCacheOverflowBytes: 1024 * 1024 * 1024,
-    enableCollision: true,
-    // Tiles keep drawing their own texture while draped weather loads.
-    asynchronouslyLoadImagery: true,
-  });
+  return Cesium.Cesium3DTileset.fromUrl(
+    resource,
+    getPhotorealisticTilesetOptions(options),
+  );
 }

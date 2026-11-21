@@ -4,10 +4,8 @@ import {
   perspectiveProjectedRotation,
 } from '../../data/iconOrientation.js';
 import {
-  PLACED_WAKE_MS,
   updatePlayback,
   applyDisplayCourse,
-  playbackMoving,
   syncPlayback,
 } from './movement.js';
 import {
@@ -108,12 +106,8 @@ export function createRendering({ state, services, parts }) {
     );
     entry.surfaceReady = !!known;
     entry.heightPending = !known;
-    // A vehicle a first-person view rides keeps moving, unseen.
     entry.marker.show =
-      !!known &&
-      vehicleInView(entry) &&
-      !entry.modelOwnsVisual &&
-      entry.key !== state._cockpitSubjectKey;
+      !!known && vehicleInView(entry) && !entry.modelOwnsVisual;
     if (known) {
       entry.marker.position = state._scratchCartesian;
       entry.hasRendered = true;
@@ -167,7 +161,7 @@ export function createRendering({ state, services, parts }) {
       migrateMarker(entry, false);
       return;
     }
-    const positional = playbackMoving(entry);
+    const positional = sample.phase === 'playing' && sample.segmentSpeedMps > 0;
     const turning =
       Number.isFinite(sample.segmentCourseDeg) &&
       Number.isFinite(entry.courseDeg) &&
@@ -180,19 +174,7 @@ export function createRendering({ state, services, parts }) {
     } else {
       state._moving.delete(entry);
       migrateMarker(entry, false);
-      // A vehicle a host-supplied placement holds still is asked again every
-      // PLACED_WAKE_MS: it moves on once the placement does.
-      const monoNow = performance.now();
-      const placedWake = entry.placed === true;
-      const boundary = sample.nextWakeMonoMs;
-      const wakeMonoMs = placedWake
-        ? Math.min(
-            Number.isFinite(boundary) ? boundary : Infinity,
-            monoNow + PLACED_WAKE_MS,
-          )
-        : boundary;
-      if (Number.isFinite(wakeMonoMs)) {
-        const atBoundary = !placedWake || boundary <= wakeMonoMs;
+      if (Number.isFinite(sample.nextWakeMonoMs)) {
         entry.wakeTimer = setTimeout(
           () => {
             entry.wakeTimer = null;
@@ -201,10 +183,9 @@ export function createRendering({ state, services, parts }) {
             placeSample(entry);
             schedulePlayback(entry);
             syncRenderHold();
-            if (atBoundary || state._moving.has(entry))
-              governorRequestRender('transit-motion-boundary');
+            governorRequestRender('transit-motion-boundary');
           },
-          Math.max(1, wakeMonoMs - monoNow),
+          Math.max(1, sample.nextWakeMonoMs - performance.now()),
         );
       }
     }
@@ -217,7 +198,7 @@ export function createRendering({ state, services, parts }) {
    * @returns {boolean}
    */
   function vehicleInView(entry) {
-    return state._visible.has(entry) || entry.key === state._cockpitSubjectKey;
+    return state._visible.has(entry);
   }
 
   /** Cesium colour for a preset tuple, cached per profile+mode. */
@@ -456,8 +437,7 @@ export function createRendering({ state, services, parts }) {
       if (
         !entry.surfaceReady ||
         entry.sample.phase !== 'playing' ||
-        entry.sample.segmentSpeedMps === 0 ||
-        (entry.placed === true && entry.placedMoving !== true)
+        entry.sample.segmentSpeedMps === 0
       )
         schedulePlayback(entry);
       if (!state._moving.has(entry)) settleSelectedCard(entry);
@@ -509,7 +489,7 @@ export function createRendering({ state, services, parts }) {
     });
   }
 
-  /** Hand an entry's visual back to its icon, unless a view rides it. */
+  /** Hand an entry's visual back to its icon. */
   function handBack(entry) {
     if (!entry.modelOwnsVisual) return;
     entry.modelOwnsVisual = false;
@@ -517,8 +497,7 @@ export function createRendering({ state, services, parts }) {
       entry.marker.show =
         vehicleInView(entry) &&
         !entry.heightPending &&
-        entry.surfaceReady !== false &&
-        entry.key !== state._cockpitSubjectKey;
+        entry.surfaceReady !== false;
   }
 
   function updateModels() {
@@ -547,26 +526,15 @@ export function createRendering({ state, services, parts }) {
           groundLiftM,
         };
       }
-      if (item.mode !== entry.mode || item.routeType !== entry.routeType) {
+      if (item.mode !== entry.mode) {
         item.mode = entry.mode;
-        item.routeType = entry.routeType;
-        // The route type picks the finer model (a coach, a high-speed set);
-        // the mode is the fallback for a type the model table lacks.
-        item.spec = transitModelSpec(set, {
-          routeType: entry.routeType,
-          mode: entry.mode,
-        });
+        item.spec = transitModelSpec(set, { mode: entry.mode });
         item.tint =
           MODE_CESIUM_COLORS[entry.mode] || MODE_CESIUM_COLORS.unknown;
       }
       item.position = entry.marker.position;
       item.headingDeg = Number.isFinite(entry.courseDeg) ? entry.courseDeg : 0;
-      // A vehicle a first-person view rides draws no model: the camera is
-      // inside it (cockpitSubject.js).
-      item.show =
-        !entry.heightPending &&
-        entry.surfaceReady !== false &&
-        entry.key !== state._cockpitSubjectKey;
+      item.show = !entry.heightPending && entry.surfaceReady !== false;
       next.set(entry.key, item);
     }
     for (const [key, item] of modelItems)
@@ -673,10 +641,7 @@ export function createRendering({ state, services, parts }) {
       } else if (frustum)
         inFrustum =
           frustum.computeVisibility(sphere) !== Cesium.Intersect.OUTSIDE;
-      // A held vehicle (cockpitSubject.js) is the camera's own: it stays in
-      // play wherever the view looks.
-      const held = entry.key === state._cockpitSubjectKey;
-      const visible = held || ((frustum || bounds) && horizon && inFrustum);
+      const visible = (frustum || bounds) && horizon && inFrustum;
       const visibility = (entry.visibility ||= {});
       visibility.bounds = bounds;
       visibility.boundsApplied = !frustum;
@@ -701,7 +666,6 @@ export function createRendering({ state, services, parts }) {
         }
       }
       entry.marker.show =
-        !held &&
         visible &&
         !entry.heightPending &&
         entry.surfaceReady !== false &&

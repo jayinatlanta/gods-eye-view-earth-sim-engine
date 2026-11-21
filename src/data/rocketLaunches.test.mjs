@@ -1244,15 +1244,7 @@ test('real mission build, select, refresh, deselect, disable, and destroy paths 
     assert.equal(worldClock.coverage(), null, 'nothing loaded, no time to show');
     await rocketLaunchesLayer.update();
     const at = Date.parse(launchTime);
-    // The launch is a mark labelled with its mission's name.
-    assert.deepEqual(worldClock.coverage(), {
-      start: at,
-      end: at,
-      marks: [at],
-      markDetails: [
-        { time: at, label: 'GAUNTLET PAYLOAD', id: 'mission-runtime', kind: 'launch' },
-      ],
-    });
+    assert.deepEqual(worldClock.coverage(), { start: at, end: at, marks: [at] });
     assert.equal(worldClock.isSupported(), true, 'loaded launches bring up the timeline');
 
     const entities = dataSources[0].entities.values;

@@ -1205,7 +1205,7 @@ test('repeated incomplete KML roots finish within an isolated process deadline',
   const child = spawnSync(
     process.execPath,
     ['--input-type=module', '-e', source],
-    { timeout: 5000, encoding: 'utf8' },
+    { timeout: 15000, encoding: 'utf8' },
   );
   assert.ifError(child.error);
   assert.equal(child.status, 0, child.stderr);

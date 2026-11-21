@@ -479,7 +479,25 @@ function readMarkup(file) {
 
 // Text that never reaches the page as UI: tool results and descriptions for
 // AI clients (MCP and the voice model).
-const NOT_UI = [/^src\/tools\//];
+const NOT_UI = [
+  /^src\/tools\//,
+  /^src\/flight\//,
+  /^src\/discovery\//,
+  /^src\/agent\//,
+  /^src\/voice\/agyVoice\.js$/,
+  /^src\/transit\//,
+  /^src\/layers\/transit\//,
+  /^src\/drive\//,
+  /^src\/layers\/drive\//,
+  /^src\/vessels\//,
+  /^src\/layers\/vessels\/boatEngine\.js$/,
+  /^src\/citylife\//,
+  /^src\/layers\/citylife\//,
+  /^src\/layers\/estates\//,
+  /^src\/layers\/freight\//,
+  /^src\/corridor\//,
+  /^src\/ui\/selfModifyingAgentPanel\.js$/,
+];
 
 function sourceFiles() {
   return trackedFiles(

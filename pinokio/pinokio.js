@@ -1,7 +1,9 @@
 module.exports = {
   version: '3.6',
-  title: "God's Eye View",
-  description: 'A live 3D intelligence console for planet Earth.',
+  title: "God's Eye View (Earth Sim Engine Edition)",
+  description:
+    "A live 3D Earth simulation engine & self-modifying world sandbox built on God's Eye View.",
+  icon: 'icon.png',
   menu: async (kernel, info) => {
     const installed = await kernel.exists(__dirname, '.installed');
     const installing = info.running('install.js');
@@ -22,10 +24,13 @@ module.exports = {
     if (starting) {
       const local = info.local('start.js');
       if (local?.url) {
-        // Open in the system browser without changing the app's framing policy.
-        // This also avoids relying on Pinokio's embedded browser behavior.
         return [
-          { default: true, icon: 'fa-solid fa-earth-americas', text: 'Open God\'s Eye View', href: local.url, popout: true },
+          {
+            default: true,
+            icon: 'fa-solid fa-earth-americas',
+            text: "Open God's Eye View (Earth Sim Engine Edition)",
+            href: local.url,
+          },
           { icon: 'fa-solid fa-terminal', text: 'Server', href: 'start.js' },
         ];
       }

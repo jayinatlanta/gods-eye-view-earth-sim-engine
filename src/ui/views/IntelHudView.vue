@@ -17,9 +17,7 @@ const view = computed(() => hud.value ?? EMPTY);
 // answers its clicks.
 const { presence: cockpit } = storeToRefs(useCockpitStore());
 // The entry names the subject it would ride (cockpitEntryFace).
-const entry = computed(() =>
-  cockpitEntryFace(cockpit.value?.entryKind, cockpit.value?.entryFace),
-);
+const entry = computed(() => cockpitEntryFace(cockpit.value?.entryKind));
 </script>
 
 <template>

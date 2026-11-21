@@ -71,8 +71,7 @@ export function normalizeReadsbAircraft(row, snapshotTimeMs) {
     ellipsoidAltitudeM: geoFt == null ? null : geoFt * 0.3048,
     onGround: cleanText(row.alt_baro).toLowerCase() === 'ground',
     speedMps: speedKts == null ? null : speedKts * 0.514444,
-    // No track (parked, slow): the true heading, where the nose points.
-    courseDeg: finite(row.track) ?? finite(row.true_heading),
+    courseDeg: finite(row.track),
     verticalRateMps: rateFtMin == null ? null : rateFtMin * 0.00508,
     category: row.category ?? null,
     typeCode: cleanText(row.t),
