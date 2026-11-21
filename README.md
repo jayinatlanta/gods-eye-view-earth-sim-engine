@@ -2,6 +2,8 @@
 
 # 🌍 God's Eye View — Earth Sim Engine
 
+[![CI](https://github.com/jayinatlanta/gods-eye-view-earth-sim-engine/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jayinatlanta/gods-eye-view-earth-sim-engine/actions/workflows/ci.yml)
+
 ### Infinite play with a living Earth — and a self-modifying engine to simulate anything else you can imagine on Earth (or beyond).
 
 _An open-source World & Earth Simulation fork built on [God's Eye View](https://github.com/bilawalsidhu/gods-eye-view). Drop from orbit straight onto any street, highway, runway, railway, waterway, or wilderness trail on the planet — then reshape the simulator itself with your local AI coding agent._
@@ -60,7 +62,7 @@ Every Earth Sim session includes the floating lower-left **AI Assistant (`🤖`)
 
 <div align="center">
 
-[![CI](https://github.com/bilawalsidhu/gods-eye-view/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/bilawalsidhu/gods-eye-view/actions/workflows/ci.yml) [![Reached #1 on GitHub Trending](https://img.shields.io/badge/%231_GitHub_Trending-thank_you!-F0A63C?style=flat-square&logo=github)](https://x.com/bilawalsidhu/status/2093798887815348521)
+[![Reached #1 on GitHub Trending](https://img.shields.io/badge/%231_GitHub_Trending-thank_you!-F0A63C?style=flat-square&logo=github)](https://x.com/bilawalsidhu/status/2093798887815348521)
 
 ### A spy-satellite simulator in your browser — then you realize the sources are public and the data is real.
 
