@@ -2584,8 +2584,12 @@ export const RESORT_PARK_HOPPER_BRIDGES = Object.freeze([
     toParkName: 'EPCOT (WDW)',
     transitLabel: 'Seven Seas Monorail',
     icon: '🚝',
-    durationNote: 'Express Monorail Beam Transfer (~14 min)',
+    durationNote: 'Elevated Mark VI Beamway via Contemporary & TTC (~14 min)',
     arrivalStopId: 'epcot_spaceship_earth',
+    railCorridorId: 'wdw_monorail',
+    railProfileId: 'mk_to_epcot_express',
+    railSpeedMph: 45,
+    rideableTransit: true,
   },
   {
     id: 'wdw_seven_seas_monorail_return',
@@ -2594,8 +2598,13 @@ export const RESORT_PARK_HOPPER_BRIDGES = Object.freeze([
     toParkName: 'Magic Kingdom (WDW)',
     transitLabel: 'Seven Seas Monorail',
     icon: '🚝',
-    durationNote: 'TTC Lagoon Beam Transfer (~14 min)',
+    durationNote:
+      'Elevated Mark VI Beamway via TTC & Grand Floridian (~14 min)',
     arrivalStopId: 'mk_main_street_train_station',
+    railCorridorId: 'wdw_monorail',
+    railProfileId: 'epcot_to_mk_express',
+    railSpeedMph: 45,
+    rideableTransit: true,
   },
   {
     id: 'wdw_skyliner_to_dhs',

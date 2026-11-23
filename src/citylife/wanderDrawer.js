@@ -58,6 +58,8 @@ export function createWanderDrawer({
   parkAdventures = null,
   parkFireworks = null,
   agentForgePanel = null,
+  railwayEngine = null,
+  railDrawer = null,
   onRequestTourBuild = null,
   viewer = null,
   container = null,
@@ -737,6 +739,22 @@ export function createWanderDrawer({
       .gev-tour-hopper-btn:hover {
         border-color: #e879f9;
         background: linear-gradient(135deg, rgba(168, 85, 247, 0.45), rgba(56, 189, 248, 0.35));
+      }
+      .gev-tour-hopper-ride-btn {
+        padding: 5px 8px;
+        border-radius: 6px;
+        border: 1px solid rgba(56, 189, 248, 0.65);
+        background: linear-gradient(135deg, rgba(2, 132, 199, 0.4), rgba(14, 165, 233, 0.3));
+        color: #e0f2fe;
+        font-size: 10px;
+        font-weight: 700;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .gev-tour-hopper-ride-btn:hover {
+        border-color: #7dd3fc;
+        background: linear-gradient(135deg, rgba(2, 132, 199, 0.65), rgba(56, 189, 248, 0.5));
+        color: #ffffff;
       }
       .gev-tour-fireworks-btn {
         border-color: rgba(244, 114, 182, 0.55);
@@ -1667,10 +1685,13 @@ export function createWanderDrawer({
         const listEl = hopperBarEl.querySelector('.gev-tour-hopper-list');
         if (listEl) {
           listEl.innerHTML = bridges
-            .map(
-              (b) =>
-                `<button class="gev-tour-hopper-btn" data-target-city-id="${escapeHtml(b.toCityId)}" data-bridge-id="${escapeHtml(b.id)}" type="button" title="${escapeHtml(b.durationNote)}">${escapeHtml(b.icon)} ${escapeHtml(b.transitLabel)} → ${escapeHtml(b.toParkName)}</button>`,
-            )
+            .map((b) => {
+              const rideBtn =
+                b.rideableTransit && b.railCorridorId
+                  ? `<button class="gev-tour-hopper-ride-btn" data-target-city-id="${escapeHtml(b.toCityId)}" data-bridge-id="${escapeHtml(b.id)}" data-corridor-id="${escapeHtml(b.railCorridorId)}" data-profile-id="${escapeHtml(b.railProfileId || '')}" data-arrival-stop-id="${escapeHtml(b.arrivalStopId || '')}" data-speed-mph="${escapeHtml(String(b.railSpeedMph || 45))}" type="button" title="Ride the real 3D elevated ${escapeHtml(b.transitLabel)} beamway (Cab/Chase/Heli cameras) and arrive at ${escapeHtml(b.toParkName)}">🚝 Ride 3D</button>`
+                  : '';
+              return `<div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap;"><button class="gev-tour-hopper-btn" data-target-city-id="${escapeHtml(b.toCityId)}" data-bridge-id="${escapeHtml(b.id)}" type="button" title="${escapeHtml(b.durationNote)}">${escapeHtml(b.icon)} ${escapeHtml(b.transitLabel)} → ${escapeHtml(b.toParkName)}</button>${rideBtn}</div>`;
+            })
             .join('');
         }
       }
@@ -2822,6 +2843,49 @@ export function createWanderDrawer({
     drawerEl
       .querySelector('.gev-tour-hopper-list')
       ?.addEventListener('click', (e) => {
+        const rideBtn = e.target?.closest?.('.gev-tour-hopper-ride-btn');
+        if (rideBtn) {
+          const corridorId = rideBtn.getAttribute('data-corridor-id');
+          const profileId = rideBtn.getAttribute('data-profile-id');
+          const targetCityId = rideBtn.getAttribute('data-target-city-id');
+          const arrivalStopId = rideBtn.getAttribute('data-arrival-stop-id');
+          const speedMph = Number(rideBtn.getAttribute('data-speed-mph')) || 45;
+          const activeRailEngine =
+            railwayEngine ||
+            (typeof window !== 'undefined' ? window.__gevRailEngine : null);
+          const activeRailDrawer =
+            railDrawer ||
+            (typeof window !== 'undefined' ? window.__gevRailDrawer : null);
+          if (activeRailEngine?.spawnRailRoute && corridorId) {
+            tourAndPlayEngine?.stop?.();
+            activeRailDrawer?.selectCorridor?.(corridorId, profileId);
+            activeRailDrawer?.open?.();
+            dock.notifySimulationStarted('rail');
+            void activeRailEngine.spawnRailRoute(corridorId, null, {
+              corridor: profileId || undefined,
+              cameraMode: 'chase',
+              cabRide: false,
+              speedMph,
+              useOverpass: false,
+              onArrival: () => {
+                if (!targetCityId) return;
+                activeRailEngine.clearActiveRailRoute?.();
+                dock.notifySimulationStopped('rail');
+                selectedTourMode = 'all';
+                open();
+                tourAndPlayEngine?.startCityTour?.({
+                  cityId: targetCityId,
+                  startStopId: arrivalStopId || null,
+                  tourMode: 'all',
+                  cameraMode: WANDER_CAMERA_MODES.ISO_CHASE,
+                });
+                syncDrawerState();
+              },
+            });
+            syncDrawerState();
+            return;
+          }
+        }
         const hopBtn = e.target?.closest?.('.gev-tour-hopper-btn');
         if (!hopBtn) return;
         const targetCityId = hopBtn.getAttribute('data-target-city-id');

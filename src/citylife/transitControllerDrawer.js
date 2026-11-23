@@ -104,6 +104,7 @@ export function createTransitControllerDrawer({
           <option value="san_francisco">🌁 San Francisco (BART & SF Muni)</option>
           <option value="washington_dc">🏛️ Washington, D.C. (WMATA — 6 Lines)</option>
           <option value="northeast_corridor">🚄 Northeast Corridor (Amtrak NEC: Boston ↔ DC)</option>
+          <option value="wdw_monorail">🚝 Walt Disney World Monorail (Seven Seas Lagoon &amp; EPCOT Beams)</option>
           <option value="chicago">🏙️ Chicago (CTA The Loop & Red/Blue)</option>
           <option value="new_york">🗽 New York (MTA Subways — Multi-Line)</option>
           <option value="tokyo">🗾 Tokyo (JR Yamanote & Metro Lines)</option>
@@ -535,14 +536,28 @@ export function createTransitControllerDrawer({
     });
   }
 
-  function startActiveTransit(cityId) {
+  function startActiveTransit(cityId, { preferredMode = null } = {}) {
     if (cityId) activeCityId = cityId;
     if (!activeCityId) activeCityId = 'atlanta';
+    if (citySelect && citySelect.value !== activeCityId) {
+      citySelect.value = activeCityId;
+    }
+    const isRailOnlyNetwork =
+      activeCityId === 'wdw_monorail' || activeCityId === 'northeast_corridor';
+    if (
+      preferredMode === 'metro' ||
+      (isRailOnlyNetwork && activeMode === 'bus')
+    ) {
+      activeMode = 'metro';
+      updateModeButtonStyles();
+    }
     try {
       dock.notifySimulationStarted('transit');
     } catch {}
-    // Both transit systems operate persistently together in the active city
-    if (
+    // Both transit systems operate persistently together in the active city (except rail-only networks)
+    if (isRailOnlyNetwork) {
+      busEngine?.stopBusFleet?.();
+    } else if (
       !busEngine?.isSimActive?.() ||
       busEngine?.getActiveCity?.() !== activeCityId
     ) {
@@ -720,7 +735,7 @@ export function createTransitControllerDrawer({
               const isSelected = activeLineFilter === rId;
               const lineNameShort = route.lineName
                 .replace(
-                  /^(MARTA|LA Metro|BART|WMATA|CTA|MTA|TfL|JR|Amtrak)\s*/i,
+                  /^(MARTA|LA Metro|BART|WMATA|CTA|MTA|TfL|JR|Amtrak|WDW)\s*/i,
                   '',
                 )
                 .split('(')[0]

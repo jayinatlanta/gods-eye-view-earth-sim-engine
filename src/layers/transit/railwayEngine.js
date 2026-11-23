@@ -25,6 +25,11 @@ import {
   releaseContinuousRender,
   governorRequestRender,
 } from '../../renderGovernor.js';
+import {
+  MONORAIL_MODEL_URI,
+  MONORAIL_MODEL_LENGTH_M,
+  computeFleetGlbOrientationQuat,
+} from '../citylife/syntheticMetroEngine.js';
 
 export const TOP_OF_RAIL_OFFSET_METERS = 2.0; // Elevation offset matching locomotive wheel-rail interface
 export const CAB_VIEW_OFFSET = new Cesium.Cartesian3(0.0, 6.0, 2.0); // +2m above deck looking forward
@@ -48,6 +53,7 @@ export const DEFAULT_CARS_PER_CORRIDOR = {
   atlanta_marta_east: 4,
   northeast_corridor_acela: 6,
   tokaido_shinkansen: 8,
+  wdw_monorail: 0,
 };
 
 /**
@@ -331,7 +337,7 @@ export function applyRailCameraFollow(
     Cesium.Cartesian3.add(lookTarget, scratchFwd, lookTarget);
   } else {
     // 'chase': Raised urban chase behind train consist clearing low/mid buildings
-    const distBack = -(consistLength + 40.0);
+    const distBack = -(Math.max(40.0, consistLength) + 40.0);
     const heightUp = 36.0;
     Cesium.Cartesian3.multiplyByScalar(trueForward, distBack, scratchFwd);
     Cesium.Cartesian3.multiplyByScalar(up, heightUp, scratchUp);
@@ -415,10 +421,13 @@ export function createRailwayEngine({
   let mapStackUnsub = null;
   let activeRouteData = null;
   let isDestroyed = false;
-  let cameraMode = 'cab'; // 'cab' | 'chase' | 'overview' | 'free'
+  let cameraMode = 'cab'; // 'cab' | 'chase' | 'heli' | 'overview' | 'free'
   let originalClockState = null;
   let lastSampledRailGroundM = null;
   let liveClampedTrainPos = null;
+  let activeRailOffsetM = TOP_OF_RAIL_OFFSET_METERS;
+  let activeArrivalCallback = null;
+  let arrivalTriggered = false;
 
   function getExcludeEntities() {
     return [activeTrainEntity, activeTrackEntity, ...activeCarEntities].filter(
@@ -436,7 +445,7 @@ export function createRailwayEngine({
     if (!c) return Cesium.Cartesian3.clone(rawCartesian);
     const groundM = fallbackGroundM ?? lastSampledRailGroundM;
     if (!Number.isFinite(groundM)) return Cesium.Cartesian3.clone(rawCartesian);
-    const targetH = groundM + TOP_OF_RAIL_OFFSET_METERS;
+    const targetH = groundM + activeRailOffsetM;
     if (isPhotoreal3DActive(viewer)) {
       c.height = targetH;
     } else if (c.height < targetH) {
@@ -475,13 +484,27 @@ export function createRailwayEngine({
       }
     }
     const speedMph = Number(options.speedMph) || corridor.speedMph || 45;
-    const isCabRide = options.cabRide !== false;
-    cameraMode = isCabRide ? 'cab' : 'chase';
+    const requestedCam =
+      options.cameraMode || (options.cabRide === false ? 'chase' : 'cab');
+    const isCabRide = requestedCam === 'cab';
+    cameraMode = requestedCam;
+    const isMonorail =
+      corridor.activeProfile?.vehicleMode === 'monorail' ||
+      options.vehicleMode === 'monorail';
+    activeRailOffsetM = Number.isFinite(
+      corridor.activeProfile?.railOffsetMeters,
+    )
+      ? corridor.activeProfile.railOffsetMeters
+      : TOP_OF_RAIL_OFFSET_METERS;
+    activeArrivalCallback =
+      typeof options.onArrival === 'function' ? options.onArrival : null;
+    arrivalTriggered = false;
 
     let orderedWaypoints = corridor.waypoints;
 
-    // Optional dynamic Overpass vector ingestion
-    if (options.useOverpass && corridor.bbox) {
+    // Optional dynamic Overpass vector ingestion (skipped for dedicated monorail beamways
+    // so curated elevated Disney straddle-beam coordinates are preserved verbatim).
+    if (options.useOverpass && corridor.bbox && !isMonorail) {
       try {
         const elements = await fetchOverpassRailways(corridor.bbox, fetchImpl);
         if (elements) {
@@ -500,18 +523,19 @@ export function createRailwayEngine({
     }
 
     const trajectoryCartesians = generateRailTrajectory(orderedWaypoints, {
-      sampleIntervalMeters: 20,
-      railOffsetMeters: TOP_OF_RAIL_OFFSET_METERS,
+      sampleIntervalMeters: isMonorail ? 12 : 20,
+      railOffsetMeters: activeRailOffsetM,
       scene: viewer?.scene,
     });
 
     if (trajectoryCartesians.length < 2) return null;
 
     // Consist configuration
-    const carsCount =
-      options.carsCount !== undefined
+    const carsCount = isMonorail
+      ? 0
+      : options.carsCount !== undefined
         ? Number(options.carsCount)
-        : DEFAULT_CARS_PER_CORRIDOR[corridor.id] || 4;
+        : (DEFAULT_CARS_PER_CORRIDOR[corridor.id] ?? 4);
 
     const carPitch =
       RAIL_CAR_DIMENSIONS.length + RAIL_CAR_DIMENSIONS.couplerGap;
@@ -578,29 +602,99 @@ export function createRailwayEngine({
       viewer.clock.shouldAnimate = true;
     }
 
-    // 1. Vector Rail Track Entity (Amber/Gold glowing rail centerline)
+    // 1. Vector Rail Track Entity (Amber/Gold or Monorail Cyan glowing beamway)
+    const trackColor = corridor.activeProfile?.trackColor || '#f59e0b';
     activeTrackEntity = viewer.entities.add({
       name: `Track: ${corridor.name}`,
       polyline: {
         positions: trajectoryCartesians,
-        width: 4.0,
+        width: isMonorail ? 5.0 : 4.0,
         material: new Cesium.PolylineGlowMaterialProperty({
           glowPower: 0.3,
           taperPower: 0.1,
-          color: Cesium.Color.fromCssColorString('#f59e0b').withAlpha(0.9),
+          color: Cesium.Color.fromCssColorString(trackColor).withAlpha(0.9),
         }),
         clampToGround: false,
       },
     });
 
-    // 2. 3D Locomotive Entity with High-Contrast Outlined Reticle
-    const orientationProperty = new Cesium.VelocityOrientationProperty(
-      positionProperty,
-    );
+    // 2. 3D Locomotive / Monorail Entity
+    // For procedural fleet `monorail.glb` (built glTF Y-up, nose toward local -X),
+    // compute orientation dynamically from track forward vector via `computeFleetGlbOrientationQuat`
+    // so glTF(-1,0,0) aligns strictly along travel direction (dot = +1.0, zero 90°/180° offset).
+    let lastValidMonorailQuat = null;
+    if (isMonorail && trajectoryCartesians.length >= 2) {
+      const initFwd = Cesium.Cartesian3.subtract(
+        trajectoryCartesians[1],
+        trajectoryCartesians[0],
+        new Cesium.Cartesian3(),
+      );
+      if (Cesium.Cartesian3.magnitudeSquared(initFwd) > 1e-6) {
+        Cesium.Cartesian3.normalize(initFwd, initFwd);
+        lastValidMonorailQuat = computeFleetGlbOrientationQuat(
+          trajectoryCartesians[0],
+          initFwd,
+        );
+      }
+    }
+
+    const orientationProperty = isMonorail
+      ? new Cesium.CallbackProperty((time, result) => {
+          const evalTime = time || viewer.clock?.currentTime;
+          const p0 = evalTime ? positionProperty.getValue(evalTime) : null;
+          if (!p0) return lastValidMonorailQuat || undefined;
+          const futureTime = Cesium.JulianDate.addSeconds(
+            evalTime,
+            0.35,
+            new Cesium.JulianDate(),
+          );
+          let p1 = positionProperty.getValue(futureTime);
+          let fwd = null;
+          if (p1 && Cesium.Cartesian3.distanceSquared(p0, p1) > 1e-4) {
+            fwd = Cesium.Cartesian3.subtract(p1, p0, new Cesium.Cartesian3());
+          } else {
+            const pastTime = Cesium.JulianDate.addSeconds(
+              evalTime,
+              -0.35,
+              new Cesium.JulianDate(),
+            );
+            const pPrev = positionProperty.getValue(pastTime);
+            if (pPrev && Cesium.Cartesian3.distanceSquared(pPrev, p0) > 1e-4) {
+              fwd = Cesium.Cartesian3.subtract(
+                p0,
+                pPrev,
+                new Cesium.Cartesian3(),
+              );
+            }
+          }
+          if (fwd && Cesium.Cartesian3.magnitudeSquared(fwd) > 1e-6) {
+            Cesium.Cartesian3.normalize(fwd, fwd);
+            const q = computeFleetGlbOrientationQuat(p0, fwd);
+            if (q) {
+              lastValidMonorailQuat = Cesium.Quaternion.clone(
+                q,
+                lastValidMonorailQuat || new Cesium.Quaternion(),
+              );
+              return Cesium.Quaternion.clone(
+                q,
+                result || new Cesium.Quaternion(),
+              );
+            }
+          }
+          return lastValidMonorailQuat
+            ? Cesium.Quaternion.clone(
+                lastValidMonorailQuat,
+                result || new Cesium.Quaternion(),
+              )
+            : undefined;
+        }, false)
+      : new Cesium.VelocityOrientationProperty(positionProperty);
 
     const trainName =
       options.trainName ||
-      `Locomotive ${corridor.activeProfileKey || 'CSX-4500'}`;
+      (isMonorail
+        ? 'WDW Monorail Mark VI'
+        : `Locomotive ${corridor.activeProfileKey || 'CSX-4500'}`);
     const locoColor = corridor.activeProfile?.locoColor || '#0284c7';
     const carColor = corridor.activeProfile?.carColor || '#0369a1';
 
@@ -638,17 +732,32 @@ export function createRailwayEngine({
       name: trainName,
       position: dynamicTrainPosition,
       orientation: orientationProperty,
-      box: {
-        dimensions: new Cesium.Cartesian3(
-          LOCOMOTIVE_DIMENSIONS.width,
-          LOCOMOTIVE_DIMENSIONS.length,
-          LOCOMOTIVE_DIMENSIONS.height,
-        ),
-        material: Cesium.Color.fromCssColorString(locoColor).withAlpha(0.85),
-        outline: true,
-        outlineColor: Cesium.Color.WHITE,
-        outlineWidth: 3.5,
-      },
+      ...(isMonorail
+        ? {
+            model: {
+              uri: MONORAIL_MODEL_URI,
+              scale: 1.0,
+              minimumPixelSize: 48,
+              color: Cesium.Color.fromCssColorString(locoColor),
+              colorBlendMode: Cesium.ColorBlendMode.MIX,
+              colorBlendAmount: 0.25,
+              show: !isCabRide,
+            },
+          }
+        : {
+            box: {
+              dimensions: new Cesium.Cartesian3(
+                LOCOMOTIVE_DIMENSIONS.width,
+                LOCOMOTIVE_DIMENSIONS.length,
+                LOCOMOTIVE_DIMENSIONS.height,
+              ),
+              material:
+                Cesium.Color.fromCssColorString(locoColor).withAlpha(0.85),
+              outline: true,
+              outlineColor: Cesium.Color.WHITE,
+              outlineWidth: 3.5,
+            },
+          }),
       point: {
         pixelSize: 15,
         color: Cesium.Color.fromCssColorString(locoColor),
@@ -753,8 +862,10 @@ export function createRailwayEngine({
       : ORBITAL_CHASE_OFFSET;
     activeTrainEntity.viewFrom = initialViewOffset.clone();
     viewer.trackedEntity = activeTrainEntity;
-    cameraMode = isCabRide ? 'cab' : 'chase';
-    const consistLength = carsCount * carPitch;
+    cameraMode = requestedCam;
+    const consistLength = isMonorail
+      ? MONORAIL_MODEL_LENGTH_M
+      : carsCount * carPitch;
 
     const syncTrainAndCamera = () => {
       if (!activeTrainEntity || isDestroyed || !viewer.clock) return;
@@ -785,6 +896,28 @@ export function createRailwayEngine({
 
       if (activeTrainEntity.point) {
         activeTrainEntity.point.show = cameraMode !== 'cab';
+      }
+      if (activeTrainEntity.model) {
+        activeTrainEntity.model.show = cameraMode !== 'cab';
+      }
+
+      if (
+        activeArrivalCallback &&
+        !arrivalTriggered &&
+        Cesium.JulianDate.secondsDifference(curTime, startTime) >=
+          durationSec - 0.5
+      ) {
+        arrivalTriggered = true;
+        const cb = activeArrivalCallback;
+        activeArrivalCallback = null;
+        setTimeout(() => {
+          try {
+            cb();
+          } catch {
+            /* ignore arrival handoff errors */
+          }
+        }, 0);
+        return;
       }
 
       if (cameraMode === 'free' || cameraMode === 'overview') return;
@@ -874,6 +1007,9 @@ export function createRailwayEngine({
     lastSampledRailGroundM = null;
     liveClampedTrainPos = null;
     activeRawTrainPositionProperty = null;
+    activeRailOffsetM = TOP_OF_RAIL_OFFSET_METERS;
+    activeArrivalCallback = null;
+    arrivalTriggered = false;
     if (activeTrainEntity) {
       viewer.entities.remove(activeTrainEntity);
       activeTrainEntity = null;
@@ -954,6 +1090,9 @@ export function createRailwayEngine({
     if (activeTrainEntity.point) {
       activeTrainEntity.point.show = mode !== 'cab';
     }
+    if (activeTrainEntity.model) {
+      activeTrainEntity.model.show = mode !== 'cab';
+    }
     governorRequestRender('rail-snap');
     if (viewer.clock) {
       const curTime = viewer.clock.currentTime;
@@ -978,9 +1117,13 @@ export function createRailwayEngine({
           Cesium.Cartesian3.normalize(fwd, fwd);
         }
         if (fwd) {
-          const consistLength =
-            (activeRouteData?.carsCount || 4) *
-            (RAIL_CAR_DIMENSIONS.length + RAIL_CAR_DIMENSIONS.couplerGap);
+          const isMono =
+            activeRouteData?.corridor?.activeProfile?.vehicleMode ===
+            'monorail';
+          const consistLength = isMono
+            ? MONORAIL_MODEL_LENGTH_M
+            : (activeRouteData?.carsCount || 4) *
+              (RAIL_CAR_DIMENSIONS.length + RAIL_CAR_DIMENSIONS.couplerGap);
           applyRailCameraFollow(
             viewer,
             currentPos,
@@ -999,9 +1142,13 @@ export function createRailwayEngine({
    */
   function setCameraMode(mode) {
     if (mode === 'overview') {
+      if (activeTrainEntity?.model) activeTrainEntity.model.show = true;
+      if (activeTrainEntity?.point) activeTrainEntity.point.show = true;
       showRailOverview();
     } else if (mode === 'free') {
       cameraMode = 'free';
+      if (activeTrainEntity?.model) activeTrainEntity.model.show = true;
+      if (activeTrainEntity?.point) activeTrainEntity.point.show = true;
       if (viewer.trackedEntity) {
         viewer.trackedEntity = undefined;
       }
@@ -1090,7 +1237,11 @@ export function createRailwayEngine({
       totalDistKm,
       isCabRide: cameraMode === 'cab',
       cameraMode,
-      carsCount: activeCarEntities.length + 1,
+      vehicleMode: corridor?.activeProfile?.vehicleMode || 'rail',
+      carsCount:
+        corridor?.activeProfile?.vehicleMode === 'monorail'
+          ? 6
+          : activeCarEntities.length + 1,
     };
   }
 

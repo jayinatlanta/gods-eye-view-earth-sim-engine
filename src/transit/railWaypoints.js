@@ -146,6 +146,223 @@ export const NORTHEAST_CORRIDOR_FULL_ALIGNMENT = Object.freeze([
   },
 ]);
 
+export const WDW_MONORAIL_RESORT_LOOP = Object.freeze([
+  {
+    name: 'Magic Kingdom Monorail Station',
+    lat: 28.4158,
+    lon: -81.5812,
+    elev: 32,
+  },
+  {
+    name: 'Seven Seas Eastbound Viaduct',
+    lat: 28.4156,
+    lon: -81.5778,
+    elev: 32,
+  },
+  {
+    name: 'Contemporary Resort Grand Canyon Concourse',
+    lat: 28.4141,
+    lon: -81.5746,
+    elev: 36,
+  },
+  {
+    name: 'Bay Lake Southbound Beamway',
+    lat: 28.4095,
+    lon: -81.5754,
+    elev: 32,
+  },
+  {
+    name: 'Transportation & Ticket Center (TTC)',
+    lat: 28.4054,
+    lon: -81.5792,
+    elev: 32,
+  },
+  {
+    name: "Disney's Polynesian Village Resort",
+    lat: 28.4055,
+    lon: -81.5852,
+    elev: 32,
+  },
+  {
+    name: 'Seven Seas Lagoon West Shore',
+    lat: 28.4084,
+    lon: -81.5882,
+    elev: 32,
+  },
+  {
+    name: "Disney's Grand Floridian Resort & Spa",
+    lat: 28.4112,
+    lon: -81.5878,
+    elev: 32,
+  },
+  {
+    name: 'Lagoon North Bridge Approach',
+    lat: 28.4146,
+    lon: -81.5847,
+    elev: 32,
+  },
+  {
+    name: 'Magic Kingdom Monorail Station',
+    lat: 28.4158,
+    lon: -81.5812,
+    elev: 32,
+  },
+]);
+
+export const WDW_MONORAIL_EPCOT_BEAM = Object.freeze([
+  {
+    name: 'Transportation & Ticket Center (TTC)',
+    lat: 28.4054,
+    lon: -81.5792,
+    elev: 32,
+  },
+  {
+    name: 'World Drive Elevated Beamway North',
+    lat: 28.3992,
+    lon: -81.5744,
+    elev: 32,
+  },
+  {
+    name: 'World Drive Elevated Beamway Mid',
+    lat: 28.391,
+    lon: -81.5662,
+    elev: 32,
+  },
+  {
+    name: 'Epcot Center Drive Flyover',
+    lat: 28.3832,
+    lon: -81.5578,
+    elev: 33,
+  },
+  {
+    name: 'EPCOT North Entry Portal',
+    lat: 28.3778,
+    lon: -81.5515,
+    elev: 32,
+  },
+  {
+    name: 'Spaceship Earth West Sweep',
+    lat: 28.3746,
+    lon: -81.5508,
+    elev: 32,
+  },
+  {
+    name: 'World Celebration Garden Loop',
+    lat: 28.3728,
+    lon: -81.5494,
+    elev: 32,
+  },
+  {
+    name: 'Spaceship Earth East Turnaround',
+    lat: 28.3745,
+    lon: -81.5479,
+    elev: 32,
+  },
+  {
+    name: 'EPCOT Monorail Station',
+    lat: 28.3765,
+    lon: -81.5494,
+    elev: 32,
+  },
+]);
+
+export const WDW_MONORAIL_MK_TO_EPCOT_TRANSFER = Object.freeze([
+  {
+    name: 'Magic Kingdom Monorail Station',
+    lat: 28.4158,
+    lon: -81.5812,
+    elev: 32,
+  },
+  {
+    name: 'Seven Seas Eastbound Viaduct',
+    lat: 28.4156,
+    lon: -81.5778,
+    elev: 32,
+  },
+  {
+    name: 'Contemporary Resort Grand Canyon Concourse',
+    lat: 28.4141,
+    lon: -81.5746,
+    elev: 36,
+  },
+  {
+    name: 'Bay Lake Southbound Beamway',
+    lat: 28.4095,
+    lon: -81.5754,
+    elev: 32,
+  },
+  ...WDW_MONORAIL_EPCOT_BEAM,
+]);
+
+export const WDW_MONORAIL_EPCOT_TO_MK_TRANSFER = Object.freeze([
+  {
+    name: 'EPCOT Monorail Station',
+    lat: 28.3765,
+    lon: -81.5494,
+    elev: 32,
+  },
+  {
+    name: 'EPCOT North Entry Portal',
+    lat: 28.3778,
+    lon: -81.5515,
+    elev: 32,
+  },
+  {
+    name: 'Epcot Center Drive Flyover',
+    lat: 28.3832,
+    lon: -81.5578,
+    elev: 33,
+  },
+  {
+    name: 'World Drive Elevated Beamway Mid',
+    lat: 28.391,
+    lon: -81.5662,
+    elev: 32,
+  },
+  {
+    name: 'World Drive Elevated Beamway North',
+    lat: 28.3992,
+    lon: -81.5744,
+    elev: 32,
+  },
+  {
+    name: 'Transportation & Ticket Center (TTC)',
+    lat: 28.4054,
+    lon: -81.5792,
+    elev: 32,
+  },
+  {
+    name: "Disney's Polynesian Village Resort",
+    lat: 28.4055,
+    lon: -81.5852,
+    elev: 32,
+  },
+  {
+    name: 'Seven Seas Lagoon West Shore',
+    lat: 28.4084,
+    lon: -81.5882,
+    elev: 32,
+  },
+  {
+    name: "Disney's Grand Floridian Resort & Spa",
+    lat: 28.4112,
+    lon: -81.5878,
+    elev: 32,
+  },
+  {
+    name: 'Lagoon North Bridge Approach',
+    lat: 28.4146,
+    lon: -81.5847,
+    elev: 32,
+  },
+  {
+    name: 'Magic Kingdom Monorail Station',
+    lat: 28.4158,
+    lon: -81.5812,
+    elev: 32,
+  },
+]);
+
 export const RAIL_CORRIDORS = Object.freeze({
   atlanta_marta_east: {
     id: 'atlanta_marta_east',
@@ -324,6 +541,76 @@ export const RAIL_CORRIDORS = Object.freeze({
           'Electrified 457-mile multi-track high-speed spine connecting Boston, Providence, New Haven, New York Penn, Newark, Trenton, Philadelphia 30th St, Wilmington, Baltimore Penn, and Washington Union Station.',
         subterranean: false,
         waypoints: NORTHEAST_CORRIDOR_FULL_ALIGNMENT,
+      },
+    },
+  },
+  wdw_monorail: {
+    id: 'wdw_monorail',
+    name: 'Walt Disney World Monorail (Seven Seas & EPCOT Beams)',
+    city: 'Lake Buena Vista, Orlando, FL',
+    from: {
+      name: 'Magic Kingdom Monorail Station',
+      lat: 28.4158,
+      lon: -81.5812,
+      elev: 32,
+    },
+    to: {
+      name: 'EPCOT Monorail Station',
+      lat: 28.3765,
+      lon: -81.5494,
+      elev: 32,
+    },
+    defaultCorridor: 'mk_to_epcot_express',
+    defaultSpeedMph: 40,
+    bbox: [28.368, -81.594, 28.422, -81.542],
+    trackProfiles: {
+      mk_to_epcot_express: {
+        name: 'Magic Kingdom → Contemporary → TTC → EPCOT (Spaceship Earth Loop)',
+        description:
+          'Elevated Mark VI straddle-beam monorail journey from Magic Kingdom through the Contemporary A-frame concourse, TTC, and sweeping around Spaceship Earth into EPCOT.',
+        subterranean: false,
+        vehicleMode: 'monorail',
+        railOffsetMeters: 7.5,
+        locoColor: '#ef4444',
+        carColor: '#f8fafc',
+        trackColor: '#38bdf8',
+        waypoints: WDW_MONORAIL_MK_TO_EPCOT_TRANSFER,
+      },
+      epcot_to_mk_express: {
+        name: 'EPCOT → TTC → Polynesian & Grand Floridian → Magic Kingdom',
+        description:
+          'Return elevated monorail transfer from EPCOT north along World Drive to TTC and around the Seven Seas Lagoon west shore to Magic Kingdom.',
+        subterranean: false,
+        vehicleMode: 'monorail',
+        railOffsetMeters: 7.5,
+        locoColor: '#0284c7',
+        carColor: '#f8fafc',
+        trackColor: '#38bdf8',
+        waypoints: WDW_MONORAIL_EPCOT_TO_MK_TRANSFER,
+      },
+      resort_lagoon_loop: {
+        name: 'Seven Seas Lagoon Resort Loop (MK · Contemporary · TTC · Poly · GF)',
+        description:
+          'Full 2.6-mile Resort Monorail clockwise straddle-beam circuit around Seven Seas Lagoon passing through Disney’s Contemporary Resort.',
+        subterranean: false,
+        vehicleMode: 'monorail',
+        railOffsetMeters: 7.5,
+        locoColor: '#f59e0b',
+        carColor: '#f8fafc',
+        trackColor: '#fbbf24',
+        waypoints: WDW_MONORAIL_RESORT_LOOP,
+      },
+      epcot_beam_only: {
+        name: 'EPCOT Beamway (TTC ↔ Spaceship Earth Preview Loop)',
+        description:
+          '4.0-mile elevated straddle-beam glide from the Transportation & Ticket Center straight into EPCOT’s Future World loop around Spaceship Earth.',
+        subterranean: false,
+        vehicleMode: 'monorail',
+        railOffsetMeters: 7.5,
+        locoColor: '#10b981',
+        carColor: '#f8fafc',
+        trackColor: '#34d399',
+        waypoints: WDW_MONORAIL_EPCOT_BEAM,
       },
     },
   },

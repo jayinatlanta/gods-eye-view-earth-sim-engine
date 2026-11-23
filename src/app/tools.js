@@ -484,6 +484,8 @@ export function createApplicationTools({
     parkAdventures,
     parkFireworks,
     agentForgePanel,
+    railwayEngine,
+    railDrawer,
     viewer,
   });
   defer(() => wanderDrawer.destroy());

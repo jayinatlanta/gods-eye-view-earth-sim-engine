@@ -14,7 +14,11 @@
  * - Tokyo (JR Yamanote, Chuo Rapid, Tokyo Metro Ginza, Marunouchi Line)
  */
 
-import { NORTHEAST_CORRIDOR_FULL_ALIGNMENT } from '../../transit/railWaypoints.js';
+import {
+  NORTHEAST_CORRIDOR_FULL_ALIGNMENT,
+  WDW_MONORAIL_RESORT_LOOP,
+  WDW_MONORAIL_EPCOT_BEAM,
+} from '../../transit/railWaypoints.js';
 
 export const METRO_ELEVATED_HEIGHT_M = 5.5;
 
@@ -3363,6 +3367,97 @@ export const RAPID_TRANSIT_ROUTES = {
       { lat: 33.415, lon: -111.831, elev: 375 },
     ],
   },
+  // ---------------------------------------------------------
+  // 11. WALT DISNEY WORLD (SEVEN SEAS & EPCOT MONORAIL SYSTEM)
+  // ---------------------------------------------------------
+  wdw_monorail_resort_loop: {
+    id: 'wdw_monorail_resort_loop',
+    cityId: 'wdw_monorail',
+    lineName: 'WDW Resort Monorail Loop (Gold / Coral)',
+    operator: 'WDW Monorail',
+    vehicleMode: 'monorail',
+    liveryColor: '#f59e0b',
+    accentColor: '#fef3c7',
+    carsPerTrain: 6,
+    capacityPerCar: 60,
+    isElevated: true,
+    elevOffsetMeters: 7.5,
+    stations: [
+      {
+        id: 'wdw_mono_mk',
+        name: 'Magic Kingdom Monorail Station',
+        lat: 28.4158,
+        lon: -81.5812,
+        elev: 32,
+      },
+      {
+        id: 'wdw_mono_contemp',
+        name: 'Contemporary Resort Grand Canyon Concourse',
+        lat: 28.4141,
+        lon: -81.5746,
+        elev: 36,
+      },
+      {
+        id: 'wdw_mono_ttc',
+        name: 'Transportation & Ticket Center (TTC)',
+        lat: 28.4054,
+        lon: -81.5792,
+        elev: 32,
+      },
+      {
+        id: 'wdw_mono_poly',
+        name: "Disney's Polynesian Village Resort",
+        lat: 28.4055,
+        lon: -81.5852,
+        elev: 32,
+      },
+      {
+        id: 'wdw_mono_gf',
+        name: "Disney's Grand Floridian Resort & Spa",
+        lat: 28.4112,
+        lon: -81.5878,
+        elev: 32,
+      },
+    ],
+    waypoints: WDW_MONORAIL_RESORT_LOOP,
+  },
+  wdw_monorail_epcot_beam: {
+    id: 'wdw_monorail_epcot_beam',
+    cityId: 'wdw_monorail',
+    lineName: 'WDW EPCOT Monorail Beam (Blue / Green)',
+    operator: 'WDW Monorail',
+    vehicleMode: 'monorail',
+    liveryColor: '#0ea5e9',
+    accentColor: '#e0f2fe',
+    carsPerTrain: 6,
+    capacityPerCar: 60,
+    isElevated: true,
+    elevOffsetMeters: 7.5,
+    stations: [
+      {
+        id: 'wdw_epcot_mono_ttc',
+        name: 'Transportation & Ticket Center (TTC)',
+        lat: 28.4054,
+        lon: -81.5792,
+        elev: 32,
+      },
+      {
+        id: 'wdw_epcot_mono_station',
+        name: 'EPCOT Monorail Station (Spaceship Earth)',
+        lat: 28.3765,
+        lon: -81.5494,
+        elev: 32,
+      },
+    ],
+    waypoints: [
+      ...WDW_MONORAIL_EPCOT_BEAM,
+      { lat: 28.3778, lon: -81.5515, elev: 32 },
+      { lat: 28.3832, lon: -81.5578, elev: 33 },
+      { lat: 28.391, lon: -81.5662, elev: 32 },
+      { lat: 28.3992, lon: -81.5744, elev: 32 },
+      { lat: 28.4054, lon: -81.5792, elev: 32 },
+    ],
+  },
 };
 
 // Normalize routes so both .name and .lineName are always populated
@@ -3412,6 +3507,7 @@ export const METRO_NETWORKS_BY_CITY = Object.freeze({
     'wmata_yellow',
   ],
   northeast_corridor: ['nec_acela_express', 'nec_regional_rail'],
+  wdw_monorail: ['wdw_monorail_resort_loop', 'wdw_monorail_epcot_beam'],
   phoenix: ['phoenix_valley_metro'],
   chicago: [
     'chicago_cta_loop',

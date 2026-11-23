@@ -306,13 +306,17 @@ export function createRailDrawer({
       const route = await railwayEngine?.spawnRailRoute(fromQuery, toQuery, {
         corridor: corridorProfile,
         cabRide: isCabRide,
+        cameraMode: selectedCamMode,
         speedMph,
         useOverpass: true,
       });
 
       if (route && statusEl) {
         const km = (route.corridor.totalDistanceMeters / 1000).toFixed(1);
-        const carsTotal = (route.carsCount || 4) + 1;
+        const carsTotal =
+          route.corridor?.activeProfile?.vehicleMode === 'monorail'
+            ? 6
+            : (route.carsCount || 4) + 1;
         statusEl.textContent = `En route: ${km} km @ ${speedMph} mph | ${carsTotal}-car consist (ETA: ${route.durationSec}s)`;
         startTelemetryPolling();
       }
@@ -415,6 +419,24 @@ export function createRailDrawer({
     open,
     close,
     isOpen: () => !drawer.classList.contains('hidden'),
+    selectCorridor: (corridorId, profileId = null) => {
+      const corridor = RAIL_CORRIDORS[corridorId];
+      if (!corridor) return;
+      if (corridorSelect) corridorSelect.value = corridorId;
+      if (trackSelect) {
+        trackSelect.innerHTML = Object.entries(corridor.trackProfiles)
+          .map(([k, v]) => `<option value="${k}">${v.name}</option>`)
+          .join('');
+        trackSelect.value =
+          profileId && corridor.trackProfiles[profileId]
+            ? profileId
+            : corridor.defaultCorridor;
+      }
+      if (corridor.defaultSpeedMph && speedSlider && speedLabel) {
+        speedSlider.value = corridor.defaultSpeedMph;
+        speedLabel.textContent = `${corridor.defaultSpeedMph} mph`;
+      }
+    },
     destroy: () => {
       unsubscribeSimState?.();
       if (telemInterval) {
