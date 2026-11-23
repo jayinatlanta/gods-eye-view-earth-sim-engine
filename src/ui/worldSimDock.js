@@ -15,7 +15,7 @@
  */
 
 import { CITY_POIS } from '../cityPois.js';
-import { LIVING_CITIES } from '../citylife/cityWaypoints.js';
+import { LIVING_CITIES } from '../citylife/livingCitiesCatalog.js';
 import { EXEMPLAR_LOCALES } from '../layers/citylife/localeClassifier.js';
 import { msg, t } from '../i18n/index.js';
 
