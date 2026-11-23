@@ -129,3 +129,124 @@ test('sightseeingDiscoveryProxy handles /api/discovery/sightseeing', async () =>
   assert.equal(parsed.billboards.length, 1);
   assert.equal(parsed.billboards[0].title, 'Bora Bora');
 });
+
+test('fetchSightseeingFromWikipedia supports exact title lookup with redirects and 640px thumb', async () => {
+  const seenUrls = [];
+  const res = await fetchSightseeingFromWikipedia({
+    title: 'Spaceship_Earth_(Epcot)',
+    fetchImpl: async (url) => {
+      seenUrls.push(String(url));
+      return {
+        ok: true,
+        async json() {
+          return {
+            query: {
+              pages: {
+                101: {
+                  pageid: 101,
+                  title: 'Spaceship Earth (Epcot)',
+                  extract: 'Iconic geodesic sphere attraction at EPCOT.',
+                  thumbnail: {
+                    source:
+                      'https://upload.wikimedia.org/wikipedia/commons/thumb/spaceship.jpg/640px-spaceship.jpg',
+                  },
+                },
+              },
+            },
+          };
+        },
+      };
+    },
+  });
+
+  assert.equal(seenUrls.length, 1);
+  assert.match(seenUrls[0], /action=query&titles=Spaceship_Earth_\(Epcot\)/);
+  assert.match(seenUrls[0], /redirects=1/);
+  assert.match(seenUrls[0], /pithumbsize=640/);
+  assert.equal(res.count, 1);
+  assert.equal(res.title, 'Spaceship_Earth_(Epcot)');
+  assert.equal(res.billboards[0].title, 'Spaceship Earth (Epcot)');
+});
+
+test('sightseeingDiscoveryProxy forwards ?title= parameter and falls back to ?query= when needed', async () => {
+  const seenUrls = [];
+  const middlewares = [];
+  const server = {
+    middlewares: {
+      use(path, handler) {
+        middlewares.push({ path, handler });
+      },
+    },
+  };
+  const plugin = sightseeingDiscoveryProxy({
+    fetchImpl: async (url) => {
+      const s = String(url);
+      seenUrls.push(s);
+      if (s.includes('titles=')) {
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return { query: { pages: {} } };
+          },
+        };
+      }
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            query: {
+              pages: {
+                202: {
+                  pageid: 202,
+                  title: 'Cinderella Castle',
+                  extract: 'Fairytale fortress centerpiece of Magic Kingdom.',
+                  thumbnail: {
+                    source:
+                      'https://upload.wikimedia.org/wikipedia/commons/thumb/castle.jpg/640px-castle.jpg',
+                  },
+                },
+              },
+            },
+          };
+        },
+      };
+    },
+  });
+  plugin.configureServer(server);
+  const route = middlewares.find((m) => m.path === '/api/discovery/sightseeing');
+  assert.ok(route);
+
+  let statusCode = 0;
+  let body = '';
+  const headers = {};
+  await route.handler(
+    {
+      method: 'GET',
+      url: '/?title=Nonexistent_Title_Fallback_Check&query=Cinderella%20Castle%20Magic%20Kingdom',
+    },
+    {
+      setHeader(k, v) {
+        headers[k] = v;
+      },
+      set statusCode(c) {
+        statusCode = c;
+      },
+      get statusCode() {
+        return statusCode;
+      },
+      end(payload) {
+        body = String(payload || '');
+      },
+    },
+  );
+
+  assert.equal(statusCode, 200);
+  assert.equal(seenUrls.length, 2);
+  assert.match(seenUrls[0], /titles=Nonexistent_Title_Fallback_Check/);
+  assert.match(seenUrls[1], /generator=search&gsrsearch=Cinderella%20Castle/);
+  const parsed = JSON.parse(body);
+  assert.equal(parsed.count, 1);
+  assert.equal(parsed.billboards[0].title, 'Cinderella Castle');
+});

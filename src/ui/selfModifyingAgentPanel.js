@@ -191,6 +191,15 @@ export function buildClientNeuroLayeredPreview({
   ].join('\n');
 }
 
+export function isTourForgeAvailable(capabilities) {
+  return Boolean(
+    capabilities &&
+    capabilities.liveForgeEnabled === true &&
+    Array.isArray(capabilities.availableClis) &&
+    capabilities.availableClis.filter(Boolean).length > 0,
+  );
+}
+
 export function createSelfModifyingAgentPanel(options = {}) {
   const {
     viewer = null,
@@ -204,15 +213,23 @@ export function createSelfModifyingAgentPanel(options = {}) {
     modelsFetchImpl = null,
     capabilitiesFetchImpl = null,
     autoLoadModels = null,
+    autoLoadCapabilities = null,
     clipboardWrite = null,
   } = options || {};
   const hasCustomFetchWithoutModels =
     Object.prototype.hasOwnProperty.call(options || {}, 'fetchImpl') &&
     !modelsFetchImpl;
+  const hasCustomFetchWithoutCaps =
+    Object.prototype.hasOwnProperty.call(options || {}, 'fetchImpl') &&
+    !capabilitiesFetchImpl;
   const shouldAutoLoadModels =
     typeof autoLoadModels === 'boolean'
       ? autoLoadModels
       : !hasCustomFetchWithoutModels;
+  const shouldAutoLoadCapabilities =
+    typeof autoLoadCapabilities === 'boolean'
+      ? autoLoadCapabilities
+      : !hasCustomFetchWithoutCaps || Boolean(capabilitiesFetchImpl);
   const host =
     container || (typeof document !== 'undefined' ? document.body : null);
   let isOpen = false;
@@ -227,6 +244,7 @@ export function createSelfModifyingAgentPanel(options = {}) {
   let capabilitiesData = null;
   let capabilitiesLoadedOnce = false;
   let capabilitiesPromise = null;
+  const capabilitiesListeners = new Set();
   const recentConversation = [];
 
   function ensureStyles() {
@@ -808,6 +826,17 @@ export function createSelfModifyingAgentPanel(options = {}) {
     syncModePresentation();
   }
 
+  function notifyCapabilitiesListeners() {
+    const snapshot = capabilitiesData ? { ...capabilitiesData } : null;
+    for (const cb of capabilitiesListeners) {
+      try {
+        cb(snapshot);
+      } catch {
+        /* ignore listener errors */
+      }
+    }
+  }
+
   async function refreshCapabilities({ force = false } = {}) {
     if (!capabilitiesEndpoint) return null;
     if (capabilitiesPromise && !force) return capabilitiesPromise;
@@ -822,10 +851,17 @@ export function createSelfModifyingAgentPanel(options = {}) {
       try {
         const res = await fn(capabilitiesEndpoint, { method: 'GET' });
         const data = await res?.json?.();
-        if (data && data.ok) {
+        if (
+          data &&
+          data.ok &&
+          ('liveForgeEnabled' in data ||
+            'availableClis' in data ||
+            'clis' in data)
+        ) {
           capabilitiesLoadedOnce = true;
           capabilitiesData = data;
           applyCapabilitiesToUI();
+          notifyCapabilitiesListeners();
         }
         return data || null;
       } catch {
@@ -836,6 +872,140 @@ export function createSelfModifyingAgentPanel(options = {}) {
     })();
 
     return capabilitiesPromise;
+  }
+
+  function resolveForgeCliProviderId() {
+    const allowedCliIds = ['agy', 'claude', 'codex', 'gemini'];
+    const available = Array.isArray(capabilitiesData?.availableClis)
+      ? capabilitiesData.availableClis.filter((id) =>
+          allowedCliIds.includes(id),
+        )
+      : [];
+    const selected = String(
+      panelEl?.querySelector?.('.gev-forge-provider-select')?.value ||
+        readSavedProviderSelection() ||
+        DEFAULT_AGENT_PROVIDER,
+    )
+      .trim()
+      .toLowerCase();
+    if (allowedCliIds.includes(selected)) {
+      if (available.length === 0 || available.includes(selected)) {
+        return selected;
+      }
+    }
+    return available[0] || null;
+  }
+
+  async function runTourBuildForge(
+    tourBuildPayload,
+    { fetchImpl: overrideFetch = null } = {},
+  ) {
+    if (!isTourForgeAvailable(capabilitiesData)) {
+      return {
+        ok: false,
+        code: 'forge-disabled',
+        error:
+          'Dev Forge tour building requires GEV_ENABLE_LIVE_FORGE=1 and an installed CLI (agy, claude, codex, or gemini).',
+      };
+    }
+    if (isRunning) {
+      return {
+        ok: false,
+        code: 'forge-busy',
+        error: 'A Dev Forge operation is already in progress.',
+      };
+    }
+    const providerId = resolveForgeCliProviderId();
+    if (!providerId) {
+      return {
+        ok: false,
+        code: 'no-cli',
+        error: 'No code-capable CLI detected for Dev Forge.',
+      };
+    }
+    const fn =
+      overrideFetch ||
+      fetchImpl ||
+      (typeof fetch !== 'undefined' ? fetch : null);
+    if (!fn) {
+      return {
+        ok: false,
+        code: 'no-fetch',
+        error: 'Fetch API unavailable in this environment.',
+      };
+    }
+
+    const placeName = String(
+      tourBuildPayload?.placeName || tourBuildPayload?.name || 'Local Place',
+    ).trim();
+    const model = String(
+      panelEl?.querySelector?.('.gev-forge-model-select')?.value ||
+        readSavedModelSelection() ||
+        DEFAULT_AGENT_MODEL,
+    ).trim();
+    const autoCommit = Boolean(
+      panelEl?.querySelector?.('.gev-forge-autocommit')?.checked ?? true,
+    );
+    const outputEl = panelEl?.querySelector?.('.gev-agent-forge-output');
+    const submitBtn = panelEl?.querySelector?.('.gev-agent-forge-submit');
+
+    isRunning = true;
+    launcherBtn?.classList?.add?.('running');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = '⚙️ Forging Tour...';
+    }
+    if (outputEl) {
+      outputEl.classList?.remove?.('answer-mode');
+      outputEl.textContent = `🛠️ Tour ANYWHERE: Forging "${placeName}" Tour v2 via ${providerId} (${getSelectedModelDisplay(model)})...`;
+    }
+
+    try {
+      const res = await fn(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: `Build a Tour v2 landmark tour for ${placeName}`,
+          mode: 'forge',
+          providerId,
+          model,
+          autoCommit,
+          appName,
+          tourBuild: tourBuildPayload,
+        }),
+      });
+      const data = await res?.json?.();
+      const normalizedResult =
+        data && typeof data === 'object'
+          ? data
+          : { ok: false, error: `Unexpected server status (${res?.status})` };
+      if (!res?.ok && normalizedResult.ok !== false) {
+        normalizedResult.ok = false;
+      }
+      lastResult = normalizedResult;
+      if (outputEl) {
+        outputEl.textContent = normalizedResult.ok
+          ? `✅ Tour ANYWHERE Complete (${placeName}):\n${normalizedResult.output || 'Built and verified.'}`
+          : `⚠️ Tour Forge Notice (${placeName}):\n${normalizedResult.error || normalizedResult.output || 'Failed.'}`;
+      }
+      return normalizedResult;
+    } catch (err) {
+      const failResult = {
+        ok: false,
+        error: err?.message || 'Tour Forge request failed.',
+      };
+      if (outputEl) {
+        outputEl.textContent = `❌ Tour Forge Error: ${failResult.error}`;
+      }
+      return failResult;
+    } finally {
+      isRunning = false;
+      launcherBtn?.classList?.remove?.('running');
+      if (submitBtn) {
+        submitBtn.disabled = false;
+      }
+      syncModePresentation();
+    }
   }
 
   function formatInheritLabel(activeDefault = activeCliDefaultModel) {
@@ -1542,6 +1712,7 @@ export function createSelfModifyingAgentPanel(options = {}) {
       clearTimeout(copyFeedbackTimer);
       copyFeedbackTimer = null;
     }
+    capabilitiesListeners.clear();
     close();
     getGlobalDrawerCoordinator().unregisterOverlayGroup('agent-forge');
     launcherBtn?.remove();
@@ -1549,6 +1720,9 @@ export function createSelfModifyingAgentPanel(options = {}) {
   }
 
   buildDOM();
+  if (shouldAutoLoadCapabilities) {
+    void refreshCapabilities();
+  }
 
   return {
     open,
@@ -1560,6 +1734,14 @@ export function createSelfModifyingAgentPanel(options = {}) {
     copyOutput,
     refreshModels,
     refreshCapabilities,
+    runTourBuildForge,
+    resolveForgeCliProviderId,
+    canBuildTourWithForge: () => isTourForgeAvailable(capabilitiesData),
+    onCapabilitiesChange: (cb) => {
+      if (typeof cb !== 'function') return () => {};
+      capabilitiesListeners.add(cb);
+      return () => capabilitiesListeners.delete(cb);
+    },
     isOpen: () => isOpen,
     isRunning: () => isRunning,
     getCapabilities: () => (capabilitiesData ? { ...capabilitiesData } : null),

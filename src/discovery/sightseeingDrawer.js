@@ -23,23 +23,38 @@ export function createSightseeingDrawer({
   overlay.setAttribute('role', 'dialog');
   overlay.setAttribute('aria-label', 'Sightseeing Landmark Details');
 
+  const YOUTUBE_VIDEO_ID_RE = /^[A-Za-z0-9_-]{11}$/;
+
   overlay.innerHTML = `
     <div class="gev-sightseeing-backdrop"></div>
     <div class="gev-sightseeing-card">
       <div class="gev-sightseeing-header">
         <div class="gev-sightseeing-badge">
           <span class="gev-sightseeing-badge-dot"></span>
-          <span>DISCOVERED SIGHTSEEING</span>
+          <span class="gev-sightseeing-badge-text">DISCOVERED SIGHTSEEING</span>
         </div>
         <button class="gev-sightseeing-close" aria-label="Close dialog" title="Close (Esc)">✕</button>
       </div>
       <div class="gev-sightseeing-image-wrap">
         <img class="gev-sightseeing-img" src="" alt="" loading="lazy" />
+        <div class="gev-sightseeing-fallback hidden">
+          <div class="gev-sightseeing-fallback-icon">📍</div>
+          <div class="gev-sightseeing-fallback-title"></div>
+          <div class="gev-sightseeing-fallback-sub"></div>
+        </div>
       </div>
       <div class="gev-sightseeing-body">
         <h2 class="gev-sightseeing-title"></h2>
         <div class="gev-sightseeing-coords"></div>
+        <div class="gev-sightseeing-meta-pills hidden"></div>
         <p class="gev-sightseeing-extract"></p>
+        <p class="gev-sightseeing-companion hidden"></p>
+        <div class="gev-sightseeing-media hidden">
+          <div class="gev-sightseeing-yt-embed-wrap hidden"></div>
+          <div class="gev-sightseeing-yt-actions">
+            <a class="gev-sightseeing-yt-search" href="#" target="_blank" rel="noopener noreferrer">🎬 Watch 4K POV on YouTube ↗</a>
+          </div>
+        </div>
         <div class="gev-sightseeing-footer">
           <span class="gev-sightseeing-source">Source: Wikimedia Commons / Wikipedia</span>
           <a class="gev-sightseeing-link" href="#" target="_blank" rel="noopener noreferrer">View Full Image ↗</a>
@@ -141,6 +156,120 @@ export function createSightseeingDrawer({
         object-fit: cover;
         display: block;
       }
+      .gev-sightseeing-img.hidden {
+        display: none;
+      }
+      .gev-sightseeing-fallback {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 16px;
+        box-sizing: border-box;
+        text-align: center;
+        background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 55%, #0c4a6e 100%);
+        color: #f8fafc;
+      }
+      .gev-sightseeing-fallback.hidden {
+        display: none;
+      }
+      .gev-sightseeing-fallback-icon {
+        font-size: 36px;
+        line-height: 1;
+      }
+      .gev-sightseeing-fallback-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #f1f5f9;
+      }
+      .gev-sightseeing-fallback-sub {
+        font-size: 12px;
+        color: #93c5fd;
+      }
+      .gev-sightseeing-card {
+        max-height: 88vh;
+        overflow-y: auto;
+      }
+      .gev-sightseeing-meta-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 10px;
+      }
+      .gev-sightseeing-meta-pills.hidden,
+      .gev-sightseeing-companion.hidden,
+      .gev-sightseeing-media.hidden,
+      .gev-sightseeing-yt-embed-wrap.hidden {
+        display: none;
+      }
+      .gev-sightseeing-pill {
+        font-size: 11px;
+        padding: 3px 8px;
+        border-radius: 999px;
+        background: rgba(56, 189, 248, 0.14);
+        border: 1px solid rgba(56, 189, 248, 0.35);
+        color: #bae6fd;
+      }
+      .gev-sightseeing-pill-snack {
+        background: rgba(244, 114, 182, 0.14);
+        border-color: rgba(244, 114, 182, 0.35);
+        color: #fbcfe8;
+      }
+      .gev-sightseeing-companion {
+        margin: 0 0 12px;
+        padding: 8px 10px;
+        border-left: 3px solid #ec4899;
+        background: rgba(236, 72, 153, 0.08);
+        border-radius: 4px;
+        font-size: 13px;
+        color: #f5d0fe;
+        line-height: 1.45;
+      }
+      .gev-sightseeing-media {
+        margin: 12px 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .gev-sightseeing-yt-embed-wrap {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #020617;
+        border: 1px solid rgba(148, 163, 184, 0.25);
+      }
+      .gev-sightseeing-yt-iframe {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        display: block;
+      }
+      .gev-sightseeing-yt-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+      }
+      .gev-sightseeing-yt-search {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 12px;
+        border-radius: 6px;
+        background: rgba(239, 68, 68, 0.18);
+        border: 1px solid rgba(239, 68, 68, 0.45);
+        color: #fecaca;
+        font-size: 12px;
+        font-weight: 600;
+        text-decoration: none;
+      }
+      .gev-sightseeing-yt-search:hover {
+        background: rgba(239, 68, 68, 0.3);
+      }
       .gev-sightseeing-body {
         padding: 18px;
         display: flex;
@@ -191,38 +320,235 @@ export function createSightseeingDrawer({
 
   const backdrop = overlay.querySelector('.gev-sightseeing-backdrop');
   const closeBtn = overlay.querySelector('.gev-sightseeing-close');
+  const badgeTextEl = overlay.querySelector('.gev-sightseeing-badge-text');
   const imgEl = overlay.querySelector('.gev-sightseeing-img');
+  const fallbackEl = overlay.querySelector('.gev-sightseeing-fallback');
+  const fallbackIconEl = overlay.querySelector(
+    '.gev-sightseeing-fallback-icon',
+  );
+  const fallbackTitleEl = overlay.querySelector(
+    '.gev-sightseeing-fallback-title',
+  );
+  const fallbackSubEl = overlay.querySelector('.gev-sightseeing-fallback-sub');
   const titleEl = overlay.querySelector('.gev-sightseeing-title');
   const coordsEl = overlay.querySelector('.gev-sightseeing-coords');
+  const pillsEl = overlay.querySelector('.gev-sightseeing-meta-pills');
   const extractEl = overlay.querySelector('.gev-sightseeing-extract');
+  const companionEl = overlay.querySelector('.gev-sightseeing-companion');
+  const mediaEl = overlay.querySelector('.gev-sightseeing-media');
+  const ytEmbedWrapEl = overlay.querySelector('.gev-sightseeing-yt-embed-wrap');
+  const ytSearchEl = overlay.querySelector('.gev-sightseeing-yt-search');
+  const sourceEl = overlay.querySelector('.gev-sightseeing-source');
   const linkEl = overlay.querySelector('.gev-sightseeing-link');
 
   let active = false;
+  let activeOnClose = null;
+  let activeMediaSignature = null;
+
+  function teardownYouTubeIframes() {
+    if (!ytEmbedWrapEl) return;
+    const iframes = ytEmbedWrapEl.querySelectorAll('iframe');
+    for (const frame of iframes) {
+      try {
+        frame.src = 'about:blank';
+        frame.removeAttribute?.('src');
+      } catch {}
+      frame.remove();
+    }
+    ytEmbedWrapEl.classList.add('hidden');
+    activeMediaSignature = null;
+  }
+
+  function showImageFallback() {
+    imgEl.classList.add('hidden');
+    fallbackEl?.classList.remove('hidden');
+  }
+
+  imgEl.addEventListener?.('error', () => {
+    if (active) {
+      showImageFallback();
+    }
+  });
 
   function hide() {
+    const wasActive = active;
     active = false;
+    teardownYouTubeIframes();
     overlay.classList.add('hidden');
     overlay.setAttribute('aria-hidden', 'true');
     imgEl.src = '';
+    const cb = activeOnClose;
+    activeOnClose = null;
+    if (wasActive && typeof cb === 'function') {
+      try {
+        cb();
+      } catch {}
+    }
+  }
+
+  function appendMetaPill(text, extraClass = '') {
+    if (!pillsEl || !text) return;
+    const pill = document.createElement('span');
+    pill.className = extraClass
+      ? `gev-sightseeing-pill ${extraClass}`
+      : 'gev-sightseeing-pill';
+    pill.textContent = text;
+    pillsEl.appendChild(pill);
   }
 
   function show(billboard) {
     if (!billboard) return;
     active = true;
-    titleEl.textContent = billboard.title || 'Discovered Landmark';
+    if (typeof billboard.onClose === 'function') {
+      activeOnClose = billboard.onClose;
+    }
+
+    const displayTitle =
+      billboard.title || billboard.name || 'Discovered Landmark';
+    if (badgeTextEl) {
+      if (billboard.tourScope === 'venue') {
+        badgeTextEl.textContent = '🎢 PARK DAY EXPERIENCE';
+      } else if (billboard.isTourStop) {
+        badgeTextEl.textContent = '🛴 TOUR STOP EXPERIENCE';
+      } else {
+        badgeTextEl.textContent = 'DISCOVERED SIGHTSEEING';
+      }
+    }
+
+    titleEl.textContent = displayTitle;
     const latStr =
       typeof billboard.lat === 'number' ? billboard.lat.toFixed(4) : '';
     const lonStr =
       typeof billboard.lon === 'number' ? billboard.lon.toFixed(4) : '';
     coordsEl.textContent = latStr && lonStr ? `${latStr}° N, ${lonStr}° W` : '';
+
+    if (pillsEl) {
+      pillsEl.innerHTML = '';
+      if (billboard.land) appendMetaPill(`🏰 ${billboard.land}`);
+      if (billboard.category && !billboard.land) {
+        appendMetaPill(`📍 ${billboard.category}`);
+      }
+      const waitVal = Number.isFinite(billboard.estimatedWaitMin)
+        ? billboard.estimatedWaitMin
+        : Number.isFinite(billboard.waitTimeMin)
+          ? billboard.waitTimeMin
+          : null;
+      if (waitVal !== null) {
+        appendMetaPill(waitVal === 0 ? '⏱ Walk-On' : `⏱ ~${waitVal} min wait`);
+      }
+      const zoneVal = billboard.showcaseZone || billboard.dayChapter || null;
+      if (zoneVal === 'world_showcase') {
+        appendMetaPill('🌐 World Showcase');
+      } else if (zoneVal === 'front_of_park') {
+        appendMetaPill('🚀 Front of Park');
+      }
+      const snackVal = billboard.snackNote || billboard.snackTag || null;
+      if (snackVal) {
+        appendMetaPill(`🍿 ${snackVal}`, 'gev-sightseeing-pill-snack');
+      }
+      pillsEl.classList.toggle('hidden', pillsEl.childElementCount === 0);
+    }
+
     extractEl.textContent =
+      billboard.extract ||
       billboard.summary ||
+      billboard.lore ||
       'Authentic regional sightseeing photo discovered via Wikimedia Commons.';
 
-    const imgSrc = billboard.original_url || billboard.image_url;
-    imgEl.src = imgSrc;
-    imgEl.alt = billboard.title || 'Sightseeing';
-    linkEl.href = imgSrc || '#';
+    if (companionEl) {
+      if (billboard.companionNote) {
+        const prefix = billboard.companionName
+          ? `💬 ${billboard.companionName}: `
+          : '💬 ';
+        companionEl.textContent = `${prefix}"${billboard.companionNote}"`;
+        companionEl.classList.remove('hidden');
+      } else {
+        companionEl.textContent = '';
+        companionEl.classList.add('hidden');
+      }
+    }
+
+    if (fallbackIconEl) fallbackIconEl.textContent = billboard.icon || '📍';
+    if (fallbackTitleEl) fallbackTitleEl.textContent = displayTitle;
+    if (fallbackSubEl) {
+      fallbackSubEl.textContent =
+        billboard.land || billboard.cityName || billboard.category || '';
+    }
+
+    const imgSrc =
+      billboard.thumbnailUrl ||
+      billboard.originalUrl ||
+      billboard.original_url ||
+      billboard.image_url ||
+      '';
+    if (imgSrc) {
+      fallbackEl?.classList.add('hidden');
+      imgEl.classList.remove('hidden');
+      imgEl.src = imgSrc;
+      imgEl.alt = displayTitle;
+    } else {
+      imgEl.src = '';
+      showImageFallback();
+    }
+
+    const cleanYtId = String(billboard.youtubeVideoId || '').trim();
+    const hasEmbedId = YOUTUBE_VIDEO_ID_RE.test(cleanYtId);
+    const searchQuery =
+      String(billboard.youtubeSearchQuery || '').trim() ||
+      (billboard.isTourStop ? `${displayTitle} 4K POV tour` : '');
+
+    if (mediaEl) {
+      if (hasEmbedId || searchQuery) {
+        mediaEl.classList.remove('hidden');
+        if (hasEmbedId && ytEmbedWrapEl) {
+          const nextSig = `${billboard.stopId || displayTitle}:${cleanYtId}`;
+          if (activeMediaSignature !== nextSig) {
+            teardownYouTubeIframes();
+            const iframe = document.createElement('iframe');
+            iframe.className = 'gev-sightseeing-yt-iframe';
+            iframe.src = `https://www.youtube-nocookie.com/embed/${cleanYtId}?rel=0&modestbranding=1`;
+            iframe.title = `${displayTitle} — POV Video`;
+            iframe.allow =
+              'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+            iframe.allowFullscreen = true;
+            iframe.loading = 'lazy';
+            iframe.referrerPolicy = 'strict-origin-when-cross-origin';
+            ytEmbedWrapEl.appendChild(iframe);
+            ytEmbedWrapEl.classList.remove('hidden');
+            activeMediaSignature = nextSig;
+          }
+        } else {
+          teardownYouTubeIframes();
+        }
+        if (ytSearchEl) {
+          const ytHref = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery || displayTitle)}`;
+          ytSearchEl.href = ytHref;
+          ytSearchEl.classList.toggle(
+            'hidden',
+            !(searchQuery || billboard.isTourStop),
+          );
+        }
+      } else {
+        teardownYouTubeIframes();
+        mediaEl.classList.add('hidden');
+      }
+    }
+
+    const wikiHref =
+      billboard.url ||
+      billboard.originalUrl ||
+      billboard.original_url ||
+      billboard.image_url ||
+      '#';
+    linkEl.href = wikiHref;
+    linkEl.textContent = billboard.url
+      ? 'Read on Wikipedia ↗'
+      : 'View Full Image ↗';
+    if (sourceEl) {
+      sourceEl.textContent = billboard.cityName
+        ? `${billboard.cityName} · Wikimedia Commons / Wikipedia`
+        : 'Source: Wikimedia Commons / Wikipedia';
+    }
 
     overlay.classList.remove('hidden');
     overlay.setAttribute('aria-hidden', 'false');
@@ -230,13 +556,15 @@ export function createSightseeingDrawer({
 
   function onKeyDown(e) {
     if (active && e.key === 'Escape') {
+      e.preventDefault?.();
+      e.stopPropagation?.();
       hide();
     }
   }
 
   backdrop.addEventListener('click', hide);
   closeBtn.addEventListener('click', hide);
-  document.addEventListener('keydown', onKeyDown);
+  document.addEventListener('keydown', onKeyDown, true);
 
   return {
     show,
@@ -244,7 +572,7 @@ export function createSightseeingDrawer({
     isVisible: () => active,
     destroy: () => {
       hide();
-      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('keydown', onKeyDown, true);
       overlay.remove();
     },
   };

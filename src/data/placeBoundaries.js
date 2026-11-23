@@ -208,6 +208,7 @@ function loadState(st) {
         loadBundledJson(packUrl(placeFiles.STATE_URLS, st)),
       ]);
       const byKey = new Map();
+      const allEntries = [];
       for (const feature of pack.features) {
         const entry = {
           kind: 'place',
@@ -216,6 +217,7 @@ function loadState(st) {
           state: pack.state,
           st: pack.st,
         };
+        allEntries.push(entry);
         for (const key of nameVariants(feature.name))
           addKey(byKey, key, entry, 0, null);
         for (const alt of feature.alt || [])
@@ -224,6 +226,7 @@ function loadState(st) {
         for (const key of nameVariants(feature.full))
           addKey(byKey, key, entry, 2, null);
       }
+      byKey.allEntries = allEntries;
       return byKey;
     }),
   );
@@ -250,6 +253,7 @@ function loadTile(key) {
       ]);
       const precision = index.meta.precision;
       const byKey = new Map();
+      const allEntries = [];
       for (const feature of tile.features) {
         const [id, name, country, type, bbox, aliases, source, rings, label] =
           feature;
@@ -261,6 +265,7 @@ function loadTile(key) {
               poly.map((ring) => decodePolyline(ring, precision)),
             ),
         };
+        allEntries.push(entry);
         for (const key of nameVariants(name)) {
           addKey(byKey, key, entry, 0, null);
           addKey(byKey, key.replace(ARTICLE, ''), entry, 1, null);
@@ -271,6 +276,7 @@ function loadTile(key) {
             addKey(byKey, key.replace(ARTICLE, ''), entry, 2, null);
           }
       }
+      byKey.allEntries = allEntries;
       return byKey;
     }),
   );
@@ -638,4 +644,73 @@ async function neighborhoodAt(names, lat, lon) {
   );
   if (!found.length) return null;
   return neighborhoodResult(rank(bestTier(found), point)[0], found.length);
+}
+
+/**
+ * Reverse point-in-polygon lookup across bundled US Census places without a query string.
+ * Prefers incorporated places over CDPs, then smallest polygon area.
+ * @param {number} lat
+ * @param {number} lon
+ * @returns {Promise<object|null>}
+ */
+export async function findPlaceAreaContainingPoint(lat, lon) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+  const pool = await statesAround(lat, lon, 0.5);
+  if (!pool.length) return null;
+  const maps = await Promise.all(pool.map((s) => loadState(s.st)));
+  const matches = [];
+  for (const byKey of maps) {
+    for (const entry of byKey.allEntries || []) {
+      const geom = geometryOf(entry);
+      if (
+        boxDistanceKm(geom.bbox, lat, lon) === 0 &&
+        polygonsContain(geom.polygons, lat, lon)
+      ) {
+        matches.push({ entry, geom });
+      }
+    }
+  }
+  if (!matches.length) return null;
+  matches.sort((a, b) => {
+    const aCdp = Boolean(a.entry.feature.cdp);
+    const bCdp = Boolean(b.entry.feature.cdp);
+    if (aCdp !== bCdp) return aCdp ? 1 : -1;
+    return a.geom.areaKm2 - b.geom.areaKm2;
+  });
+  return placeResult({ entry: matches[0].entry, alias: null }, matches.length);
+}
+
+/**
+ * Reverse point-in-polygon lookup across bundled Who's On First neighborhoods without a query string.
+ * @param {number} lat
+ * @param {number} lon
+ * @returns {Promise<object|null>}
+ */
+export async function findNeighborhoodAreaContainingPoint(lat, lon) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+  const index = await loadNeighborhoodIndex();
+  const keys = tileKeysAround(index, lat, lon, 0.5);
+  if (!keys.length) return null;
+  const maps = await Promise.all(keys.map(loadTile));
+  const matches = [];
+  for (const byKey of maps) {
+    for (const entry of byKey.allEntries || []) {
+      if (
+        Array.isArray(entry.feature?.bbox) &&
+        boxDistanceKm(entry.feature.bbox, lat, lon) > 0
+      ) {
+        continue;
+      }
+      const geom = geometryOf(entry);
+      if (polygonsContain(geom.polygons, lat, lon)) {
+        matches.push({ entry, geom });
+      }
+    }
+  }
+  if (!matches.length) return null;
+  matches.sort((a, b) => a.geom.areaKm2 - b.geom.areaKm2);
+  return neighborhoodResult(
+    { entry: matches[0].entry, tier: 0 },
+    matches.length,
+  );
 }

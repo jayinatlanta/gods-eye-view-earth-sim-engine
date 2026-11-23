@@ -35,6 +35,11 @@ import {
   exportTourAsContractJson,
   onCustomToursChange,
   inferContinentFromCoords,
+  getAllTourCatalogEntries,
+  getRuntimeBuiltTours,
+  isConcreteCatalogPlaceName,
+  getCachedCatalogPlaceAt,
+  resolveCatalogPlaceAt,
 } from '../layers/citylife/tourAndPlayEngine.js';
 import { pickActiveGroundPosition } from '../layers/citylife/surfaceHeight.js';
 import { EXEMPLAR_LOCALES } from '../layers/citylife/localeClassifier.js';
@@ -49,6 +54,11 @@ export function createWanderDrawer({
   wanderEngine = null,
   cityEngine = null,
   tourAndPlayEngine = null,
+  tourPoiCards = null,
+  parkAdventures = null,
+  parkFireworks = null,
+  agentForgePanel = null,
+  onRequestTourBuild = null,
   viewer = null,
   container = null,
 } = {}) {
@@ -58,10 +68,17 @@ export function createWanderDrawer({
   let launcherBtn = null;
   let drawerEl = null;
   let pointerLockBannerEl = null;
+  let tourResumePillEl = null;
+  let selectedTourMode = 'all';
   let unsubscribePointerLock = null;
   let unsubscribeLocality = null;
   let unsubscribeTourStatus = null;
   let unsubscribeCustomTours = null;
+  let unsubscribeAgentCaps = null;
+  let unsubscribeParkAdventures = null;
+  let unsubscribeParkFireworks = null;
+  let wanderCatalogLookupGen = 0;
+  let activeWanderCatalogPlace = null;
   let isWizardOpen = false;
   let wizardMode = 'stop'; // 'stop' | 'tour'
   let wizardPin = null; // { lat, lon, elev, heading, localityLabel, countryHint }
@@ -69,6 +86,18 @@ export function createWanderDrawer({
   let wizardPickHandler = null;
   let wizardFeedbackTimer = null;
   const dock = getGlobalDrawerCoordinator();
+
+  function getEffectiveAgentPanel() {
+    if (agentForgePanel) return agentForgePanel;
+    if (typeof window !== 'undefined' && window.__gevAgentForgePanel) {
+      return window.__gevAgentForgePanel;
+    }
+    return null;
+  }
+
+  function canBuildTourWithForge() {
+    return Boolean(getEffectiveAgentPanel()?.canBuildTourWithForge?.());
+  }
 
   function escapeHtml(raw) {
     return String(raw ?? '')
@@ -492,6 +521,234 @@ export function createWanderDrawer({
       .gev-pointer-lock-banner.visible {
         display: flex;
       }
+      .gev-tour-resume-pill {
+        position: fixed;
+        bottom: 88px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(15, 23, 42, 0.94);
+        border: 1px solid rgba(56, 189, 248, 0.55);
+        color: #f8fafc;
+        padding: 7px 12px;
+        border-radius: 999px;
+        font-family: 'Inter', -apple-system, sans-serif;
+        font-size: 12px;
+        display: none;
+        align-items: center;
+        gap: 8px;
+        z-index: 10015;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(8px);
+      }
+      .gev-tour-resume-pill.visible {
+        display: flex;
+      }
+      .gev-tour-resume-pill-label {
+        color: #cbd5e1;
+        font-weight: 600;
+        max-width: 240px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .gev-tour-resume-btn {
+        border: 1px solid rgba(56, 189, 248, 0.45);
+        background: rgba(14, 116, 144, 0.35);
+        color: #e0f2fe;
+        border-radius: 999px;
+        padding: 4px 10px;
+        font-size: 11px;
+        font-weight: 700;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .gev-tour-resume-btn:hover {
+        background: rgba(6, 182, 212, 0.45);
+      }
+      .gev-tour-resume-next-btn {
+        border-color: rgba(244, 114, 182, 0.55);
+        background: rgba(190, 24, 93, 0.35);
+        color: #fce7f3;
+      }
+      .gev-tour-mode-bar {
+        display: flex;
+        gap: 4px;
+        margin-top: 6px;
+        flex-wrap: wrap;
+      }
+      .gev-tour-mode-btn {
+        flex: 1 1 auto;
+        padding: 4px 7px;
+        border-radius: 6px;
+        border: 1px solid rgba(56, 189, 248, 0.3);
+        background: rgba(15, 23, 42, 0.72);
+        color: #cbd5e1;
+        font-size: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .gev-tour-mode-btn.active {
+        border-color: #f472b6;
+        background: rgba(236, 72, 153, 0.25);
+        color: #fdf2f8;
+      }
+
+      .gev-tour-passport-strip,
+      .gev-tour-npc-strip,
+      .gev-tour-hopper-bar {
+        display: none;
+        flex-direction: column;
+        gap: 5px;
+        background: rgba(9, 14, 24, 0.72);
+        border: 1px solid rgba(56, 189, 248, 0.25);
+        border-radius: 8px;
+        padding: 7px 8px;
+      }
+      .gev-tour-passport-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 10.5px;
+        font-weight: 700;
+        color: #fde047;
+      }
+      .gev-tour-passport-bar-wrap {
+        height: 5px;
+        border-radius: 999px;
+        background: rgba(30, 41, 59, 0.9);
+        overflow: hidden;
+      }
+      .gev-tour-passport-bar {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, #fbbf24, #34d399);
+        transition: width 0.2s ease;
+      }
+      .gev-tour-passport-stamps {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        font-size: 12px;
+      }
+      .gev-tour-secrets-details summary {
+        font-size: 10px;
+        color: #94a3b8;
+        cursor: pointer;
+        user-select: none;
+      }
+      .gev-tour-secrets-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin-top: 5px;
+        max-height: 112px;
+        overflow-y: auto;
+      }
+      .gev-tour-secret-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+        padding: 4px 6px;
+        border-radius: 5px;
+        background: rgba(15, 23, 42, 0.85);
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        font-size: 10px;
+        color: #e2e8f0;
+      }
+      .gev-tour-secret-row.collected {
+        border-color: rgba(16, 185, 129, 0.45);
+        color: #a7f3d0;
+      }
+      .gev-tour-secret-btn {
+        padding: 2px 6px;
+        border-radius: 4px;
+        border: 1px solid rgba(251, 191, 36, 0.55);
+        background: rgba(251, 191, 36, 0.16);
+        color: #fef3c7;
+        font-size: 9.5px;
+        font-weight: 700;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .gev-tour-npc-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 10.5px;
+        font-weight: 700;
+        color: #7dd3fc;
+      }
+      .gev-tour-npc-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+      .gev-tour-npc-btn {
+        padding: 4px 7px;
+        border-radius: 6px;
+        border: 1px solid rgba(56, 189, 248, 0.32);
+        background: rgba(15, 23, 42, 0.88);
+        color: #e0f2fe;
+        font-size: 10px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .gev-tour-npc-btn.near,
+      .gev-tour-npc-btn.active {
+        border-color: #fde047;
+        background: rgba(251, 191, 36, 0.22);
+        color: #fef9c3;
+      }
+      .gev-tour-npc-dialogue {
+        font-size: 10.5px;
+        line-height: 1.35;
+        color: #cbd5e1;
+        background: rgba(15, 23, 42, 0.78);
+        padding: 5px 7px;
+        border-radius: 6px;
+        border-left: 2px solid #38bdf8;
+      }
+      .gev-tour-hopper-header {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #c084fc;
+      }
+      .gev-tour-hopper-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+      }
+      .gev-tour-hopper-btn {
+        flex: 1 1 auto;
+        padding: 5px 8px;
+        border-radius: 6px;
+        border: 1px solid rgba(192, 132, 252, 0.48);
+        background: linear-gradient(135deg, rgba(147, 51, 234, 0.28), rgba(14, 165, 233, 0.22));
+        color: #f3e8ff;
+        font-size: 10px;
+        font-weight: 700;
+        cursor: pointer;
+        text-align: left;
+      }
+      .gev-tour-hopper-btn:hover {
+        border-color: #e879f9;
+        background: linear-gradient(135deg, rgba(168, 85, 247, 0.45), rgba(56, 189, 248, 0.35));
+      }
+      .gev-tour-fireworks-btn {
+        border-color: rgba(244, 114, 182, 0.55);
+        background: rgba(190, 24, 93, 0.22);
+        color: #fce7f3;
+      }
+      .gev-tour-fireworks-btn.active {
+        border-color: #fde047;
+        background: linear-gradient(135deg, rgba(236, 72, 153, 0.45), rgba(245, 158, 11, 0.35));
+        color: #fff;
+        box-shadow: 0 0 12px rgba(244, 114, 182, 0.45);
+      }
 
       .gev-tour-play-card {
         background: rgba(15, 23, 42, 0.88);
@@ -657,6 +914,7 @@ export function createWanderDrawer({
         color: #ddd6fe;
         line-height: 1.3;
       }
+      .gev-tour-forge-build-btn,
       .gev-tour-wizard-new-tour-btn {
         flex: 0 0 auto;
         padding: 5px 8px;
@@ -669,6 +927,7 @@ export function createWanderDrawer({
         cursor: pointer;
         white-space: nowrap;
       }
+      .gev-tour-forge-build-btn:hover,
       .gev-tour-wizard-new-tour-btn:hover {
         background: linear-gradient(135deg, rgba(168, 85, 247, 0.55), rgba(16, 185, 129, 0.45));
       }
@@ -1112,9 +1371,15 @@ export function createWanderDrawer({
     const continueBtn = cardEl.querySelector('.gev-tour-continue-btn');
 
     if (titleEl) {
+      const isVenueDay =
+        status.isTour && status.cityId
+          ? status.tourScope === 'venue'
+          : ctx.tourScope === 'venue';
       titleEl.textContent = isPlayMode
         ? `🏖️ LIVING WORLD PLAY (${ctx.label || 'Local Biome'})`
-        : `🛴 CITY SCOOTER TOUR (15 MPH · RANDOMIZED)`;
+        : isVenueDay
+          ? `🎢 THEME PARK DAY · WALK MIDWAY`
+          : `🛴 CITY SCOOTER TOUR (15 MPH · RANDOMIZED)`;
     }
 
     if (badgeEl) {
@@ -1132,18 +1397,21 @@ export function createWanderDrawer({
     }
 
     if (statusEl) {
+      const isWalkMidway = status.transitMode === 'walk_midway';
       if (
         status.state === TOUR_OR_PLAY_STATES.TOUR_TRANSIT &&
         status.currentLandmark
       ) {
-        statusEl.textContent = `🛴 Scootering (15 mph) to Stop #${status.landmarkIndex + 1}: ${status.currentLandmark.icon || '📍'} ${status.currentLandmark.name}`;
+        statusEl.textContent = isWalkMidway
+          ? `🚶 Walking midway to Stop #${status.landmarkIndex + 1}: ${status.currentLandmark.icon || '📍'} ${status.currentLandmark.name}`
+          : `🛴 Scootering (15 mph) to Stop #${status.landmarkIndex + 1}: ${status.currentLandmark.icon || '📍'} ${status.currentLandmark.name}`;
       } else if (
         status.state === TOUR_OR_PLAY_STATES.TOUR_DWELL &&
         status.currentLandmark
       ) {
         statusEl.textContent = `🏛️ ${status.currentLandmark.name} (${Math.ceil(status.dwellRemainingSec || 0)}s autonomous walk) — "${status.currentLandmark.lore}"`;
       } else if (status.state === TOUR_OR_PLAY_STATES.USER_TAKEOVER) {
-        statusEl.textContent = `🚶 Normal Walking Take-Over (1.2 m/s). Explore freely with WASD, then click Continue Tour when ready!`;
+        statusEl.textContent = `🚶 Normal Walking Take-Over (1.2 m/s). Explore freely with WASD, then Rejoin Stop or jump Next Stop!`;
       } else if (
         status.state === TOUR_OR_PLAY_STATES.PLAY_ACTIVE &&
         status.activePlayActivity
@@ -1153,6 +1421,73 @@ export function createWanderDrawer({
         statusEl.textContent = `Non-metro / tourist environment detected (${ctx.typologyName || ctx.label}). Pick an environment hike or leisure activity:`;
       } else {
         statusEl.textContent = `Randomized landmark order every run · 15 mph electric scooter transit · 20s autonomous walking dwell + lore bubble at each stop.`;
+      }
+    }
+
+    const modeBarEl = cardEl.querySelector('.gev-tour-mode-bar');
+    if (modeBarEl) {
+      const selCityVal = cardEl.querySelector('.gev-tour-city-select')?.value;
+      const allMetaMap = getAllTourCatalogEntries().metadataByCityId;
+      const targetMeta =
+        (selCityVal && selCityVal !== 'auto'
+          ? allMetaMap[selCityVal] || METRO_TOUR_METADATA[selCityVal]
+          : ctx?.metadata) ||
+        (status.cityId
+          ? allMetaMap[status.cityId] || METRO_TOUR_METADATA[status.cityId]
+          : null);
+      const supportedModes = Array.isArray(targetMeta?.supportedModes)
+        ? targetMeta.supportedModes
+        : ['all'];
+      const supportsMultiMode = supportedModes.length > 1;
+      modeBarEl.style.display =
+        !isPlayMode && supportsMultiMode ? 'flex' : 'none';
+      if (supportsMultiMode) {
+        const defaultLabels = {
+          all: '🌐 All 18',
+          front_of_park: '🚀 Front of Park (7)',
+          world_showcase: '🌍 11 Countries (11)',
+        };
+        const modeLabels = targetMeta?.modeLabels || defaultLabels;
+        const nextSig = `${targetMeta?.id || ''}:${supportedModes.join(',')}`;
+        if (modeBarEl.getAttribute('data-mode-sig') !== nextSig) {
+          modeBarEl.setAttribute('data-mode-sig', nextSig);
+          modeBarEl.innerHTML = supportedModes
+            .map(
+              (m) =>
+                `<button class="gev-tour-mode-btn" data-tour-mode="${escapeHtml(m)}" type="button">${escapeHtml(modeLabels[m] || m)}</button>`,
+            )
+            .join('');
+        }
+      }
+      const activeMode =
+        status.isTour && status.cityId === targetMeta?.id
+          ? status.tourMode || 'all'
+          : selectedTourMode;
+      modeBarEl.querySelectorAll('.gev-tour-mode-btn').forEach((btn) => {
+        btn.classList.toggle(
+          'active',
+          btn.getAttribute('data-tour-mode') === activeMode,
+        );
+      });
+    }
+
+    if (tourResumePillEl) {
+      const showResumePill = Boolean(
+        status.isTour && status.state === TOUR_OR_PLAY_STATES.USER_TAKEOVER,
+      );
+      tourResumePillEl.classList.toggle('visible', showResumePill);
+      if (showResumePill) {
+        const pillLabelEl = tourResumePillEl.querySelector(
+          '.gev-tour-resume-pill-label',
+        );
+        if (pillLabelEl) {
+          const stopTitle =
+            status.currentLandmark?.name || status.cityName || 'Current Stop';
+          const nearNpc = parkAdventures?.getNearestInteractableNpc?.();
+          pillLabelEl.textContent = nearNpc
+            ? `🚶 Free Roam near ${stopTitle} · [E] Chat ${nearNpc.name}`
+            : `🚶 Free Roam near ${stopTitle}`;
+        }
       }
     }
 
@@ -1218,9 +1553,181 @@ export function createWanderDrawer({
           : 'none';
     }
 
+    const fireworksBtn = cardEl.querySelector('.gev-tour-fireworks-btn');
+    if (fireworksBtn) {
+      const showFw = Boolean(status.isTour && status.tourScope === 'venue');
+      const fwActive = Boolean(parkFireworks?.isActive?.());
+      fireworksBtn.style.display = showFw ? 'inline-block' : 'none';
+      fireworksBtn.classList.toggle('active', fwActive);
+      fireworksBtn.textContent = fwActive ? '🎆 Fireworks ON' : '🎆 Fireworks';
+    }
+
+    const adventureState = parkAdventures?.getState?.() || null;
+    const passportStripEl = cardEl.querySelector('.gev-tour-passport-strip');
+    if (passportStripEl) {
+      const p = adventureState?.passport;
+      const showPassport = Boolean(status.isTour && p && p.total > 0);
+      passportStripEl.style.display = showPassport ? 'flex' : 'none';
+      if (showPassport) {
+        const pTitle = passportStripEl.querySelector(
+          '.gev-tour-passport-title',
+        );
+        const pCount = passportStripEl.querySelector(
+          '.gev-tour-passport-count',
+        );
+        const pBar = passportStripEl.querySelector('.gev-tour-passport-bar');
+        const pStamps = passportStripEl.querySelector(
+          '.gev-tour-passport-stamps',
+        );
+        const pList = passportStripEl.querySelector('.gev-tour-secrets-list');
+        if (pTitle) {
+          pTitle.textContent =
+            status.tourScope === 'venue'
+              ? '🛂 Day Passport'
+              : '💎 Hidden City Gems';
+        }
+        if (pCount) {
+          pCount.textContent = `${p.collected}/${p.total} (${p.percent}%)`;
+        }
+        if (pBar) {
+          pBar.style.width = `${p.percent}%`;
+        }
+        if (pStamps) {
+          const collectedSet = new Set(p.collectedIds || []);
+          pStamps.innerHTML = (adventureState.secrets || [])
+            .map((s) => {
+              const got = collectedSet.has(s.id);
+              return `<span title="${escapeHtml(s.title)}" style="opacity:${got ? '1' : '0.35'};">${got ? escapeHtml(s.icon) : '⭕'}</span>`;
+            })
+            .join('');
+        }
+        if (pList) {
+          const collectedSet = new Set(p.collectedIds || []);
+          pList.innerHTML = (adventureState.secrets || [])
+            .map((s) => {
+              const got = collectedSet.has(s.id);
+              return `
+                <div class="gev-tour-secret-row ${got ? 'collected' : ''}" data-secret-id="${escapeHtml(s.id)}">
+                  <div style="min-width:0; flex:1;">
+                    <div><strong>${escapeHtml(s.icon)} ${escapeHtml(s.title)}</strong></div>
+                    <div style="font-size:9px; color:#94a3b8;">${escapeHtml(got ? s.story : s.hint)}</div>
+                  </div>
+                  ${got ? '<span>✅</span>' : `<button class="gev-tour-secret-btn" data-secret-id="${escapeHtml(s.id)}" type="button">Collect</button>`}
+                </div>
+              `;
+            })
+            .join('');
+        }
+      }
+    }
+
+    const npcStripEl = cardEl.querySelector('.gev-tour-npc-strip');
+    if (npcStripEl) {
+      const npcs = adventureState?.npcs || [];
+      const showNpcs = Boolean(
+        status.isTour && status.tourScope === 'venue' && npcs.length > 0,
+      );
+      npcStripEl.style.display = showNpcs ? 'flex' : 'none';
+      if (showNpcs) {
+        const chipsEl = npcStripEl.querySelector('.gev-tour-npc-chips');
+        const diagEl = npcStripEl.querySelector('.gev-tour-npc-dialogue');
+        const activeNpcId = adventureState?.activeDialogue?.npcId || null;
+        const nearNpcId = adventureState?.nearestNpcId || null;
+        if (chipsEl) {
+          chipsEl.innerHTML = npcs
+            .map((n) => {
+              const cls = [
+                'gev-tour-npc-btn',
+                n.id === nearNpcId ? 'near' : '',
+                n.id === activeNpcId ? 'active' : '',
+              ]
+                .filter(Boolean)
+                .join(' ');
+              return `<button class="${cls}" data-npc-id="${escapeHtml(n.id)}" type="button" title="${escapeHtml(`${n.roleLabel} near ${n.anchorStopName}`)}">${escapeHtml(n.icon)} ${escapeHtml(n.name)}</button>`;
+            })
+            .join('');
+        }
+        if (diagEl) {
+          const dlg = adventureState?.activeDialogue;
+          diagEl.innerHTML = dlg
+            ? `<b>${escapeHtml(dlg.icon)} ${escapeHtml(dlg.npcName)} (${escapeHtml(dlg.roleLabel)}):</b> ${escapeHtml(dlg.greeting)} <i>${escapeHtml(dlg.tip)}</i><br><span style="color:#fde047;">${escapeHtml(dlg.clue)}</span><br><span style="color:#a7f3d0;">${escapeHtml(dlg.companionBanter)}</span>`
+            : 'Press <b>[E]</b> or click any cast badge above for insider ride/snack hints & scavenger clues!';
+        }
+      }
+    }
+
+    const hopperBarEl = cardEl.querySelector('.gev-tour-hopper-bar');
+    if (hopperBarEl) {
+      const bridges = Array.isArray(status.parkHopperBridges)
+        ? status.parkHopperBridges
+        : [];
+      const showHopper = Boolean(status.isTour && bridges.length > 0);
+      hopperBarEl.style.display = showHopper ? 'flex' : 'none';
+      if (showHopper) {
+        const listEl = hopperBarEl.querySelector('.gev-tour-hopper-list');
+        if (listEl) {
+          listEl.innerHTML = bridges
+            .map(
+              (b) =>
+                `<button class="gev-tour-hopper-btn" data-target-city-id="${escapeHtml(b.toCityId)}" data-bridge-id="${escapeHtml(b.id)}" type="button" title="${escapeHtml(b.durationNote)}">${escapeHtml(b.icon)} ${escapeHtml(b.transitLabel)} → ${escapeHtml(b.toParkName)}</button>`,
+            )
+            .join('');
+        }
+      }
+    }
+
     const noTourCtaEl = cardEl.querySelector('.gev-tour-no-tour-cta');
+    const noTourCtaTextEl = cardEl.querySelector('.gev-tour-no-tour-cta-text');
+    const forgeBuildBtn = cardEl.querySelector('.gev-tour-forge-build-btn');
+    const forgeAllowed = canBuildTourWithForge();
+    let resolvedCatalogPlace = null;
+
+    if (forgeAllowed && !ctx.hasCuratedOrCustomTour) {
+      if (
+        ctx.isDynamicPlaceholder &&
+        isConcreteCatalogPlaceName(ctx.cityName)
+      ) {
+        resolvedCatalogPlace = {
+          name: ctx.cityName,
+          displayName: ctx.cityName,
+          cityId: ctx.cityId,
+          lat: coords.lat,
+          lon: coords.lon,
+          source: 'major-world-metros',
+          isCatalogPlace: true,
+        };
+      } else {
+        const cached = getCachedCatalogPlaceAt(coords.lat, coords.lon);
+        if (cached?.name && isConcreteCatalogPlaceName(cached.name)) {
+          resolvedCatalogPlace = cached;
+        } else if (!cached) {
+          const myGen = ++wanderCatalogLookupGen;
+          void resolveCatalogPlaceAt(coords.lat, coords.lon)
+            .then((found) => {
+              if (myGen !== wanderCatalogLookupGen || !found || !isOpen) return;
+              syncTourAndPlayUI();
+            })
+            .catch(() => {});
+        }
+      }
+    }
+
+    activeWanderCatalogPlace = resolvedCatalogPlace;
+    const showForgeBuildBtn = Boolean(forgeAllowed && resolvedCatalogPlace);
+    if (forgeBuildBtn) {
+      forgeBuildBtn.style.display = showForgeBuildBtn ? 'inline-block' : 'none';
+      if (showForgeBuildBtn) {
+        forgeBuildBtn.textContent = `🛠️ Build: Tour ${resolvedCatalogPlace.name}`;
+      }
+    }
+    if (noTourCtaTextEl) {
+      noTourCtaTextEl.textContent = showForgeBuildBtn
+        ? `No curated tour for ${resolvedCatalogPlace.name} yet — synthesize with Dev Forge or create one:`
+        : 'No tour here yet — know this spot personally?';
+    }
     if (noTourCtaEl) {
-      noTourCtaEl.style.display = isPlayMode ? 'flex' : 'none';
+      noTourCtaEl.style.display =
+        isPlayMode || showForgeBuildBtn ? 'flex' : 'none';
     }
 
     const wizardOpenBtn = cardEl.querySelector('.gev-tour-wizard-open-btn');
@@ -1239,6 +1746,7 @@ export function createWanderDrawer({
     dynamicCityName = null,
   } = {}) {
     const reg = getCustomToursRegistry();
+    const runtimeBuilt = getRuntimeBuiltTours();
     const customEntries = Object.entries(reg.customTours || {})
       .filter(([, entry]) => entry?.metadata)
       .map(([id, entry]) => {
@@ -1253,6 +1761,7 @@ export function createWanderDrawer({
     const dynamicExtraIds = Object.keys(reg.extraStopsByCityId || {}).filter(
       (k) =>
         !METRO_LANDMARK_CATALOG[k] &&
+        !runtimeBuilt[k] &&
         !reg.customTours?.[k] &&
         Array.isArray(reg.extraStopsByCityId[k]) &&
         reg.extraStopsByCityId[k].length > 0,
@@ -1261,6 +1770,7 @@ export function createWanderDrawer({
       dynamicCityId &&
       dynamicCityId !== 'auto' &&
       !METRO_LANDMARK_CATALOG[dynamicCityId] &&
+      !runtimeBuilt[dynamicCityId] &&
       !reg.customTours?.[dynamicCityId] &&
       !dynamicExtraIds.includes(dynamicCityId)
     ) {
@@ -1282,27 +1792,71 @@ export function createWanderDrawer({
       })
       .join('');
 
-    const builtInEntries = Object.entries(METRO_LANDMARK_CATALOG)
-      .map(([cityKey, stops]) => {
-        const extraCount = (reg.extraStopsByCityId?.[cityKey] || []).length;
-        const total = stops.length + extraCount;
-        const label =
-          METRO_TOUR_METADATA[cityKey]?.name ||
-          cityKey
-            .split('_')
-            .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-            .join(' ');
-        const continent = METRO_TOUR_METADATA[cityKey]?.continent;
-        const continentTag = continent ? ` [${continent}]` : '';
-        const customTag = extraCount > 0 ? ` · +${extraCount} custom` : '';
-        return `<option value="${escapeHtml(cityKey)}">🛴 ${escapeHtml(label)}${escapeHtml(continentTag)} (${total} stops${escapeHtml(customTag)})</option>`;
-      })
-      .join('');
+    const builtInKeys = Object.entries(METRO_LANDMARK_CATALOG);
+    const runtimeKeys = Object.entries(runtimeBuilt).filter(
+      ([cityKey]) =>
+        !METRO_LANDMARK_CATALOG[cityKey] && !reg.customTours?.[cityKey],
+    );
+    const formatCatalogOption = (
+      [cityKey, stopsOrEntry],
+      isRuntime = false,
+    ) => {
+      const stops = isRuntime
+        ? stopsOrEntry?.landmarks || []
+        : stopsOrEntry || [];
+      const extraCount = (reg.extraStopsByCityId?.[cityKey] || []).length;
+      const total = stops.length + extraCount;
+      const meta = isRuntime
+        ? stopsOrEntry?.metadata
+        : METRO_TOUR_METADATA[cityKey];
+      const label =
+        meta?.name ||
+        cityKey
+          .split('_')
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(' ');
+      const continent = meta?.continent;
+      const continentTag = continent ? ` [${continent}]` : '';
+      const customTag = extraCount > 0 ? ` · +${extraCount} custom` : '';
+      const icon = meta?.tourScope === 'venue' ? '🎢' : '🛴';
+      return `<option value="${escapeHtml(cityKey)}">${icon} ${escapeHtml(label)}${escapeHtml(continentTag)} (${total} stops${escapeHtml(customTag)})</option>`;
+    };
+
+    const parkDayEntries = [
+      ...builtInKeys
+        .filter(
+          ([cityKey]) => METRO_TOUR_METADATA[cityKey]?.tourScope === 'venue',
+        )
+        .map((entry) => formatCatalogOption(entry, false)),
+      ...runtimeKeys
+        .filter(([, entry]) => entry?.metadata?.tourScope === 'venue')
+        .map((entry) => formatCatalogOption(entry, true)),
+    ].join('');
+    const cityEntries = [
+      ...builtInKeys
+        .filter(
+          ([cityKey]) => METRO_TOUR_METADATA[cityKey]?.tourScope !== 'venue',
+        )
+        .map((entry) => formatCatalogOption(entry, false)),
+      ...runtimeKeys
+        .filter(([, entry]) => entry?.metadata?.tourScope !== 'venue')
+        .map((entry) => formatCatalogOption(entry, true)),
+    ].join('');
+
+    const customGroupHtml = customEntries
+      ? `<optgroup label="✨ Custom Tours">${customEntries}</optgroup>`
+      : '';
+    const parkGroupHtml = parkDayEntries
+      ? `<optgroup label="🎢 Theme Park Days">${parkDayEntries}</optgroup>`
+      : '';
+    const cityGroupHtml = cityEntries
+      ? `<optgroup label="🏙️ City Tours">${cityEntries}</optgroup>`
+      : '';
 
     const autoOpt = includeAuto
       ? '<option value="auto">📍 Nearest Metro / Current View</option>'
       : '';
-    return `${autoOpt}${customEntries}${dynamicEntries}${builtInEntries}`;
+    return `${autoOpt}${parkGroupHtml}${customGroupHtml}${dynamicEntries}${cityGroupHtml}`;
   }
 
   function syncTourCitySelectOptions(
@@ -1905,6 +2459,16 @@ export function createWanderDrawer({
       '<span>🖱️ <b>Mouse Look Active</b> — Click anywhere or press <b>ESC</b> to release cursor</span>';
     host.appendChild(pointerLockBannerEl);
 
+    tourResumePillEl = document.createElement('div');
+    tourResumePillEl.id = 'gev-tour-resume-pill';
+    tourResumePillEl.className = 'gev-tour-resume-pill';
+    tourResumePillEl.innerHTML = `
+      <span class="gev-tour-resume-pill-label">🚶 Free Roam</span>
+      <button class="gev-tour-resume-btn gev-tour-resume-current-btn" type="button" title="Rejoin current stop in autonomous tour">↩ Rejoin Stop</button>
+      <button class="gev-tour-resume-btn gev-tour-resume-next-btn" type="button" title="Resume tour and advance to the next stop">▶ Next Stop</button>
+    `;
+    host.appendChild(tourResumePillEl);
+
     drawerEl = document.createElement('div');
     drawerEl.id = 'gev-wander-drawer';
     drawerEl.className = 'gev-wander-drawer';
@@ -1946,10 +2510,18 @@ export function createWanderDrawer({
           <button class="gev-tour-start-btn" title="Start Randomized Electric Scooter Landmark Tour">🛴 Start Tour</button>
           <button class="gev-tour-wizard-open-btn" title="Quick Wizard: Add a stop to this tour or create a new local tour">+ Stop</button>
         </div>
+        <div class="gev-tour-mode-bar" style="display: none;">
+          <button class="gev-tour-mode-btn active" data-tour-mode="all" type="button">🌐 All 18</button>
+          <button class="gev-tour-mode-btn" data-tour-mode="front_of_park" type="button">🚀 Front of Park (7)</button>
+          <button class="gev-tour-mode-btn" data-tour-mode="world_showcase" type="button">🌍 11 Countries (11)</button>
+        </div>
         <div class="gev-play-activities-grid gev-play-controls" style="display: none;"></div>
         <div class="gev-tour-no-tour-cta">
           <span class="gev-tour-no-tour-cta-text">No tour here yet — know this spot personally?</span>
-          <button class="gev-tour-wizard-new-tour-btn" title="Guided Wizard to create a local tour & stop here">✨ + Create Tour Here</button>
+          <div style="display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end;">
+            <button class="gev-tour-forge-build-btn" type="button" style="display: none; border-color: rgba(245, 158, 11, 0.72); background: linear-gradient(135deg, rgba(168, 85, 247, 0.45), rgba(245, 158, 11, 0.35));" title="Synthesize a real Tour v2 landmark tour here using Dev Forge">🛠️ Build: Tour Here</button>
+            <button class="gev-tour-wizard-new-tour-btn" title="Guided Wizard to create a local tour & stop here">✨ + Create Tour Here</button>
+          </div>
         </div>
         <div class="gev-tour-wizard-panel" aria-label="Quick Tour & Stop Wizard">
           <div class="gev-wizard-header">
@@ -2041,7 +2613,35 @@ export function createWanderDrawer({
             <div class="gev-wizard-custom-list"></div>
           </div>
         </div>
+        <div class="gev-tour-passport-strip">
+          <div class="gev-tour-passport-header">
+            <span class="gev-tour-passport-title">🛂 Day Passport</span>
+            <span class="gev-tour-passport-count">0/0 (0%)</span>
+          </div>
+          <div class="gev-tour-passport-bar-wrap">
+            <div class="gev-tour-passport-bar"></div>
+          </div>
+          <div class="gev-tour-passport-stamps"></div>
+          <details class="gev-tour-secrets-details">
+            <summary>🗺️ Off-Route Clues & Stamps ▾</summary>
+            <div class="gev-tour-secrets-list"></div>
+          </details>
+        </div>
+        <div class="gev-tour-npc-strip">
+          <div class="gev-tour-npc-header">
+            <span>🗣️ Park Cast & Insider Clues</span>
+            <button class="gev-tour-npc-btn gev-tour-npc-chat-e-btn" type="button" title="Chat with nearest park NPC [E]">💬 Chat [E]</button>
+          </div>
+          <div class="gev-tour-npc-chips"></div>
+          <div class="gev-tour-npc-dialogue"></div>
+        </div>
+        <div class="gev-tour-hopper-bar">
+          <div class="gev-tour-hopper-header">🚝 Resort Park-Hopper Transit</div>
+          <div class="gev-tour-hopper-list"></div>
+        </div>
         <div class="gev-tour-play-row gev-tour-active-actions" style="display: none;">
+          <button class="gev-tour-action-btn gev-tour-open-card-btn" type="button" title="Open Wikimedia Photo & 4K POV Experience Card">🎬 Card</button>
+          <button class="gev-tour-action-btn gev-tour-fireworks-btn" type="button" style="display: none;" title="Toggle Procedural Dusk Fireworks Finale">🎆 Fireworks</button>
           <button class="gev-tour-action-btn gev-tour-takeover-btn" title="Take over at normal walking wander speed (1.2 m/s)">🚶 Walk Here (1.2 m/s)</button>
           <button class="gev-tour-action-btn continue gev-tour-continue-btn" title="Resume scooter tour to next randomized landmark">🛴 Continue Tour ▶</button>
           <button class="gev-wander-exit-btn gev-tour-stop-btn" style="flex: 0 0 auto; padding: 6px 8px;" title="Stop Tour / Play">⏹️</button>
@@ -2148,16 +2748,121 @@ export function createWanderDrawer({
           lat: g.lat,
           lon: g.lon,
           elev: g.elev || 0,
+          tourMode: selectedTourMode,
           cameraMode: WANDER_CAMERA_MODES.ISO_CHASE,
         });
       } else {
         tourAndPlayEngine.startCityTour({
           cityId: selVal,
+          tourMode: selectedTourMode,
           cameraMode: WANDER_CAMERA_MODES.ISO_CHASE,
         });
       }
       syncDrawerState();
     });
+
+    tourCitySelect?.addEventListener('change', () => {
+      selectedTourMode = 'all';
+      syncTourAndPlayUI();
+    });
+
+    drawerEl
+      .querySelector('.gev-tour-mode-bar')
+      ?.addEventListener('click', (e) => {
+        const btn = e.target?.closest?.('.gev-tour-mode-btn');
+        if (!btn) return;
+        const nextMode = btn.getAttribute('data-tour-mode') || 'all';
+        selectedTourMode = nextMode;
+        const st = tourAndPlayEngine?.getStatus?.();
+        if (
+          st?.isTour &&
+          st.cityId &&
+          METRO_TOUR_METADATA[st.cityId]?.supportedModes?.length > 1
+        ) {
+          tourAndPlayEngine.startCityTour({
+            cityId: st.cityId,
+            tourMode: selectedTourMode,
+            cameraMode: st.cameraMode || WANDER_CAMERA_MODES.ISO_CHASE,
+          });
+        }
+        syncDrawerState();
+      });
+
+    drawerEl
+      .querySelector('.gev-tour-secrets-list')
+      ?.addEventListener('click', (e) => {
+        const btn = e.target?.closest?.('.gev-tour-secret-btn');
+        if (!btn) return;
+        const sid = btn.getAttribute('data-secret-id');
+        if (sid) {
+          parkAdventures?.collectSecretById?.(sid);
+          syncDrawerState();
+        }
+      });
+
+    drawerEl
+      .querySelector('.gev-tour-npc-strip')
+      ?.addEventListener('click', (e) => {
+        const chatBtn = e.target?.closest?.('.gev-tour-npc-chat-e-btn');
+        if (chatBtn) {
+          parkAdventures?.interactWithNearestNpc?.();
+          syncDrawerState();
+          return;
+        }
+        const npcBtn = e.target?.closest?.('.gev-tour-npc-btn[data-npc-id]');
+        if (npcBtn) {
+          const nid = npcBtn.getAttribute('data-npc-id');
+          if (nid) {
+            parkAdventures?.interactWithNpc?.(nid);
+            syncDrawerState();
+          }
+        }
+      });
+
+    drawerEl
+      .querySelector('.gev-tour-hopper-list')
+      ?.addEventListener('click', (e) => {
+        const hopBtn = e.target?.closest?.('.gev-tour-hopper-btn');
+        if (!hopBtn) return;
+        const targetCityId = hopBtn.getAttribute('data-target-city-id');
+        const bridgeId = hopBtn.getAttribute('data-bridge-id');
+        if (targetCityId || bridgeId) {
+          selectedTourMode = 'all';
+          tourAndPlayEngine?.hopToLinkedPark?.(targetCityId, { bridgeId });
+          syncDrawerState();
+        }
+      });
+
+    drawerEl
+      .querySelector('.gev-tour-fireworks-btn')
+      ?.addEventListener('click', () => {
+        parkFireworks?.toggle?.();
+        syncDrawerState();
+      });
+
+    drawerEl
+      .querySelector('.gev-tour-open-card-btn')
+      ?.addEventListener('click', () => {
+        const st = tourAndPlayEngine?.getStatus?.();
+        tourPoiCards?.openExperienceCard?.(st?.currentLandmark || null);
+      });
+
+    tourResumePillEl
+      ?.querySelector('.gev-tour-resume-current-btn')
+      ?.addEventListener('click', () => {
+        tourAndPlayEngine?.continueTour?.({
+          advanceToNext: false,
+          resumeFromCurrent: true,
+        });
+        syncDrawerState();
+      });
+
+    tourResumePillEl
+      ?.querySelector('.gev-tour-resume-next-btn')
+      ?.addEventListener('click', () => {
+        tourAndPlayEngine?.continueTour?.({ advanceToNext: true });
+        syncDrawerState();
+      });
 
     drawerEl
       .querySelector('.gev-tour-takeover-btn')
@@ -2269,6 +2974,26 @@ export function createWanderDrawer({
       ?.addEventListener('click', () => {
         if (isWizardOpen) closeWizard();
         else openWizard('stop');
+      });
+
+    drawerEl
+      .querySelector('.gev-tour-forge-build-btn')
+      ?.addEventListener('click', () => {
+        if (!activeWanderCatalogPlace) return;
+        const coords = getCameraGroundTarget();
+        if (typeof onRequestTourBuild === 'function') {
+          void onRequestTourBuild(activeWanderCatalogPlace, coords);
+          return;
+        }
+        if (
+          typeof window !== 'undefined' &&
+          window.__gevCityDrawer?.triggerBuildTourForPlace
+        ) {
+          void window.__gevCityDrawer.triggerBuildTourForPlace(
+            activeWanderCatalogPlace,
+            coords,
+          );
+        }
       });
 
     drawerEl
@@ -2432,11 +3157,20 @@ export function createWanderDrawer({
     });
 
     unsubscribeCustomTours = onCustomToursChange(() => {
-      syncTourCitySelectOptions();
+      const st = tourAndPlayEngine?.getStatus?.();
+      syncTourCitySelectOptions(st?.isTour ? st.cityId : null);
       if (isOpen) {
         syncDrawerState();
       }
     });
+
+    unsubscribeAgentCaps = getEffectiveAgentPanel()?.onCapabilitiesChange?.(
+      () => {
+        if (isOpen) {
+          syncDrawerState();
+        }
+      },
+    );
 
     if (wanderEngine?.onTelemetry) {
       wanderEngine.onTelemetry((telem) => {
@@ -2448,7 +3182,23 @@ export function createWanderDrawer({
 
     if (tourAndPlayEngine?.onStatusChange) {
       unsubscribeTourStatus = tourAndPlayEngine.onStatusChange(() => {
-        if (isOpen || launcherBtn) {
+        if (isOpen || launcherBtn || tourResumePillEl) {
+          syncDrawerState();
+        }
+      });
+    }
+
+    if (parkAdventures?.onStateChange) {
+      unsubscribeParkAdventures = parkAdventures.onStateChange(() => {
+        if (isOpen || tourResumePillEl) {
+          syncDrawerState();
+        }
+      });
+    }
+
+    if (parkFireworks?.onStateChange) {
+      unsubscribeParkFireworks = parkFireworks.onStateChange(() => {
+        if (isOpen) {
           syncDrawerState();
         }
       });
@@ -2478,7 +3228,7 @@ export function createWanderDrawer({
     });
 
     dock.registerOverlayGroup('wander-banner', {
-      elements: [pointerLockBannerEl],
+      elements: [pointerLockBannerEl, tourResumePillEl],
     });
   }
 
@@ -2520,9 +3270,13 @@ export function createWanderDrawer({
     unsubscribeLocality?.();
     unsubscribeTourStatus?.();
     unsubscribeCustomTours?.();
+    unsubscribeAgentCaps?.();
+    unsubscribeParkAdventures?.();
+    unsubscribeParkFireworks?.();
     launcherBtn?.remove();
     drawerEl?.remove();
     pointerLockBannerEl?.remove();
+    tourResumePillEl?.remove();
   }
 
   buildDOM();

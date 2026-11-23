@@ -1,4 +1,5 @@
 [
+  "scripts/install-sovereign-hooks.mjs",
   "scripts/private-hygiene-rules.json",
   "src/tooling/privateHygieneRules.test.mjs"
 ]

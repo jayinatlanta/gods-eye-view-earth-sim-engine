@@ -31,6 +31,9 @@ import { createBoatDrawer } from '../vessels/boatDrawer.js';
 import { createPedestrianEngine } from '../layers/citylife/pedestrianEngine.js';
 import { createAvatarWanderEngine } from '../layers/citylife/avatarWanderEngine.js';
 import { createTourAndPlayEngine } from '../layers/citylife/tourAndPlayEngine.js';
+import { createTourPoiCards } from '../layers/citylife/tourPoiCards.js';
+import { createParkAdventureController } from '../layers/citylife/parkSecretsAndNpcs.js';
+import { createParkFireworksFinale } from '../layers/citylife/parkFireworksFinale.js';
 import { createWanderDrawer } from '../citylife/wanderDrawer.js';
 import { createCityDrawer } from '../citylife/cityDrawer.js';
 import { createSelfModifyingAgentPanel } from '../ui/selfModifyingAgentPanel.js';
@@ -433,15 +436,54 @@ export function createApplicationTools({
   const tourAndPlayEngine = createTourAndPlayEngine({
     wanderEngine,
     cityEngine,
+    viewer,
   });
   defer(() => tourAndPlayEngine.destroy());
   debug.tourAndPlayEngine = tourAndPlayEngine;
   window.__gevTourAndPlayEngine = tourAndPlayEngine;
 
+  const tourPoiCards = createTourPoiCards({
+    viewer,
+    tourAndPlayEngine,
+    sightseeingDrawer: sightseeingEngine?.getDrawer?.() || null,
+  });
+  defer(() => tourPoiCards.destroy());
+  debug.tourPoiCards = tourPoiCards;
+  window.__gevTourPoiCards = tourPoiCards;
+
+  const parkAdventures = createParkAdventureController({
+    viewer,
+    tourAndPlayEngine,
+    wanderEngine,
+  });
+  defer(() => parkAdventures.destroy());
+  debug.parkAdventures = parkAdventures;
+  window.__gevParkAdventures = parkAdventures;
+
+  const parkFireworks = createParkFireworksFinale({
+    viewer,
+    tourAndPlayEngine,
+  });
+  defer(() => parkFireworks.destroy());
+  debug.parkFireworks = parkFireworks;
+  window.__gevParkFireworks = parkFireworks;
+
+  const agentForgePanel = createSelfModifyingAgentPanel({
+    viewer,
+    container: typeof document !== 'undefined' ? document.body : null,
+  });
+  defer(() => agentForgePanel.destroy());
+  debug.agentForgePanel = agentForgePanel;
+  window.__gevAgentForgePanel = agentForgePanel;
+
   const wanderDrawer = createWanderDrawer({
     wanderEngine,
     cityEngine,
     tourAndPlayEngine,
+    tourPoiCards,
+    parkAdventures,
+    parkFireworks,
+    agentForgePanel,
     viewer,
   });
   defer(() => wanderDrawer.destroy());
@@ -452,19 +494,12 @@ export function createApplicationTools({
     cityEngine,
     wanderEngine,
     tourAndPlayEngine,
+    agentForgePanel,
     viewer,
   });
   defer(() => cityDrawer.destroy());
   debug.cityDrawer = cityDrawer;
   window.__gevCityDrawer = cityDrawer;
-
-  const agentForgePanel = createSelfModifyingAgentPanel({
-    viewer,
-    container: typeof document !== 'undefined' ? document.body : null,
-  });
-  defer(() => agentForgePanel.destroy());
-  debug.agentForgePanel = agentForgePanel;
-  window.__gevAgentForgePanel = agentForgePanel;
 
   const passengerFlow = createPassengerFlow({ viewer });
   defer(() => passengerFlow.clearStops());

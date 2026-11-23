@@ -23,6 +23,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { runOssInvariants } from './check-oss-invariants.mjs';
+import { verifyGitCommitAuthors } from './check-public-hygiene.mjs';
 
 const DEFAULT_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -44,6 +45,147 @@ export const FORBIDDEN_PUSH_URL_PATTERNS = Object.freeze([
 
 export const DEFAULT_TARGET_BRANCH = 'oss/public-earth-sim';
 export const DEFAULT_PUBLIC_REMOTE = 'public';
+
+const MEDIA_ASSET_EXTENSIONS = new Set([
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.webp',
+  '.glb',
+  '.mp4',
+  '.woff2',
+  '.woff',
+]);
+
+const HIGH_PRECISION_COORD_RE = /(?<![\d.])-?(?:1[0-7]\d|[1-9]?\d)\.\d{4,}\b/g;
+
+export function auditPublicSyncDiff({
+  cwd = DEFAULT_ROOT,
+  baseSha,
+  targetTreeOrSha,
+  excludesApplied = 0,
+  authorResult = null,
+  gitRunner = runGit,
+} = {}) {
+  const nameStatusRaw = gitRunner(
+    cwd,
+    ['diff', '--name-status', baseSha, targetTreeOrSha],
+    { allowFail: true },
+  );
+  const rows = nameStatusRaw
+    ? nameStatusRaw
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+    : [];
+
+  let addedFileCount = 0;
+  let modifiedFileCount = 0;
+  let deletedFileCount = 0;
+  const addedMediaAssets = [];
+  const changedTestFiles = [];
+
+  for (const row of rows) {
+    const parts = row.split('\t');
+    const status = parts[0] || '';
+    const targetPath = parts.length >= 3 ? parts[2] : parts[1] || '';
+    if (!targetPath) continue;
+
+    if (status.startsWith('A')) addedFileCount += 1;
+    else if (status.startsWith('D')) deletedFileCount += 1;
+    else modifiedFileCount += 1;
+
+    const ext = path.extname(targetPath).toLowerCase();
+    if (
+      (status.startsWith('A') || status.startsWith('R')) &&
+      MEDIA_ASSET_EXTENSIONS.has(ext)
+    ) {
+      addedMediaAssets.push(targetPath);
+    }
+
+    if (!status.startsWith('D') && targetPath.endsWith('.test.mjs')) {
+      changedTestFiles.push(targetPath);
+    }
+  }
+
+  const novelTestCoordinates = [];
+  if (changedTestFiles.length > 0) {
+    const diffText = gitRunner(
+      cwd,
+      ['diff', '-U0', baseSha, targetTreeOrSha, '--', ...changedTestFiles],
+      { allowFail: true },
+    );
+    if (diffText) {
+      let currentFile = '';
+      let currentLine = 0;
+      for (const rawLine of diffText.split(/\r?\n/)) {
+        if (rawLine.startsWith('+++ b/')) {
+          currentFile = rawLine.slice(6).trim();
+          continue;
+        }
+        const hunkMatch = rawLine.match(
+          /^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/,
+        );
+        if (hunkMatch) {
+          currentLine = Number(hunkMatch[1]);
+          continue;
+        }
+        if (rawLine.startsWith('+') && !rawLine.startsWith('+++')) {
+          const content = rawLine.slice(1);
+          const matches = content.match(HIGH_PRECISION_COORD_RE);
+          if (matches && matches.length > 0 && currentFile) {
+            novelTestCoordinates.push({
+              file: currentFile,
+              line: currentLine,
+              matches,
+              snippet: content.trim().slice(0, 140),
+            });
+          }
+          currentLine += 1;
+        }
+      }
+    }
+  }
+
+  return {
+    baseSha,
+    targetRef: targetTreeOrSha,
+    changedFileCount: rows.length,
+    addedFileCount,
+    modifiedFileCount,
+    deletedFileCount,
+    excludesApplied,
+    addedMediaAssets,
+    novelTestCoordinates,
+    authorVerified: authorResult ? authorResult.violations.length === 0 : null,
+    checkedAuthorCommits: authorResult ? authorResult.checkedCount : 0,
+  };
+}
+
+export function formatDiffAuditReport(audit) {
+  if (!audit) return '';
+  const lines = [
+    `[oss:sync --audit-diff] ${audit.changedFileCount} changed (${audit.addedFileCount} added, ${audit.modifiedFileCount} modified, ${audit.deletedFileCount} deleted) | excludesApplied=${audit.excludesApplied} | authorVerified=${audit.authorVerified === null ? 'pending(dry-run)' : audit.authorVerified}`,
+  ];
+  if (audit.addedMediaAssets.length > 0) {
+    lines.push(
+      `  Added media assets (${audit.addedMediaAssets.length}): ${audit.addedMediaAssets.join(', ')}`,
+    );
+  }
+  if (audit.novelTestCoordinates.length > 0) {
+    lines.push(
+      `  [REVIEW] High-precision coordinates added in *.test.mjs (${audit.novelTestCoordinates.length}):`,
+    );
+    for (const hit of audit.novelTestCoordinates.slice(0, 20)) {
+      lines.push(
+        `    - ${hit.file}:${hit.line} [${hit.matches.join(', ')}] ${hit.snippet}`,
+      );
+    }
+  } else {
+    lines.push('  Novel high-precision test coordinates: none detected.');
+  }
+  return lines.join('\n');
+}
 
 function runGit(
   cwd,
@@ -319,6 +461,7 @@ export function syncPublicFork({
   allowDirty = false,
   skipChecks = false,
   fullChecks = false,
+  auditDiff = false,
   forbiddenAncestors = FORBIDDEN_PRIVATE_ANCESTORS,
   runInvariantsImpl = runOssInvariants,
   gitRunner = runGit,
@@ -417,6 +560,16 @@ export function syncPublicFork({
   }
 
   if (tree === baseTree && parentShas.length === 1) {
+    const audit = auditDiff
+      ? auditPublicSyncDiff({
+          cwd,
+          baseSha,
+          targetTreeOrSha: tree,
+          excludesApplied: excludes.length,
+          authorResult: { checkedCount: 0, violations: [] },
+          gitRunner,
+        })
+      : undefined;
     return {
       ok: true,
       changed: false,
@@ -429,10 +582,19 @@ export function syncPublicFork({
       commitSha: baseSha,
       tree,
       excludesApplied: excludes.length,
+      ...(audit ? { audit } : {}),
     };
   }
 
   if (dryRun) {
+    const audit = auditPublicSyncDiff({
+      cwd,
+      baseSha,
+      targetTreeOrSha: tree,
+      excludesApplied: excludes.length,
+      authorResult: null,
+      gitRunner,
+    });
     return {
       ok: true,
       changed: true,
@@ -446,6 +608,7 @@ export function syncPublicFork({
       commitSha: null,
       tree,
       excludesApplied: excludes.length,
+      audit,
     };
   }
 
@@ -479,6 +642,18 @@ export function syncPublicFork({
   const commitSha = gitRunner(cwd, commitArgs, { env: commitEnv });
   gitRunner(cwd, ['branch', '-f', targetBranch, commitSha]);
 
+  const authorResult = verifyGitCommitAuthors(cwd, commitSha, {
+    baseRef: baseSha,
+  });
+  const audit = auditPublicSyncDiff({
+    cwd,
+    baseSha,
+    targetTreeOrSha: commitSha,
+    excludesApplied: excludes.length,
+    authorResult,
+    gitRunner,
+  });
+
   if (push) {
     gitRunner(cwd, ['push', publicRemote, `${targetBranch}:main`]);
   }
@@ -496,6 +671,7 @@ export function syncPublicFork({
     commitSha,
     tree,
     excludesApplied: excludes.length,
+    audit,
   };
 }
 
@@ -513,6 +689,7 @@ function parseCliArgs(argv = process.argv.slice(2)) {
     push: false,
     allowDirty: false,
     fullChecks: false,
+    auditDiff: false,
   };
   for (let i = 0; i < argv.length; i += 1) {
     const token = argv[i];
@@ -520,6 +697,7 @@ function parseCliArgs(argv = process.argv.slice(2)) {
     else if (token === '--push') opts.push = true;
     else if (token === '--allow-dirty') opts.allowDirty = true;
     else if (token === '--full') opts.fullChecks = true;
+    else if (token === '--audit-diff') opts.auditDiff = true;
     else if (token === '--source' && argv[i + 1]) opts.sourceRef = argv[++i];
     else if (token === '--target' && argv[i + 1]) opts.targetBranch = argv[++i];
     else if (token === '--remote' && argv[i + 1]) opts.publicRemote = argv[++i];
@@ -547,6 +725,9 @@ if (
       cwd: DEFAULT_ROOT,
       ...opts,
     });
+    if (opts.auditDiff && result.audit) {
+      console.error(formatDiffAuditReport(result.audit));
+    }
     console.log(JSON.stringify(result, null, 2));
   } catch (error) {
     console.error(`[oss:sync] ERROR: ${error?.message || error}`);

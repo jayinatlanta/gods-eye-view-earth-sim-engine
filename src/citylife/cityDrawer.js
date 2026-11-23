@@ -10,7 +10,11 @@
  */
 
 import * as Cesium from 'cesium';
-import { LIVING_CITIES, resolveCity } from './cityWaypoints.js';
+import {
+  LIVING_CITIES,
+  resolveCity,
+  haversineDistanceMeters,
+} from './cityWaypoints.js';
 import { URBAN_EVENTS } from '../layers/citylife/urbanEvents.js';
 import {
   getCompanionPersonaName,
@@ -38,13 +42,25 @@ import {
   GAMEDAY_STATE_BADGES,
   GAMEDAY_CAMERA_MODES,
 } from '../layers/citylife/stadiumCrowdEngine.js';
-import { resolveTourOrPlayContext } from '../layers/citylife/tourAndPlayEngine.js';
-import { getGlobalDrawerCoordinator } from '../ui/worldSimDock.js';
+import {
+  resolveTourOrPlayContext,
+  registerBuiltTourRuntime,
+  isConcreteCatalogPlaceName,
+  getCachedCatalogPlaceAt,
+  resolveCatalogPlaceAt,
+  onCustomToursChange,
+} from '../layers/citylife/tourAndPlayEngine.js';
+import {
+  getGlobalDrawerCoordinator,
+  onLocalityResolved,
+} from '../ui/worldSimDock.js';
 
 export function createCityDrawer({
   cityEngine = null,
   wanderEngine = null,
   tourAndPlayEngine = null,
+  agentForgePanel = null,
+  tourBuildFetchImpl = null,
   stadiumEngine = null,
   viewer = null,
   container = typeof document !== 'undefined' ? document.body : null,
@@ -608,8 +624,22 @@ export function createCityDrawer({
   `;
   launcherButton.innerHTML = '🌍';
 
+  // Persistent Non-Blocking Tour Build Overlay (above #command-dock)
+  const tourBuildOverlay = document.createElement('div');
+  tourBuildOverlay.className = 'gev-tour-build-overlay';
+  tourBuildOverlay.setAttribute('role', 'status');
+  tourBuildOverlay.setAttribute('aria-live', 'polite');
+  tourBuildOverlay.innerHTML = `
+    <span class="gev-tour-build-spinner" aria-hidden="true"></span>
+    <span class="gev-tour-build-msg">⏳ Building Tour...</span>
+    <span class="gev-tour-build-phase"></span>
+    <button type="button" class="gev-tour-build-action-btn" style="display: none;"></button>
+    <button type="button" class="gev-tour-build-dismiss-btn" title="Dismiss" aria-label="Dismiss" style="display: none;">✕</button>
+  `;
+
   container.appendChild(drawer);
   container.appendChild(ambientPill);
+  container.appendChild(tourBuildOverlay);
   container.appendChild(launcherButton);
 
   const dock = getGlobalDrawerCoordinator();
@@ -620,6 +650,287 @@ export function createCityDrawer({
   let ambientPillDismissTimer = null;
   let currentPillTarget = null;
   let lastCityDepthTarget = null;
+  let currentAmbientPillState = null;
+  let currentDrawerTourState = null;
+  let catalogLookupGeneration = 0;
+  let buildPhaseTimer = null;
+  const TOUR_BUILD_PHASES = [
+    'Resolving landmarks',
+    'Authoring Tour v2 contract',
+    'Verifying check:oss',
+  ];
+  const tourBuildState = {
+    status: 'idle', // 'idle' | 'building' | 'ready' | 'error'
+    cityKey: null,
+    placeName: null,
+    catalogPlace: null,
+    lat: null,
+    lon: null,
+    elev: 0,
+    builtTour: null,
+    errorMessage: null,
+    phaseIndex: 0,
+    promise: null,
+  };
+
+  function getEffectiveAgentPanel() {
+    if (agentForgePanel) return agentForgePanel;
+    if (typeof window !== 'undefined' && window.__gevAgentForgePanel) {
+      return window.__gevAgentForgePanel;
+    }
+    return null;
+  }
+
+  function canBuildTourWithForge() {
+    return Boolean(getEffectiveAgentPanel()?.canBuildTourWithForge?.());
+  }
+
+  function clearBuildPhaseTimer() {
+    if (buildPhaseTimer) {
+      clearInterval(buildPhaseTimer);
+      buildPhaseTimer = null;
+    }
+  }
+
+  function syncTourBuildOverlay() {
+    const spinnerEl = tourBuildOverlay.querySelector('.gev-tour-build-spinner');
+    const msgEl = tourBuildOverlay.querySelector('.gev-tour-build-msg');
+    const phaseEl = tourBuildOverlay.querySelector('.gev-tour-build-phase');
+    const actionBtn = tourBuildOverlay.querySelector(
+      '.gev-tour-build-action-btn',
+    );
+    const dismissBtn = tourBuildOverlay.querySelector(
+      '.gev-tour-build-dismiss-btn',
+    );
+
+    tourBuildOverlay.classList.remove('visible', 'state-error', 'state-ready');
+    if (tourBuildState.status === 'idle') {
+      tourBuildOverlay.style.display = 'none';
+      return;
+    }
+
+    tourBuildOverlay.style.display = 'flex';
+    tourBuildOverlay.classList.add('visible');
+
+    if (tourBuildState.status === 'building') {
+      if (spinnerEl) spinnerEl.style.display = 'inline-block';
+      if (msgEl) {
+        msgEl.textContent = `⏳ Building Tour: ${tourBuildState.placeName || 'Place'} — Please wait...`;
+      }
+      if (phaseEl) {
+        phaseEl.style.display = 'inline';
+        phaseEl.textContent =
+          TOUR_BUILD_PHASES[
+            tourBuildState.phaseIndex % TOUR_BUILD_PHASES.length
+          ];
+      }
+      if (actionBtn) actionBtn.style.display = 'none';
+      if (dismissBtn) dismissBtn.style.display = 'none';
+    } else if (tourBuildState.status === 'ready') {
+      tourBuildOverlay.classList.add('state-ready');
+      if (spinnerEl) spinnerEl.style.display = 'none';
+      if (msgEl) {
+        msgEl.textContent = `✅ ${tourBuildState.placeName || 'Local'} Tour Ready`;
+      }
+      if (phaseEl) phaseEl.style.display = 'none';
+      if (actionBtn) {
+        actionBtn.style.display = 'inline-block';
+        actionBtn.textContent = `🛴 Fly & Start ${tourBuildState.placeName || 'Tour'}`;
+      }
+      if (dismissBtn) dismissBtn.style.display = 'inline-block';
+    } else if (tourBuildState.status === 'error') {
+      tourBuildOverlay.classList.add('state-error');
+      if (spinnerEl) spinnerEl.style.display = 'none';
+      if (msgEl) {
+        msgEl.textContent = `⚠️ Could not build ${tourBuildState.placeName || 'this tour'}: ${tourBuildState.errorMessage || 'Failed'}`;
+      }
+      if (phaseEl) phaseEl.style.display = 'none';
+      if (actionBtn) {
+        actionBtn.style.display = 'inline-block';
+        actionBtn.textContent = '🔄 Retry';
+      }
+      if (dismissBtn) dismissBtn.style.display = 'inline-block';
+    }
+  }
+
+  function ensureCatalogPlaceResolved(lat, lon, entityOrCity = null) {
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+    const myGen = ++catalogLookupGeneration;
+    void resolveCatalogPlaceAt(lat, lon)
+      .then((resolved) => {
+        if (myGen !== catalogLookupGeneration || !resolved) return;
+        if (entityOrCity && typeof entityOrCity === 'object') {
+          entityOrCity.catalogPlace = resolved;
+          entityOrCity.catalogPlaceName = resolved.name;
+          entityOrCity.catalogPlaceSource = resolved.source;
+        }
+        if (
+          lastCityDepthTarget &&
+          !isAnyCustomCapabilityActive() &&
+          (ambientPill.classList.contains('visible') ||
+            ambientPill.style.display === 'flex')
+        ) {
+          showAmbientPill(lastCityDepthTarget);
+        }
+        if (
+          !drawer.classList.contains('hidden') &&
+          drawer.style.display !== 'none'
+        ) {
+          syncCameraArchetype();
+        }
+      })
+      .catch(() => {});
+  }
+
+  function resolveAmbientTourPillState(
+    lat,
+    lon,
+    elev = 0,
+    entityOrCity = null,
+  ) {
+    const ctx =
+      tourAndPlayEngine?.resolveContext?.(lat, lon, elev) ||
+      resolveTourOrPlayContext(lat, lon, elev);
+
+    if (ctx.hasCuratedOrCustomTour) {
+      if (ctx.tourScope === 'venue') {
+        const shortName = String(ctx.cityName || entityOrCity?.name || 'Park')
+          .replace(/\s*\((?:WDW|DLR|UOR|USH|TDR|DLP)\)$/i, '')
+          .trim();
+        return {
+          state: 'tour',
+          icon: '🎢',
+          label: `Park Day: ${shortName}`,
+          livingWorldName: shortName,
+          tooltip: `Start ${shortName} Theme Park Day Tour [T]`,
+          ctx,
+          catalogPlace: null,
+        };
+      }
+      const cityLabel = ctx.cityName || entityOrCity?.name || 'City';
+      return {
+        state: 'tour',
+        icon: '🛴',
+        label: `Tour ${cityLabel}`,
+        livingWorldName: null,
+        tooltip: `Start randomized ${cityLabel} scooter tour [T]`,
+        ctx,
+        catalogPlace: null,
+      };
+    }
+
+    if (canBuildTourWithForge()) {
+      let catalogPlace = null;
+      if (
+        entityOrCity?.catalogPlace?.name &&
+        isConcreteCatalogPlaceName(entityOrCity.catalogPlace.name)
+      ) {
+        catalogPlace = entityOrCity.catalogPlace;
+      } else if (
+        ctx.isDynamicPlaceholder &&
+        isConcreteCatalogPlaceName(ctx.cityName)
+      ) {
+        catalogPlace = {
+          name: ctx.cityName,
+          displayName: ctx.cityName,
+          cityId: ctx.cityId,
+          lat,
+          lon,
+          source: 'major-world-metros',
+          isCatalogPlace: true,
+        };
+      } else {
+        const cached = getCachedCatalogPlaceAt(lat, lon);
+        if (cached?.name && isConcreteCatalogPlaceName(cached.name)) {
+          catalogPlace = cached;
+        } else if (!cached) {
+          ensureCatalogPlaceResolved(lat, lon, entityOrCity);
+        }
+      }
+
+      if (catalogPlace) {
+        const isBuildingThis =
+          tourBuildState.status === 'building' &&
+          tourBuildState.cityKey === catalogPlace.cityId;
+        if (isBuildingThis) {
+          return {
+            state: 'building',
+            icon: '⏳',
+            label: `Building Tour: ${catalogPlace.name} — Please wait...`,
+            livingWorldName: catalogPlace.name,
+            tooltip: `Building ${catalogPlace.name} tour with Dev Forge...`,
+            ctx,
+            catalogPlace,
+          };
+        }
+        return {
+          state: 'build_tour',
+          icon: '🛠️',
+          label: `Build: Tour ${catalogPlace.name}`,
+          livingWorldName: catalogPlace.name,
+          tooltip: `Synthesize a real ${catalogPlace.name} Tour v2 landmark tour using Dev Forge [T]`,
+          ctx,
+          catalogPlace,
+        };
+      }
+    }
+
+    if (ctx.mode === 'tour') {
+      const cityLabel = ctx.cityName || entityOrCity?.name || 'City';
+      return {
+        state: 'tour',
+        icon: '🛴',
+        label: `Tour ${cityLabel}`,
+        livingWorldName: null,
+        tooltip: `Start randomized ${cityLabel} scooter tour [T]`,
+        ctx,
+        catalogPlace: null,
+      };
+    }
+
+    const actLabel = ctx.playActivities?.[0]?.label || 'Here';
+    return {
+      state: 'play',
+      icon: '🏖️',
+      label: `Play (${actLabel})`,
+      livingWorldName: null,
+      tooltip: `Start Living World Play activity (${actLabel}) [T]`,
+      ctx,
+      catalogPlace: null,
+    };
+  }
+
+  function toggleClassSafe(el, className, active) {
+    if (!el?.classList) return;
+    if (typeof el.classList.toggle === 'function') {
+      el.classList.toggle(className, active);
+    } else if (active) {
+      el.classList.add?.(className);
+    } else {
+      el.classList.remove?.(className);
+    }
+  }
+
+  function applyPillStateToButton(btnEl, iconEl, labelEl, pillState) {
+    if (!btnEl || !iconEl || !labelEl || !pillState) return;
+    iconEl.textContent = pillState.icon;
+    labelEl.textContent = pillState.label;
+    btnEl.setAttribute?.('data-pill-state', pillState.state);
+    btnEl.title = pillState.tooltip || btnEl.title;
+    toggleClassSafe(
+      btnEl,
+      'gev-pill-build-tour',
+      pillState.state === 'build_tour',
+    );
+    toggleClassSafe(btnEl, 'gev-pill-building', pillState.state === 'building');
+    if (pillState.state === 'building') {
+      btnEl.setAttribute?.('aria-busy', 'true');
+      btnEl.disabled = true;
+    } else {
+      btnEl.removeAttribute?.('aria-busy');
+      btnEl.disabled = false;
+    }
+  }
 
   function isAnyCustomCapabilityActive() {
     if (cityEngine?.isSimActive && cityEngine.isSimActive()) return true;
@@ -698,20 +1009,25 @@ export function createCityDrawer({
         stepHereLabel.textContent = `Step into ${classification.name} Here`;
       }
 
-      const tourPlayCtx =
-        tourAndPlayEngine?.resolveContext?.(lat, lon, groundElev) ||
-        resolveTourOrPlayContext(lat, lon, groundElev);
+      const pillState = resolveAmbientTourPillState(lat, lon, groundElev, {
+        lat,
+        lon,
+        elev: groundElev,
+      });
+      currentDrawerTourState = pillState;
+      const tourPlayBtnEl = drawer.querySelector(
+        '.gev-locale-tour-play-here-btn',
+      );
       const tourPlayIconEl = drawer.querySelector('.gev-tour-play-here-icon');
       const tourPlayLabelEl = drawer.querySelector('.gev-tour-play-here-label');
-      if (tourPlayIconEl && tourPlayLabelEl) {
-        if (tourPlayCtx.mode === 'tour') {
-          tourPlayIconEl.textContent = '🛴';
-          tourPlayLabelEl.textContent = `Tour ${tourPlayCtx.cityName || 'City'}`;
-        } else {
-          tourPlayIconEl.textContent = '🏖️';
-          tourPlayLabelEl.textContent = 'Play Here';
-        }
-      }
+      applyPillStateToButton(
+        tourPlayBtnEl,
+        tourPlayIconEl,
+        tourPlayLabelEl,
+        pillState.state === 'play'
+          ? { ...pillState, label: 'Play Here' }
+          : pillState,
+      );
     }
   }
 
@@ -815,21 +1131,23 @@ export function createCityDrawer({
     if (label)
       label.textContent = `Living World (${entityOrCity?.name || 'Atlanta'})`;
 
+    const tpBtn = ambientPill.querySelector('.gev-ambient-tour-play-btn');
     const tpIcon = ambientPill.querySelector('.gev-ambient-tour-play-icon');
     const tpLabel = ambientPill.querySelector('.gev-ambient-tour-play-label');
-    if (tpIcon && tpLabel) {
-      const lat = entityOrCity?.lat ?? 33.749;
-      const lon = entityOrCity?.lon ?? -84.388;
+    if (tpBtn && tpIcon && tpLabel) {
+      const lat = entityOrCity?.cameraLat ?? entityOrCity?.lat ?? 33.749;
+      const lon = entityOrCity?.cameraLon ?? entityOrCity?.lon ?? -84.388;
       const elev = entityOrCity?.elev ?? 0;
-      const ctx =
-        tourAndPlayEngine?.resolveContext?.(lat, lon, elev) ||
-        resolveTourOrPlayContext(lat, lon, elev);
-      if (ctx.mode === 'tour') {
-        tpIcon.textContent = '🛴';
-        tpLabel.textContent = `Tour ${ctx.cityName || entityOrCity?.name || 'City'}`;
-      } else {
-        tpIcon.textContent = '🏖️';
-        tpLabel.textContent = `Play (${ctx.playActivities?.[0]?.label || 'Here'})`;
+      const pillState = resolveAmbientTourPillState(
+        lat,
+        lon,
+        elev,
+        entityOrCity,
+      );
+      currentAmbientPillState = pillState;
+      applyPillStateToButton(tpBtn, tpIcon, tpLabel, pillState);
+      if (label && pillState.livingWorldName) {
+        label.textContent = `Living World (${pillState.livingWorldName})`;
       }
     }
 
@@ -950,11 +1268,235 @@ export function createCityDrawer({
     dock.openDrawer('wander');
   }
 
+  function refreshLivePillAndDrawer() {
+    if (
+      lastCityDepthTarget &&
+      !isAnyCustomCapabilityActive() &&
+      (ambientPill.classList.contains('visible') ||
+        ambientPill.style.display === 'flex')
+    ) {
+      showAmbientPill(lastCityDepthTarget);
+    }
+    if (
+      !drawer.classList.contains('hidden') &&
+      drawer.style.display !== 'none'
+    ) {
+      syncCameraArchetype();
+    }
+  }
+
+  function startBuiltTourInWander(builtTour, fallbackElev = 0) {
+    if (!builtTour?.cityId) return;
+    hideAmbientPill();
+    tourBuildState.status = 'idle';
+    tourBuildState.builtTour = null;
+    tourBuildState.errorMessage = null;
+    syncTourBuildOverlay();
+    refreshLivePillAndDrawer();
+    dock.openDrawer('wander');
+    tourAndPlayEngine?.startCityTour?.({
+      cityId: builtTour.cityId,
+      lat: builtTour.metadata?.centerLat,
+      lon: builtTour.metadata?.centerLon,
+      elev: fallbackElev || 0,
+      cameraMode: 'iso_chase',
+    });
+  }
+
+  async function triggerBuildTourForPlace(catalogPlace, coords = {}) {
+    if (!catalogPlace?.name || !canBuildTourWithForge()) {
+      return { ok: false, code: 'forge-disabled' };
+    }
+    if (tourBuildState.status === 'building') {
+      return tourBuildState.promise || { ok: false, code: 'forge-busy' };
+    }
+
+    const lat = Number.isFinite(coords?.lat)
+      ? coords.lat
+      : Number.isFinite(catalogPlace?.lat)
+        ? catalogPlace.lat
+        : getGroundTargetCoordinates().lat;
+    const lon = Number.isFinite(coords?.lon)
+      ? coords.lon
+      : Number.isFinite(catalogPlace?.lon)
+        ? catalogPlace.lon
+        : getGroundTargetCoordinates().lon;
+    const elev = Number.isFinite(coords?.elev) ? coords.elev : 20;
+    const cityKey =
+      catalogPlace.cityId ||
+      String(catalogPlace.name)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+
+    tourBuildState.status = 'building';
+    tourBuildState.cityKey = cityKey;
+    tourBuildState.placeName = catalogPlace.name;
+    tourBuildState.catalogPlace = catalogPlace;
+    tourBuildState.lat = lat;
+    tourBuildState.lon = lon;
+    tourBuildState.elev = elev;
+    tourBuildState.builtTour = null;
+    tourBuildState.errorMessage = null;
+    tourBuildState.phaseIndex = 0;
+
+    clearBuildPhaseTimer();
+    buildPhaseTimer = setInterval(() => {
+      if (tourBuildState.status !== 'building') {
+        clearBuildPhaseTimer();
+        return;
+      }
+      tourBuildState.phaseIndex =
+        (tourBuildState.phaseIndex + 1) % TOUR_BUILD_PHASES.length;
+      syncTourBuildOverlay();
+    }, 2200);
+
+    syncTourBuildOverlay();
+    refreshLivePillAndDrawer();
+
+    const tourBuildPayload = {
+      placeName: catalogPlace.name,
+      cityId: cityKey,
+      lat,
+      lon,
+      elev,
+      country: catalogPlace.country || '',
+      region: catalogPlace.region || '',
+      tourScope: 'metro',
+      radiusMeters: 32000,
+      transitMode: 'scooter',
+    };
+
+    const runPromise = (async () => {
+      try {
+        const panel = getEffectiveAgentPanel();
+        let res;
+        if (panel?.runTourBuildForge) {
+          res = await panel.runTourBuildForge(
+            tourBuildPayload,
+            tourBuildFetchImpl ? { fetchImpl: tourBuildFetchImpl } : undefined,
+          );
+        } else if (tourBuildFetchImpl) {
+          const httpRes = await tourBuildFetchImpl('/api/agy/self-modify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              prompt: `Build a Tour v2 landmark tour for ${catalogPlace.name}`,
+              mode: 'forge',
+              providerId: panel?.resolveForgeCliProviderId?.() || 'agy',
+              model: panel?.getSelectedModel?.() || 'inherit',
+              autoCommit: true,
+              tourBuild: tourBuildPayload,
+            }),
+          });
+          res = await httpRes.json();
+        } else {
+          res = {
+            ok: false,
+            error: 'Dev Forge tour builder runtime unavailable.',
+          };
+        }
+
+        if (
+          !res?.ok ||
+          !res?.builtTour?.cityId ||
+          !Array.isArray(res?.builtTour?.landmarks) ||
+          res.builtTour.landmarks.length === 0
+        ) {
+          tourBuildState.status = 'error';
+          tourBuildState.errorMessage =
+            res?.error || res?.output || 'Tour build failed verification.';
+          syncTourBuildOverlay();
+          refreshLivePillAndDrawer();
+          return { ok: false, error: tourBuildState.errorMessage, raw: res };
+        }
+
+        const regResult = registerBuiltTourRuntime(
+          res.builtTour.cityId,
+          res.builtTour.metadata,
+          res.builtTour.landmarks,
+        );
+        if (!regResult.ok) {
+          tourBuildState.status = 'error';
+          tourBuildState.errorMessage =
+            regResult.errors?.join('; ') || 'Tour contract validation failed.';
+          syncTourBuildOverlay();
+          refreshLivePillAndDrawer();
+          return { ok: false, error: tourBuildState.errorMessage };
+        }
+
+        const builtLat = regResult.metadata?.centerLat ?? lat;
+        const builtLon = regResult.metadata?.centerLon ?? lon;
+        let isNearTarget = true;
+        if (viewer?.camera?.positionCartographic || viewer?.scene?.canvas) {
+          const liveCam = getGroundTargetCoordinates();
+          const dist = haversineDistanceMeters(
+            liveCam.lat,
+            liveCam.lon,
+            builtLat,
+            builtLon,
+          );
+          isNearTarget = dist <= 35000;
+        } else if (lastCityDepthTarget) {
+          const tLat =
+            lastCityDepthTarget.cameraLat ?? lastCityDepthTarget.lat ?? lat;
+          const tLon =
+            lastCityDepthTarget.cameraLon ?? lastCityDepthTarget.lon ?? lon;
+          isNearTarget =
+            haversineDistanceMeters(tLat, tLon, builtLat, builtLon) <= 35000;
+        } else {
+          isNearTarget = false;
+        }
+
+        const competingSimActive = Boolean(
+          dock.hasActiveSimulation?.({ excludeIds: ['city', 'wander'] }),
+        );
+
+        if (isNearTarget && !competingSimActive) {
+          startBuiltTourInWander(regResult, elev);
+        } else {
+          tourBuildState.status = 'ready';
+          tourBuildState.builtTour = regResult;
+          syncTourBuildOverlay();
+          refreshLivePillAndDrawer();
+        }
+
+        return { ok: true, builtTour: regResult };
+      } catch (err) {
+        tourBuildState.status = 'error';
+        tourBuildState.errorMessage = err?.message || 'Tour build failed.';
+        syncTourBuildOverlay();
+        refreshLivePillAndDrawer();
+        return { ok: false, error: tourBuildState.errorMessage };
+      } finally {
+        clearBuildPhaseTimer();
+        tourBuildState.promise = null;
+      }
+    })();
+
+    tourBuildState.promise = runPromise;
+    return runPromise;
+  }
+
+  function handleTourOrBuildTrigger(stateObj, coordsOverride = null) {
+    if (tourBuildState.status === 'building') return;
+    if (stateObj?.state === 'build_tour' && stateObj.catalogPlace) {
+      const coords = coordsOverride || getGroundTargetCoordinates();
+      void triggerBuildTourForPlace(stateObj.catalogPlace, coords);
+      return;
+    }
+    launchContextualTourOrPlay();
+  }
+
   const tourPlayHereBtn = drawer.querySelector(
     '.gev-locale-tour-play-here-btn',
   );
   tourPlayHereBtn?.addEventListener('click', () => {
-    launchContextualTourOrPlay();
+    const coords = getGroundTargetCoordinates();
+    const stateObj =
+      currentDrawerTourState ||
+      resolveAmbientTourPillState(coords.lat, coords.lon, coords.elev);
+    handleTourOrBuildTrigger(stateObj, coords);
   });
 
   // Exemplar Locales Step Buttons & Studio/Park/Mall Quick-Jump Presets
@@ -1609,7 +2151,52 @@ export function createCityDrawer({
     .querySelector('.gev-ambient-tour-play-btn')
     ?.addEventListener('click', (e) => {
       e.stopPropagation();
-      launchContextualTourOrPlay();
+      const target = currentPillTarget || lastCityDepthTarget || {};
+      const lat = target.cameraLat ?? target.lat;
+      const lon = target.cameraLon ?? target.lon;
+      const elev = target.elev ?? 0;
+      const fallbackCoords =
+        Number.isFinite(lat) && Number.isFinite(lon)
+          ? { lat, lon, elev }
+          : getGroundTargetCoordinates();
+      const pillState =
+        currentAmbientPillState ||
+        resolveAmbientTourPillState(
+          fallbackCoords.lat,
+          fallbackCoords.lon,
+          fallbackCoords.elev,
+          target,
+        );
+      handleTourOrBuildTrigger(pillState, fallbackCoords);
+    });
+
+  tourBuildOverlay
+    .querySelector('.gev-tour-build-action-btn')
+    ?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (tourBuildState.status === 'ready' && tourBuildState.builtTour) {
+        startBuiltTourInWander(tourBuildState.builtTour, tourBuildState.elev);
+      } else if (
+        tourBuildState.status === 'error' &&
+        tourBuildState.catalogPlace
+      ) {
+        void triggerBuildTourForPlace(tourBuildState.catalogPlace, {
+          lat: tourBuildState.lat,
+          lon: tourBuildState.lon,
+          elev: tourBuildState.elev,
+        });
+      }
+    });
+
+  tourBuildOverlay
+    .querySelector('.gev-tour-build-dismiss-btn')
+    ?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (tourBuildState.status === 'building') return;
+      tourBuildState.status = 'idle';
+      tourBuildState.errorMessage = null;
+      tourBuildState.builtTour = null;
+      syncTourBuildOverlay();
     });
 
   // Launcher Button Click Trigger
@@ -1631,15 +2218,43 @@ export function createCityDrawer({
     close();
   });
 
-  // Keyboard 'C' Shortcut Listener
+  // Keyboard 'C' & 'T' Shortcut Listener
   function handleKeyDown(e) {
     if (e.target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName))
       return;
+    const isPillActive =
+      ambientPill.classList.contains('visible') ||
+      (ambientPill.style.display === 'flex' &&
+        ambientPill.style.opacity === '1');
+    if (
+      (e.key === 't' || e.key === 'T' || e.code === 'KeyT') &&
+      !e.ctrlKey &&
+      !e.metaKey &&
+      !e.altKey &&
+      isPillActive
+    ) {
+      e.preventDefault();
+      e.stopImmediatePropagation?.();
+      const target = currentPillTarget || lastCityDepthTarget || {};
+      const lat = target.cameraLat ?? target.lat;
+      const lon = target.cameraLon ?? target.lon;
+      const elev = target.elev ?? 0;
+      const fallbackCoords =
+        Number.isFinite(lat) && Number.isFinite(lon)
+          ? { lat, lon, elev }
+          : getGroundTargetCoordinates();
+      const pillState =
+        currentAmbientPillState ||
+        resolveAmbientTourPillState(
+          fallbackCoords.lat,
+          fallbackCoords.lon,
+          fallbackCoords.elev,
+          target,
+        );
+      handleTourOrBuildTrigger(pillState, fallbackCoords);
+      return;
+    }
     if (e.key === 'c' || e.key === 'C') {
-      const isPillActive =
-        ambientPill.classList.contains('visible') ||
-        (ambientPill.style.display === 'flex' &&
-          ambientPill.style.opacity === '1');
       if (isPillActive) {
         hideAmbientPill();
         if (currentPillTarget?.isDynamic || currentPillTarget?.lat != null) {
@@ -1736,7 +2351,7 @@ export function createCityDrawer({
   });
 
   dock.registerOverlayGroup('city-ambient', {
-    elements: [ambientPill],
+    elements: [ambientPill, tourBuildOverlay],
   });
 
   const unsubscribeSimState = dock.onSimulationStateChange?.(() =>
@@ -1744,6 +2359,15 @@ export function createCityDrawer({
   );
   const unsubscribeDrawerState = dock.onDrawerStateChange?.(() =>
     syncAmbientVisibility(),
+  );
+  const unsubscribeCaps = getEffectiveAgentPanel()?.onCapabilitiesChange?.(() =>
+    refreshLivePillAndDrawer(),
+  );
+  const unsubscribeCustomTours = onCustomToursChange(() =>
+    refreshLivePillAndDrawer(),
+  );
+  const unsubscribeLocality = onLocalityResolved(() =>
+    refreshLivePillAndDrawer(),
   );
 
   // Reactive Command Dock & Popover Collision-Avoidance Observer
@@ -1777,8 +2401,10 @@ export function createCityDrawer({
 
     if (isControlPanelOpen || isLocationBarOpen || hasPinnedTray) {
       ambientPill.classList.add('dock-active');
+      tourBuildOverlay.classList.add('dock-active');
     } else {
       ambientPill.classList.remove('dock-active');
+      tourBuildOverlay.classList.remove('dock-active');
     }
   }
 
@@ -1798,9 +2424,11 @@ export function createCityDrawer({
 
       commandDock.addEventListener('mouseenter', () => {
         ambientPill?.classList.add('dock-hover');
+        tourBuildOverlay?.classList.add('dock-hover');
       });
       commandDock.addEventListener('mouseleave', () => {
         ambientPill?.classList.remove('dock-hover');
+        tourBuildOverlay?.classList.remove('dock-hover');
         syncAmbientDockState();
       });
     }
@@ -1812,6 +2440,8 @@ export function createCityDrawer({
     isOpen: () =>
       !drawer.classList.contains('hidden') && drawer.style.display !== 'none',
     updateArchetypeCard,
+    triggerBuildTourForPlace,
+    getTourBuildState: () => ({ ...tourBuildState, promise: undefined }),
     getWanderEngine: () => wanderEngine,
     getTourAndPlayEngine: () => tourAndPlayEngine,
     getStadiumEngine: () => stadiumCrowdEngine,
@@ -1819,16 +2449,21 @@ export function createCityDrawer({
       if (typeof window !== 'undefined') {
         window.removeEventListener('keydown', handleKeyDown);
       }
+      clearBuildPhaseTimer();
       dockObserver?.disconnect();
       if (ambientPillDismissTimer) clearTimeout(ambientPillDismissTimer);
       unsubscribeSimState?.();
       unsubscribeDrawerState?.();
+      unsubscribeCaps?.();
+      unsubscribeCustomTours?.();
+      unsubscribeLocality?.();
       dock.unregisterOverlayGroup('city-ambient');
       dock.unregisterSimulation('city');
       dock.unregisterDrawer('city');
       stadiumCrowdEngine?.destroy?.();
       drawer.remove();
       ambientPill.remove();
+      tourBuildOverlay.remove();
       launcherButton.remove();
     },
   };

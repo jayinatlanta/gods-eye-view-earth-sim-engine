@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { spawn } from 'node:child_process';
 import process from 'node:process';
 import { readRequestBody } from '../common/request.js';
@@ -866,7 +867,7 @@ export function buildNeuroLayeredForgePrompt({
     `1. You are operating inside the live ${appName} codebase (${repoRoot}). Modify this very codebase to implement the user's request cleanly and completely.`,
     '2. When the user asks to add cities, landmarks, tours, venues, corridors, or POIs, populate the existing canonical structures listed above rather than inventing redundant silos.',
     '3. Produce production-quality, modular code with zero placeholders or broken imports.',
-    '4. SOVEREIGN & OSS SAFETY: Never hardcode personal residences, Tailscale hostnames, private brand strings, or private companion overrides directly in source; read profile defaults via `resolveForkProfile()` (`src/config/forkProfile.js`) and env config.',
+    '4. SOVEREIGN & OSS SAFETY: Never hardcode personal residences, Tailscale hostnames, private brand strings, or private companion overrides directly in source or tracked tests; read profile defaults via `resolveForkProfile()` (`src/config/forkProfile.js`) and env config. All tracked unit/regression tests (*.test.mjs) MUST use neutral civic landmarks or synthetic fixtures (e.g., Austin <-> Dallas, example.com, 12.3456), never real personal coordinates/residences/emails; keep personal repro scripts strictly in gitignored tests-private/ (or *.private.test.mjs).',
     '5. UI & CATALOG CONTRACT: If you add a new `registerDrawer(...)` panel, register its card in `EARTH_SIM_FEATURE_CATALOG` (`src/ui/earthSimFeatureCatalog.js`). Wrap all visible UI strings in `msg()`/`t()` and run `npm run i18n` (+ update all 13 `src/i18n/locales/*.json` catalogs).',
     '6. If you add any new client module under src/ imported by src/app/tools.js, register it in scripts/package-boundaries.json under "application-components" and add any new formatted files to scripts/format-scope.json.',
     '7. Write or update unit tests (*.test.mjs) covering the new capability and execute `node --test` on the relevant test files PLUS `npm run check:oss -- --skip-format` (hygiene, boundaries, i18n, catalog, icon subset) to guarantee zero regressions.',
@@ -878,6 +879,354 @@ export function buildNeuroLayeredForgePrompt({
   ]
     .filter(Boolean)
     .join('\n');
+}
+
+function slugifyTourCityId(raw = '', fallback = 'local_tour') {
+  const clean = String(raw || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 36);
+  return clean || fallback;
+}
+
+export function normalizeTourBuildDirective(rawTourBuild = {}) {
+  if (!rawTourBuild || typeof rawTourBuild !== 'object') return null;
+  const placeName = String(
+    rawTourBuild.placeName || rawTourBuild.name || '',
+  ).trim();
+  const cityId = slugifyTourCityId(
+    rawTourBuild.cityId || placeName,
+    placeName ? 'local_tour' : '',
+  );
+  const rawScope = String(rawTourBuild.tourScope || '').trim();
+  const tourScope =
+    rawScope === 'venue' || rawScope === 'metro' || rawScope === 'city'
+      ? rawScope
+      : 'metro';
+  const rawTransit = String(rawTourBuild.transitMode || '').trim();
+  const transitMode =
+    rawTransit === 'walk_midway' || rawTransit === 'scooter'
+      ? rawTransit
+      : tourScope === 'venue'
+        ? 'walk_midway'
+        : 'scooter';
+  const radiusMeters = Number.isFinite(Number(rawTourBuild.radiusMeters))
+    ? Math.max(1000, Math.round(Number(rawTourBuild.radiusMeters)))
+    : tourScope === 'venue'
+      ? 2500
+      : 32000;
+  const lat = Number.isFinite(Number(rawTourBuild.lat))
+    ? Number(Number(rawTourBuild.lat).toFixed(6))
+    : null;
+  const lon = Number.isFinite(Number(rawTourBuild.lon))
+    ? Number(Number(rawTourBuild.lon).toFixed(6))
+    : null;
+  const elev = Number.isFinite(Number(rawTourBuild.elev))
+    ? Math.round(Number(rawTourBuild.elev))
+    : 20;
+  return {
+    placeName,
+    cityId,
+    lat,
+    lon,
+    elev,
+    country: String(rawTourBuild.country || '').trim(),
+    region: String(rawTourBuild.region || '').trim(),
+    tourScope,
+    radiusMeters,
+    transitMode,
+  };
+}
+
+/**
+ * Builds a structured Dev Forge prompt for Tour ANYWHERE (`tourBuild`) targeting
+ * the Stage 1 Tour Framework v2 contract (`METRO_LANDMARK_CATALOG`, `METRO_TOUR_METADATA`,
+ * `LIVING_CITIES` / `CITY_QUERY_ALIASES`, and `MAJOR_WORLD_METROS`).
+ */
+export function buildTourBuildForgePrompt({
+  tourBuild,
+  appName = "God's Eye View (GEV)",
+  repoRoot = process.cwd(),
+  autoCommit = true,
+} = {}) {
+  const spec = normalizeTourBuildDirective(tourBuild) || {
+    placeName: 'Local Place',
+    cityId: 'local_place',
+    lat: 0,
+    lon: 0,
+    elev: 20,
+    country: '',
+    region: '',
+    tourScope: 'metro',
+    radiusMeters: 32000,
+    transitMode: 'scooter',
+  };
+  const coordLine =
+    Number.isFinite(spec.lat) && Number.isFinite(spec.lon)
+      ? `${spec.lat}, ${spec.lon} (elev ~${spec.elev}m)`
+      : 'Use verified civic coordinates';
+  const regionLine = [spec.region, spec.country].filter(Boolean).join(', ');
+
+  return [
+    `[TOUR ANYWHERE JIT DEV-FORGE DIRECTIVE — ${appName.toUpperCase()}]`,
+    `Target Repository Root: ${repoRoot}`,
+    `Target Place: ${spec.placeName}${regionLine ? ` (${regionLine})` : ''}`,
+    `Canonical cityId: ${spec.cityId}`,
+    `Anchor Coordinates: ${coordLine}`,
+    `Tour Framework v2 Scope: tourScope='${spec.tourScope}', radiusMeters=${spec.radiusMeters}, transitMode='${spec.transitMode}'`,
+    '',
+    'REQUIRED CONTRACT IMPLEMENTATION (TOUR FRAMEWORK v2):',
+    `1. Add 4 to 6 real, geographically accurate, civic-safe landmark stops under \`METRO_LANDMARK_CATALOG.${spec.cityId}\` in \`src/layers/citylife/tourAndPlayEngine.js\`.`,
+    '   Every stop MUST include: `id` (unique snake_case), `name`, `lat`, `lon`, `elev`, `category` (valid `TOUR_STOP_CATEGORIES`), `lore` (>= 20 chars), `companionNote`, `streetBearingDeg` (0..359), `icon`, `wikiTitle` (exact Wikipedia page title for Wikimedia photo cards), and `youtubeSearchQuery` (evergreen POV search string). Include `youtubeVideoId` ONLY if it is a verified 11-char ID (`^[A-Za-z0-9_-]{11}$`); otherwise omit it.',
+    `2. Register \`METRO_TOUR_METADATA.${spec.cityId}\` in \`src/layers/citylife/tourAndPlayEngine.js\` with: \`id: '${spec.cityId}'\`, \`name: '${spec.placeName}'\`, \`continent\`, \`country\`, \`populationNote\`, \`centerLat\`, \`centerLon\`, \`tourScope: '${spec.tourScope}'\`, \`radiusMeters: ${spec.radiusMeters}\`, \`transitMode: '${spec.transitMode}'\`, and \`aliases\` (plus add key aliases to \`METRO_TOUR_CITY_ALIASES\` if helpful).`,
+    spec.tourScope !== 'venue'
+      ? `3. Register \`LIVING_CITIES.${spec.cityId}\` and \`CITY_QUERY_ALIASES\` in \`src/citylife/cityWaypoints.js\` (with realistic pedestrian corridors & viewpoints), and ensure \`MAJOR_WORLD_METROS\` in \`src/ui/worldSimDock.js\` includes '${spec.placeName}' if absent.`
+      : `3. Keep \`${spec.cityId}\` scoped as a tight-radius \`venue\` tour without altering unrelated \`LIVING_CITIES\` entries.`,
+    '4. SOVEREIGN & OSS SAFETY: Public civic landmarks ONLY — never hardcode personal coordinates, residences, emails, or private identifiers in source or tracked tests. Ensure the pre-commit hygiene hook passes cleanly.',
+    '5. VERIFICATION: Run `node --test src/citylife/tourAndPlayAndAgentForge.test.mjs` and `npm run check:oss -- --skip-format` (including boundaries, i18n, and hygiene) until all checks pass.',
+    autoCommit
+      ? `6. Once tests and \`check:oss\` pass, commit cleanly to the active branch: \`git add -A && git commit -m "feat(tour-anywhere): add ${spec.placeName} Tour v2"\`.`
+      : '6. Leave verified changes in the working tree without committing.',
+    '7. IMPORTANT OUTPUT CONTRACT: At the very end of your response, emit a fenced JSON block labeled ```gev-tour-contract-json containing the exact registered Tour v2 payload (`schemaVersion: 2`, `cityId`, `metadata`, `landmarks`) so the running browser session can hot-register it immediately without a page reload.',
+  ].join('\n');
+}
+
+const VALID_YT_ID_RE = /^[A-Za-z0-9_-]{11}$/;
+
+/**
+ * Extracts and validates `{ schemaVersion: 2, cityId, metadata, landmarks }` from
+ * Dev Forge stdout (`gev-tour-contract-json` fence or trailing JSON fence).
+ */
+export function extractBuiltTourContractFromOutput(outputText = '') {
+  const raw = String(outputText || '');
+  if (!raw.trim()) return null;
+
+  const candidates = [];
+  const taggedRe = /```gev-tour-contract-json\s*([\s\S]*?)```/gi;
+  let match = taggedRe.exec(raw);
+  while (match !== null) {
+    candidates.push(match[1]);
+    match = taggedRe.exec(raw);
+  }
+  if (candidates.length === 0) {
+    const genericRe = /```(?:json)?\s*([\s\S]*?)```/gi;
+    const allGeneric = [];
+    let gMatch = genericRe.exec(raw);
+    while (gMatch !== null) {
+      allGeneric.push(gMatch[1]);
+      gMatch = genericRe.exec(raw);
+    }
+    for (let i = allGeneric.length - 1; i >= 0; i -= 1) {
+      candidates.push(allGeneric[i]);
+    }
+  }
+
+  for (const block of candidates) {
+    try {
+      const parsed = JSON.parse(String(block || '').trim());
+      if (
+        !parsed ||
+        typeof parsed !== 'object' ||
+        !Array.isArray(parsed.landmarks) ||
+        parsed.landmarks.length === 0
+      ) {
+        continue;
+      }
+      const cityId = slugifyTourCityId(
+        parsed.cityId || parsed.metadata?.id || parsed.metadata?.name || '',
+        '',
+      );
+      if (!cityId) continue;
+
+      const metaIn =
+        parsed.metadata && typeof parsed.metadata === 'object'
+          ? parsed.metadata
+          : {};
+      const displayName = String(metaIn.name || cityId).trim() || cityId;
+      const normalizedStops = [];
+      let invalidStop = false;
+
+      for (let i = 0; i < parsed.landmarks.length; i += 1) {
+        const lm = parsed.landmarks[i];
+        const stopName = String(lm?.name || '').trim();
+        const lat = Number(lm?.lat);
+        const lon = Number(lm?.lon);
+        const lore = String(lm?.lore || '').trim();
+        const ytId = String(lm?.youtubeVideoId || '').trim();
+        if (
+          stopName.length < 2 ||
+          !Number.isFinite(lat) ||
+          lat < -90 ||
+          lat > 90 ||
+          !Number.isFinite(lon) ||
+          lon < -180 ||
+          lon > 180 ||
+          lore.length < 6 ||
+          (ytId && !VALID_YT_ID_RE.test(ytId))
+        ) {
+          invalidStop = true;
+          break;
+        }
+        const elev = Number.isFinite(Number(lm?.elev))
+          ? Math.round(Number(lm.elev))
+          : 50;
+        const rawBearing = Number(lm?.streetBearingDeg);
+        const streetBearingDeg = Number.isFinite(rawBearing)
+          ? Math.round(((rawBearing % 360) + 360) % 360)
+          : 90;
+        normalizedStops.push({
+          id: String(lm?.id || '').trim() || `${cityId}_stop_${i + 1}`,
+          name: stopName,
+          lat: Number(lat.toFixed(6)),
+          lon: Number(lon.toFixed(6)),
+          elev,
+          category:
+            String(lm?.category || 'Historic Landmark').trim() ||
+            'Historic Landmark',
+          lore,
+          companionNote:
+            String(lm?.companionNote || '').trim() ||
+            `Exploring ${stopName} in ${displayName}!`,
+          streetBearingDeg,
+          icon: String(lm?.icon || '📍').trim() || '📍',
+          wikiTitle: String(lm?.wikiTitle || '').trim() || stopName,
+          ...(ytId ? { youtubeVideoId: ytId } : {}),
+          youtubeSearchQuery:
+            String(lm?.youtubeSearchQuery || '').trim() ||
+            `${stopName} ${displayName} 4K walking tour`,
+          ...(lm?.land ? { land: String(lm.land).trim() } : {}),
+          ...(Number.isFinite(Number(lm?.estimatedWaitMin ?? lm?.waitTimeMin))
+            ? {
+                estimatedWaitMin: Math.round(
+                  Number(lm.estimatedWaitMin ?? lm.waitTimeMin),
+                ),
+              }
+            : {}),
+          ...(lm?.snackNote || lm?.snackTag
+            ? { snackNote: String(lm.snackNote || lm.snackTag).trim() }
+            : {}),
+          ...(lm?.showcaseZone || lm?.dayChapter
+            ? {
+                showcaseZone: String(lm.showcaseZone || lm.dayChapter).trim(),
+              }
+            : {}),
+        });
+      }
+
+      if (invalidStop || normalizedStops.length === 0) continue;
+
+      const rawScope = String(metaIn.tourScope || '').trim();
+      const tourScope =
+        rawScope === 'venue' || rawScope === 'city' || rawScope === 'metro'
+          ? rawScope
+          : 'metro';
+      const rawTransit = String(metaIn.transitMode || '').trim();
+      const transitMode =
+        rawTransit === 'walk_midway' || rawTransit === 'scooter'
+          ? rawTransit
+          : tourScope === 'venue'
+            ? 'walk_midway'
+            : 'scooter';
+      const radiusMeters = Number.isFinite(Number(metaIn.radiusMeters))
+        ? Math.max(1000, Math.round(Number(metaIn.radiusMeters)))
+        : tourScope === 'venue'
+          ? 2500
+          : 32000;
+      const centerLat = Number.isFinite(Number(metaIn.centerLat))
+        ? Number(metaIn.centerLat)
+        : normalizedStops[0].lat;
+      const centerLon = Number.isFinite(Number(metaIn.centerLon))
+        ? Number(metaIn.centerLon)
+        : normalizedStops[0].lon;
+
+      return {
+        schemaVersion: 2,
+        cityId,
+        metadata: {
+          ...metaIn,
+          id: cityId,
+          name: displayName,
+          tourScope,
+          radiusMeters,
+          transitMode,
+          centerLat: Number(centerLat.toFixed(6)),
+          centerLon: Number(centerLon.toFixed(6)),
+        },
+        landmarks: normalizedStops,
+      };
+    } catch {
+      /* try next candidate block */
+    }
+  }
+  return null;
+}
+
+/**
+ * Loads the persisted Tour v2 contract from `tourAndPlayEngine.js` in a child Node
+ * process so server modules never statically import browser modules.
+ */
+export async function loadBuiltTourContractFromRepo({
+  repoRoot = process.cwd(),
+  cityId = '',
+  runProcessImpl = runProcess,
+} = {}) {
+  const cleanCityId = slugifyTourCityId(cityId, '');
+  const tourModulePath = path.join(
+    repoRoot,
+    'src',
+    'layers',
+    'citylife',
+    'tourAndPlayEngine.js',
+  );
+  if (!cleanCityId || !fs.existsSync(tourModulePath)) {
+    return null;
+  }
+
+  const probeScript = [
+    'const mod = await import(process.argv[1]);',
+    'const cid = process.argv[2];',
+    'if (!mod.METRO_LANDMARK_CATALOG?.[cid]) process.exit(2);',
+    'const json = mod.exportTourAsContractJson(cid);',
+    'if (!json) process.exit(3);',
+    'process.stdout.write(json);',
+  ].join(' ');
+
+  const res = await runProcessImpl(
+    process.execPath,
+    [
+      '--input-type=module',
+      '-e',
+      probeScript,
+      pathToFileURL(tourModulePath).href,
+      cleanCityId,
+    ],
+    { cwd: repoRoot, timeoutMs: 15000 },
+  );
+  if (!res?.ok || !res.stdout) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(res.stdout);
+    if (
+      parsed &&
+      parsed.cityId === cleanCityId &&
+      Array.isArray(parsed.landmarks) &&
+      parsed.landmarks.length > 0
+    ) {
+      return {
+        schemaVersion: 2,
+        cityId: parsed.cityId,
+        metadata: parsed.metadata,
+        landmarks: parsed.landmarks,
+      };
+    }
+  } catch {
+    /* ignore malformed JSON */
+  }
+  return null;
 }
 
 function runProcess(command, args, { cwd, timeoutMs = 420000, env } = {}) {
@@ -1155,7 +1504,31 @@ export async function handleAgySelfModify(
   try {
     const rawBody = await readRequestBody(req, 128 * 1024);
     const body = JSON.parse(rawBody || '{}');
-    const userPrompt = String(body.prompt || '').trim();
+    const rawTourBuild =
+      body.tourBuild && typeof body.tourBuild === 'object'
+        ? body.tourBuild
+        : null;
+    const normalizedTourBuild = rawTourBuild
+      ? normalizeTourBuildDirective(rawTourBuild)
+      : null;
+
+    if (rawTourBuild && !normalizedTourBuild?.placeName) {
+      res.statusCode = 400;
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      res.end(
+        JSON.stringify({
+          ok: false,
+          error: 'tourBuild.placeName is required.',
+        }),
+      );
+      return;
+    }
+
+    const userPrompt =
+      String(body.prompt || '').trim() ||
+      (normalizedTourBuild
+        ? `Build a Tour v2 landmark tour for ${normalizedTourBuild.placeName}`
+        : '');
     if (!userPrompt) {
       res.statusCode = 400;
       res.setHeader('Content-Type', 'application/json');
@@ -1187,7 +1560,9 @@ export async function handleAgySelfModify(
       return;
     }
 
-    const resolvedMode = classifyAgentRequestMode(userPrompt, body.mode);
+    const resolvedMode = normalizedTourBuild
+      ? 'forge'
+      : classifyAgentRequestMode(userPrompt, body.mode);
     const isAskMode = resolvedMode === 'ask';
 
     if (!isAskMode && !isLiveForgeEnabled(env)) {
@@ -1244,13 +1619,20 @@ export async function handleAgySelfModify(
           appName,
           context: body.context || null,
         })
-      : buildNeuroLayeredForgePrompt({
-          userPrompt,
-          appName,
-          repoRoot,
-          context: body.context || null,
-          autoCommit,
-        });
+      : normalizedTourBuild
+        ? buildTourBuildForgePrompt({
+            tourBuild: normalizedTourBuild,
+            appName,
+            repoRoot,
+            autoCommit,
+          })
+        : buildNeuroLayeredForgePrompt({
+            userPrompt,
+            appName,
+            repoRoot,
+            context: body.context || null,
+            autoCommit,
+          });
 
     const gitBefore = isAskMode ? null : await getGitHeadStatus(repoRoot);
 
@@ -1272,6 +1654,7 @@ export async function handleAgySelfModify(
             model: resolvedModel,
             mode: resolvedMode,
           }),
+          tourBuild: normalizedTourBuild || undefined,
           neuroPrompt: isAskMode ? null : compiledPrompt,
           worldGuidePrompt: isAskMode ? compiledPrompt : null,
           git: gitBefore,
@@ -1456,6 +1839,20 @@ export async function handleAgySelfModify(
       }
     }
 
+    let builtTour = null;
+    if (normalizedTourBuild && execResult.ok) {
+      if (runProcessImpl === runProcess) {
+        builtTour = await loadBuiltTourContractFromRepo({
+          repoRoot,
+          cityId: normalizedTourBuild.cityId,
+          runProcessImpl,
+        });
+      }
+      if (!builtTour) {
+        builtTour = extractBuiltTourContractFromOutput(answerText);
+      }
+    }
+
     const combinedOutput = answerText || cleanedStderr || 'Completed.';
     const activeDefaultModel = readAgyCliActiveDefaultModel({ settingsPath });
     const displayModelUsed =
@@ -1478,6 +1875,8 @@ export async function handleAgySelfModify(
         modelFallbackTriggered: fallbackRun.modelFallbackTriggered,
         attempts: fallbackRun.attempts,
         cliArgs: fallbackRun.finalArgs,
+        tourBuild: normalizedTourBuild || undefined,
+        builtTour: builtTour || undefined,
         answer: isAskMode ? answerText : undefined,
         summary: isAskMode ? answerText.slice(0, 280) : undefined,
         output: combinedOutput,

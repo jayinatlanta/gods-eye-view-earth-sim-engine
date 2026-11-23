@@ -34,28 +34,34 @@ export function filterScenicImage(url) {
 }
 
 export async function fetchSightseeingFromWikipedia({
-  query,
+  query = '',
+  title = '',
   lat = null,
   lon = null,
   limit = 2,
   fetchImpl = globalThis.fetch,
 } = {}) {
+  const cleanTitle = (title || '').trim();
   const cleanQuery = (query || '').trim();
-  if (!cleanQuery) {
+  const effectiveQuery = cleanTitle || cleanQuery;
+  if (!effectiveQuery) {
     return { ok: true, query: '', count: 0, billboards: [] };
   }
 
-  const cacheKey = cleanQuery.toLowerCase();
+  const cacheKey = cleanTitle
+    ? `title:${cleanTitle.toLowerCase()}`
+    : cleanQuery.toLowerCase();
   const cached = cache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
     return cached.data;
   }
 
-  const qEnc = encodeURIComponent(cleanQuery);
-  const upstreamUrl =
-    `https://en.wikipedia.org/w/api.php?action=query&generator=search` +
-    `&gsrsearch=${qEnc}&gsrlimit=6&prop=pageimages|extracts|coordinates` +
-    `&piprop=thumbnail|original&pithumbsize=1024&exintro=1&explaintext=1&format=json`;
+  const upstreamUrl = cleanTitle
+    ? `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(cleanTitle)}&redirects=1` +
+      `&prop=pageimages|extracts|coordinates&piprop=thumbnail|original&pithumbsize=640&exintro=1&explaintext=1&format=json`
+    : `https://en.wikipedia.org/w/api.php?action=query&generator=search` +
+      `&gsrsearch=${encodeURIComponent(cleanQuery)}&gsrlimit=6&prop=pageimages|extracts|coordinates` +
+      `&piprop=thumbnail|original&pithumbsize=1024&exintro=1&explaintext=1&format=json`;
 
   try {
     const res = await fetchImpl(upstreamUrl, {
@@ -107,9 +113,19 @@ export async function fetchSightseeingFromWikipedia({
       if (billboards.length >= limit) break;
     }
 
+    if (billboards.length === 0 && cleanTitle && cleanQuery) {
+      return fetchSightseeingFromWikipedia({
+        query: cleanQuery,
+        lat,
+        lon,
+        limit,
+        fetchImpl,
+      });
+    }
     const result = {
       ok: true,
-      query: cleanQuery,
+      query: effectiveQuery,
+      ...(cleanTitle ? { title: cleanTitle } : {}),
       count: billboards.length,
       billboards,
     };
@@ -148,6 +164,7 @@ export function sightseeingDiscoveryProxy({
 
       const url = new URL(req.url || '/', 'http://localhost');
       const query = url.searchParams.get('query') || '';
+      const title = url.searchParams.get('title') || '';
       const latParam = url.searchParams.get('lat');
       const lonParam = url.searchParams.get('lon');
       const limitParam = url.searchParams.get('limit');
@@ -160,6 +177,7 @@ export function sightseeingDiscoveryProxy({
 
       const data = await fetchSightseeingFromWikipedia({
         query,
+        title,
         lat,
         lon,
         limit,

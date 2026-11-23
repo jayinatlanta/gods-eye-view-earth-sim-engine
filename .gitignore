@@ -30,3 +30,7 @@ pinokio/.installed
 
 # Transient: a release interrupted mid-assembly (npm run changelog recovers it)
 changelog.d/.assembling/
+
+# Private local repro scripts & tests (never committed)
+tests-private/
+*.private.test.mjs

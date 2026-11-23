@@ -21,6 +21,7 @@
  *      Visit the Beach, See a Movie, Go Out to Eat, Go Shopping.
  */
 
+import * as Cesium from 'cesium';
 import {
   LIVING_CITIES,
   haversineDistanceMeters,
@@ -29,7 +30,14 @@ import {
 import {
   getGlobalDrawerCoordinator,
   MAJOR_WORLD_METROS,
+  resolveKnownLocalGazetteer,
+  onLocalityResolved,
 } from '../../ui/worldSimDock.js';
+import { nearPlaceRecord, placeBelow } from '../../data/placeBelow.js';
+import {
+  findPlaceAreaContainingPoint,
+  findNeighborhoodAreaContainingPoint,
+} from '../../data/placeBoundaries.js';
 import {
   SETTLEMENT_TYPOLOGIES,
   TYPOLOGY_METADATA,
@@ -43,13 +51,31 @@ import {
 import { getCompanionPersonaName } from './companionDot.js';
 import { calculateShoulderOffset } from './multiTopologyPathing.js';
 import { snapRouteToRoads } from '../../drive/roadGeometrySnapper.js';
+import {
+  STAGE3_THEME_PARK_LANDMARKS,
+  STAGE3_THEME_PARK_METADATA,
+  STAGE3_THEME_PARK_ALIASES,
+  RESORT_PARK_HOPPER_BRIDGES,
+  getParkHopperBridgesForPark,
+  ALL_CURATED_THEME_PARK_IDS,
+} from './themeParkCatalog.js';
+
+export {
+  RESORT_PARK_HOPPER_BRIDGES,
+  getParkHopperBridgesForPark,
+  ALL_CURATED_THEME_PARK_IDS,
+};
 
 export const TOUR_SCOOTER_SPEED_MPS = WANDER_SPEED_TIERS.SCOOTER || 6.7; // ~15 mph electric scooter
 export const TOUR_WALK_DWELL_SPEED_MPS = WANDER_SPEED_TIERS.STROLL || 1.2; // ~2.7 mph normal walking wander
+export const TOUR_WALK_MIDWAY_SPEED_MPS = 3.2; // Brisk park promenade walk (~3.2 m/s)
 export const TOUR_LANDMARK_DWELL_SECONDS = 20; // 20s autonomous walking wander at each landmark
 export const METRO_TOUR_RADIUS_METERS = 32000; // 32km metro detection radius
+export const VENUE_TOUR_DEFAULT_RADIUS_METERS = 2500; // Tight theme-park/campus venue detection
 export const TOUR_SIDEWALK_OFFSET_METERS = 3.5; // +3.5m right-hand pedestrian sidewalk offset from street centerline
 export const TOUR_APPROACH_CORRIDOR_MAX_METERS = 260; // Max direct scooter distance before staging on the landmark's street corridor
+export const TOUR_WALK_MIDWAY_CORRIDOR_MAX_METERS = 650; // Continuous mid-park walkway leg threshold before corridor staging
+export const YOUTUBE_VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
 
 export const TOUR_PLAY_STATES = Object.freeze({
   IDLE: 'idle',
@@ -1545,6 +1571,600 @@ export const METRO_LANDMARK_CATALOG = Object.freeze({
         'Trade wind right off the bay, wide-open sky, and zero traffic—perfect spot for a sunset cruise or chopper lift-off!',
     },
   ],
+  wdw_magic_kingdom: [
+    {
+      id: 'mk_main_street_train_station',
+      name: 'Main Street U.S.A. Station',
+      lat: 28.4163,
+      lon: -81.5812,
+      elev: 32,
+      category: 'Park Entrance',
+      land: 'Main Street, U.S.A.',
+      estimatedWaitMin: 10,
+      snackNote: 'Confectionery Cotton Candy & Mickey Cinnamon Roll',
+      wikiTitle: 'Walt_Disney_World_Railroad',
+      youtubeSearchQuery:
+        'Walt Disney World Railroad Main Street Station 4K POV Magic Kingdom',
+      streetBearingDeg: 0,
+      icon: '🚂',
+      lore: 'Turn-of-the-century Victorian brick depot overlooking Town Square where narrow-gauge steam locomotives depart on a 1.5-mile perimeter loop.',
+      companionNote:
+        'Step under the arches onto Main Street and catch that fresh waffle-cone scent drifting down toward the hub!',
+    },
+    {
+      id: 'mk_cinderella_castle',
+      name: 'Cinderella Castle Hub',
+      lat: 28.4194,
+      lon: -81.5812,
+      elev: 57,
+      category: 'Castle Icon',
+      land: 'Fantasyland Hub',
+      estimatedWaitMin: 0,
+      snackNote: 'Sleepy Hollow Fresh Fruit Waffle & Dole Whip Float Nearby',
+      wikiTitle: 'Cinderella_Castle',
+      youtubeSearchQuery: 'Cinderella Castle Walkthrough 4K Magic Kingdom WDW',
+      streetBearingDeg: 0,
+      icon: '🏰',
+      lore: '189-foot forced-perspective Gothic and Renaissance spire serving as the compass rose linking all six themed lands of Magic Kingdom.',
+      companionNote:
+        'Every spire narrows toward the sky to look twice as tall—best photo angle is slightly left of the Partners statue!',
+    },
+    {
+      id: 'mk_pirates_of_the_caribbean',
+      name: 'Pirates of the Caribbean',
+      lat: 28.4181,
+      lon: -81.5841,
+      elev: 31,
+      category: 'Dark Boat Ride',
+      land: 'Adventureland',
+      estimatedWaitMin: 30,
+      snackNote: 'Aloha Isle Pineapple Dole Whip Soft Serve',
+      wikiTitle: 'Pirates_of_the_Caribbean_(attraction)',
+      youtubeVideoId: 'Ocek9XbtG00',
+      youtubeSearchQuery: 'Pirates of the Caribbean 4K POV Magic Kingdom WDW',
+      streetBearingDeg: 270,
+      icon: '🏴‍☠️',
+      lore: 'Cool bromine-scented sea fortress plunging guests down a misty waterfall into 17th-century coastal raids and cavern treasure rooms.',
+      companionNote:
+        'Nothing beats escaping Florida afternoon sun into Castillo del Morro’s cool queue—keep an eye out for the chess-playing skeletons!',
+    },
+    {
+      id: 'mk_jungle_cruise',
+      name: 'Jungle Cruise Boathouse',
+      lat: 28.4178,
+      lon: -81.5835,
+      elev: 31,
+      category: 'Scenic River Boat',
+      land: 'Adventureland',
+      estimatedWaitMin: 45,
+      snackNote: 'Sunshine Tree Terrace Citrus Swirl',
+      wikiTitle: 'Jungle_Cruise',
+      youtubeSearchQuery: 'Jungle Cruise 4K Full Ride POV Magic Kingdom WDW',
+      streetBearingDeg: 255,
+      icon: '🚤',
+      lore: 'Canopy boat expedition winding past Nile hippos, temple ruins, and Schweitzer Falls powered by pun-slinging skippers since opening day 1971.',
+      companionNote:
+        'Back side of water joke incoming—plus the night sailings turn Adventureland’s lanterns downright atmospheric!',
+    },
+    {
+      id: 'mk_tianas_bayou_adventure',
+      name: "Tiana's Bayou Adventure",
+      lat: 28.4193,
+      lon: -81.585,
+      elev: 40,
+      category: 'Log Flume',
+      land: 'Frontierland',
+      estimatedWaitMin: 55,
+      snackNote: 'Golden Oak Outpost Tiana’s Famous Beignets',
+      wikiTitle: "Tiana's_Bayou_Adventure",
+      youtubeSearchQuery:
+        "Tiana's Bayou Adventure 4K Front Row POV Magic Kingdom WDW",
+      streetBearingDeg: 315,
+      icon: '🎺',
+      lore: 'Cypress-draped New Orleans salt dome culminating in a 50-foot splashdown plunge before Mardi Gras bayou celebration scenes.',
+      companionNote:
+        'Hold onto your sunglasses on that final briar-crest drop—front row guarantees a proper splash!',
+    },
+    {
+      id: 'mk_big_thunder_mountain',
+      name: 'Big Thunder Mountain Railroad',
+      lat: 28.4203,
+      lon: -81.5847,
+      elev: 45,
+      category: 'Mine Train Coaster',
+      land: 'Frontierland',
+      estimatedWaitMin: 40,
+      snackNote: 'Pecos Bill Churro & Cornbread Bites',
+      wikiTitle: 'Big_Thunder_Mountain_Railroad',
+      youtubeSearchQuery:
+        'Big Thunder Mountain Railroad 4K Night POV Magic Kingdom WDW',
+      streetBearingDeg: 25,
+      icon: '⛏️',
+      lore: 'Red-rock Monument Valley mesas racing runaway ore trains past subterranean bat caverns, geysers, and wooden trestles along the Rivers of America.',
+      companionNote:
+        'Sit in the very last row for maximum whip over the dips—this is truly the wildest ride in the wilderness!',
+    },
+    {
+      id: 'mk_haunted_mansion',
+      name: 'The Haunted Mansion',
+      lat: 28.4204,
+      lon: -81.583,
+      elev: 34,
+      category: 'Omnimover Dark Ride',
+      land: 'Liberty Square',
+      estimatedWaitMin: 35,
+      snackNote:
+        'Liberty Square Market Pickle & Columbia Harbour House Cobbler',
+      wikiTitle: 'The_Haunted_Mansion',
+      youtubeVideoId: '4RyfWkUvas0',
+      youtubeSearchQuery:
+        'The Haunted Mansion 4K Full Ride POV Magic Kingdom WDW',
+      streetBearingDeg: 10,
+      icon: '👻',
+      lore: 'Brick Hudson River Gothic manor hosting 999 happy haunts with Pepper’s Ghost ballroom waltzers and endless corridor illusions.',
+      companionNote:
+        'Step into the Stretching Room and look straight up when the lightning cracks—magic at dusk!',
+    },
+    {
+      id: 'mk_seven_dwarfs_mine_train',
+      name: 'Seven Dwarfs Mine Train',
+      lat: 28.4205,
+      lon: -81.5802,
+      elev: 38,
+      category: 'Swinging Coaster',
+      land: 'Fantasyland',
+      estimatedWaitMin: 65,
+      snackNote: 'Gaston’s Tavern Warm Cinnamon Roll & LeFou’s Brew',
+      wikiTitle: 'Seven_Dwarfs_Mine_Train',
+      youtubeVideoId: 'sf8NARziZZM',
+      youtubeSearchQuery:
+        'Seven Dwarfs Mine Train 4K Front Row POV Magic Kingdom WDW',
+      streetBearingDeg: 75,
+      icon: '💎',
+      lore: 'Cradled mine-cart coaster swinging gently around craggy Fantasyland peaks before drifting through the glowing jewel vault of the Seven Dwarfs.',
+      companionNote:
+        'Rock the car side-to-side during the lift hill—plus peek left on the cottage curve at the end!',
+    },
+    {
+      id: 'mk_peter_pans_flight',
+      name: "Peter Pan's Flight",
+      lat: 28.42,
+      lon: -81.5819,
+      elev: 33,
+      category: 'Suspended Dark Ride',
+      land: 'Fantasyland',
+      estimatedWaitMin: 60,
+      snackNote: 'Friar’s Nook Tots & Pinocchio Village Haus Flatbread',
+      wikiTitle: "Peter_Pan's_Flight",
+      youtubeSearchQuery: "Peter Pan's Flight 4K Ride POV Magic Kingdom WDW",
+      streetBearingDeg: 190,
+      icon: '✨',
+      lore: 'Ceiling-suspended galleons gliding high above miniature glowing London streets, Big Ben, and moonlit Never Land lagoons.',
+      companionNote:
+        'That silent takeoff out the Darling nursery window over tiny London headlights never gets old!',
+    },
+    {
+      id: 'mk_its_a_small_world',
+      name: "It's a Small World",
+      lat: 28.4208,
+      lon: -81.582,
+      elev: 32,
+      category: 'Canal Boat Classic',
+      land: 'Fantasyland',
+      estimatedWaitMin: 20,
+      snackNote: 'Cheshire Café Cheshire Cat Tail Pastry',
+      wikiTitle: "It's_a_Small_World",
+      youtubeSearchQuery:
+        "It's a Small World 4K Full Ride POV Magic Kingdom WDW",
+      streetBearingDeg: 350,
+      icon: '⛵',
+      lore: 'Mary Blair-styled pastel clockwork facade opening onto pastel paper-cut continents united by Richard and Robert Sherman’s timeless anthem.',
+      companionNote:
+        'Try spotting the hidden hippo and Pinocchio marionettes—and yes, that melody is staying with us till fireworks!',
+    },
+    {
+      id: 'mk_space_mountain',
+      name: 'Space Mountain',
+      lat: 28.4191,
+      lon: -81.5772,
+      elev: 55,
+      category: 'Indoor Dark Coaster',
+      land: 'Tomorrowland',
+      estimatedWaitMin: 45,
+      snackNote: 'Auntie Gravity’s Galactic Smoothie',
+      wikiTitle: 'Space_Mountain_(Magic_Kingdom)',
+      youtubeSearchQuery:
+        'Space Mountain Alpha Omega 4K Lights On POV Magic Kingdom',
+      streetBearingDeg: 90,
+      icon: '🚀',
+      lore: 'Soaring white ribbed Starport cone housing twin pitch-black Alpha and Omega steel coaster tracks hurtling past starfields since 1975.',
+      companionNote:
+        'Classic Star Tunnel escalator soundtrack sets the mood instantly—Alpha and Omega have subtle airtime differences!',
+    },
+    {
+      id: 'mk_tron_lightcycle_run',
+      name: 'TRON Lightcycle / Run',
+      lat: 28.4204,
+      lon: -81.5762,
+      elev: 52,
+      category: 'LSM Launch Coaster',
+      land: 'Tomorrowland',
+      estimatedWaitMin: 70,
+      snackNote: 'Energy Bytes Digital Dumplings & Joffrey’s Nitro Cold Brew',
+      wikiTitle: 'Tron_Lightcycle_Power_Run',
+      youtubeVideoId: '9vAnkhwK6NY',
+      youtubeSearchQuery:
+        'TRON Lightcycle Run 4K Front Row Night POV Magic Kingdom WDW',
+      streetBearingDeg: 45,
+      icon: '🏍️',
+      lore: 'Sweeping neon Upload Conduit canopy propelling straddle-seat Lightcycles at 59 mph beneath Tomorrowland’s glowing blue waveform.',
+      companionNote:
+        'Hit this canopy once dusk drops so the illuminated waveform arches mirror off every helmet visor!',
+    },
+  ],
+  wdw_epcot: [
+    {
+      id: 'epcot_spaceship_earth',
+      name: 'Spaceship Earth',
+      lat: 28.3753,
+      lon: -81.5494,
+      elev: 56,
+      category: 'Geodesic Icon',
+      land: 'World Celebration',
+      showcaseZone: 'front_of_park',
+      estimatedWaitMin: 15,
+      snackNote: 'Connections Café Liège Waffle & Cold Brew',
+      wikiTitle: 'Spaceship_Earth_(Epcot)',
+      youtubeVideoId: '8AI0yNMpt1E',
+      youtubeSearchQuery: 'Spaceship Earth 4K Full Ride POV EPCOT WDW',
+      streetBearingDeg: 180,
+      icon: '🌐',
+      lore: '18-story Alucobond geodesic sphere housing a slow spiral time-machine chronicle of human communication from Lascaux caves to silicon networks.',
+      companionNote:
+        'Nothing signals EPCOT day like hearing the Phoenix library embers crackle before rotating backward toward glowing Earth!',
+    },
+    {
+      id: 'epcot_journey_of_water',
+      name: 'Journey of Water',
+      lat: 28.374,
+      lon: -81.5504,
+      elev: 31,
+      category: 'Interactive Garden',
+      land: 'World Nature',
+      showcaseZone: 'front_of_park',
+      estimatedWaitMin: 0,
+      snackNote: 'Coral Reef Sea Salt Caramel Tarts Nearby',
+      wikiTitle: 'Journey_of_Water',
+      youtubeSearchQuery:
+        'Journey of Water Inspired by Moana 4K Walkthrough EPCOT',
+      streetBearingDeg: 210,
+      icon: '💧',
+      lore: 'Lush botanical walkway inspired by Moana where motion-responsive streams leap over stepping stones and chime like musical harp strings.',
+      companionNote:
+        'Wave across the mist curtains to trigger Te Fiti’s rainbow spray—super refreshing midway breather!',
+    },
+    {
+      id: 'epcot_soarin_around_the_world',
+      name: "Soarin' Around the World",
+      lat: 28.3738,
+      lon: -81.5522,
+      elev: 34,
+      category: 'Flying Theater',
+      land: 'World Nature',
+      showcaseZone: 'front_of_park',
+      estimatedWaitMin: 35,
+      snackNote: 'Sunshine Seasons Strawberry Shortcake',
+      wikiTitle: "Soarin'_Around_the_World",
+      youtubeVideoId: '84t8ltZ6nhI',
+      youtubeSearchQuery: "Soarin' Around the World 4K Center Row B1 POV EPCOT",
+      streetBearingDeg: 240,
+      icon: '🪂',
+      lore: '80-foot domed laser projection hang-glider flight sweeping over Matterhorn icefields, Kilimanjaro elephants, and the Taj Mahal with live scent cues.',
+      companionNote:
+        'Pro tip: request Concourse B, Row 1 from the cast member—dead-center, zero dangling feet above you!',
+    },
+    {
+      id: 'epcot_living_with_the_land',
+      name: 'Living with the Land',
+      lat: 28.3741,
+      lon: -81.5518,
+      elev: 31,
+      category: 'Greenhouse Boat Ride',
+      land: 'World Nature',
+      showcaseZone: 'front_of_park',
+      estimatedWaitMin: 15,
+      snackNote: 'Sunshine Seasons Fresh-Harvested Salad & Cookie',
+      wikiTitle: 'Living_with_the_Land',
+      youtubeSearchQuery: 'Living with the Land 4K Full Ride POV EPCOT WDW',
+      streetBearingDeg: 245,
+      icon: '🌱',
+      lore: 'Calm indoor barge cruise floating past rainforest biomes and EPCOT’s real NASA-inspired hydroponic, vertical-trellis, and aquaponic greenhouses.',
+      companionNote:
+        'Ask anyone who visits EPCOT often—hidden Mickey pumpkins and nine-pound lemons make this quietly elite!',
+    },
+    {
+      id: 'epcot_seas_with_nemo',
+      name: 'The Seas Pavilion & Reef',
+      lat: 28.3752,
+      lon: -81.5512,
+      elev: 31,
+      category: 'Oceanarium & Dark Ride',
+      land: 'World Nature',
+      showcaseZone: 'front_of_park',
+      estimatedWaitMin: 15,
+      snackNote: 'Joffrey’s Shakin’ Jamaican Cold Brew Outside Plaza',
+      wikiTitle: 'The_Seas_with_Nemo_&_Friends',
+      youtubeSearchQuery:
+        'The Seas with Nemo and Friends 4K Full Ride POV EPCOT',
+      streetBearingDeg: 280,
+      icon: '🐠',
+      lore: '5.7-million-gallon saltwater oceanarium housing eagle rays, sea turtles, sharks, and rescued manatees inside an East Australian Current shell ride.',
+      companionNote:
+        'Spend five quiet minutes at the second-floor observation windows after disembarking—the sea turtles love hovering right there.',
+    },
+    {
+      id: 'epcot_mission_space',
+      name: 'Mission: SPACE',
+      lat: 28.3738,
+      lon: -81.5471,
+      elev: 34,
+      category: 'Centrifuge Flight Sim',
+      land: 'World Discovery',
+      showcaseZone: 'front_of_park',
+      estimatedWaitMin: 25,
+      snackNote: 'Space 220 Lounge Astro-Fizz Mocktail & Bites',
+      wikiTitle: 'Mission:_Space',
+      youtubeSearchQuery: 'Mission Space Orange & Green 4K POV EPCOT WDW',
+      streetBearingDeg: 100,
+      icon: '🛰️',
+      lore: 'Multi-arm NASA-calibrated centrifuge simulator blasting four-person flight crews to Mars (Orange 2.5G) or orbital Earth loop (Green).',
+      companionNote:
+        'Orange Mission brings genuine liftoff G-forces—keep eyes locked forward on your cockpit monitor during boost!',
+    },
+    {
+      id: 'epcot_cosmic_rewind',
+      name: 'Guardians of the Galaxy: Cosmic Rewind',
+      lat: 28.3754,
+      lon: -81.5476,
+      elev: 40,
+      category: 'Reverse Omnicoaster',
+      land: 'World Discovery',
+      showcaseZone: 'front_of_park',
+      estimatedWaitMin: 65,
+      snackNote: 'Test Track Cool Wash Slushie Outside Wonders Pavilion',
+      wikiTitle: 'Guardians_of_the_Galaxy:_Cosmic_Rewind',
+      youtubeVideoId: 'w5JmLk1F6jQ',
+      youtubeSearchQuery:
+        'Guardians of the Galaxy Cosmic Rewind 4K Front Seat POV EPCOT',
+      streetBearingDeg: 65,
+      icon: '🌌',
+      lore: 'Disney’s first reverse-launch indoor omnicoaster spinning each Xandarian Nova Corps shuttle dynamically toward celestial jump points and mixtapes.',
+      companionNote:
+        'Hands up—spinning smoothly into a surprise 80s needle-drop around the Moon makes this the smoothest coaster on Earth!',
+    },
+    {
+      id: 'epcot_mexico_pavilion',
+      name: 'Mexico Pavilion (World Showcase)',
+      lat: 28.3712,
+      lon: -81.5469,
+      elev: 31,
+      category: 'World Showcase Country',
+      land: 'World Showcase · Mexico',
+      showcaseZone: 'world_showcase',
+      estimatedWaitMin: 15,
+      snackNote: 'La Cava del Tequila Avocado Margarita & Choza Empanadas',
+      wikiTitle: 'Mexico_Pavilion_at_Epcot',
+      youtubeSearchQuery:
+        'EPCOT Mexico Pavilion & Gran Fiesta Tour 4K Walkthrough POV',
+      streetBearingDeg: 165,
+      icon: '🇲🇽',
+      lore: 'Pre-Columbian Mesoamerican step pyramid opening into a perpetual twilight plaza, San Ángel folk market, and Three Caballeros boat ride.',
+      companionNote:
+        'First stop clockwise around the lagoon—slip inside the cool twilight market next to the glowing smoking volcano!',
+    },
+    {
+      id: 'epcot_norway_pavilion',
+      name: 'Norway Pavilion (World Showcase)',
+      lat: 28.3703,
+      lon: -81.5462,
+      elev: 31,
+      category: 'World Showcase Country',
+      land: 'World Showcase · Norway',
+      showcaseZone: 'world_showcase',
+      estimatedWaitMin: 55,
+      snackNote: 'Kringla Bakeri School Bread (Cardamom Bun + Custard)',
+      wikiTitle: 'Norway_Pavilion_at_Epcot',
+      youtubeSearchQuery: 'Frozen Ever After & Norway Pavilion 4K POV EPCOT',
+      streetBearingDeg: 185,
+      icon: '🇳🇴',
+      lore: 'Akerhus fortress stone arches, turf-roofed stave church replica, and Frozen Ever After’s glacier fjord boat adventure.',
+      companionNote:
+        'Zero debate: grab a coconut-topped School Bread at Kringla Bakeri before cruising through North Mountain!',
+    },
+    {
+      id: 'epcot_china_pavilion',
+      name: 'China Pavilion (World Showcase)',
+      lat: 28.369,
+      lon: -81.5461,
+      elev: 31,
+      category: 'World Showcase Country',
+      land: 'World Showcase · China',
+      showcaseZone: 'world_showcase',
+      estimatedWaitMin: 10,
+      snackNote:
+        'Joy of Tea Honey Hibiscus Boba & House of Good Fortune Treats',
+      wikiTitle: 'China_Pavilion_at_Epcot',
+      youtubeSearchQuery:
+        'EPCOT China Pavilion Temple of Heaven 4K Walkthrough',
+      streetBearingDeg: 205,
+      icon: '🇨🇳',
+      lore: 'Crimson triple-eaved Temple of Heaven courtyard flanked by koi lotus ponds, miniature terracotta warriors, and 360-degree Wondrous China cinema.',
+      companionNote:
+        'Stand dead-center on the stone echo disc inside the Hall of Prayer for Good Harvests and clap once—pure acoustics!',
+    },
+    {
+      id: 'epcot_germany_pavilion',
+      name: 'Germany Pavilion (World Showcase)',
+      lat: 28.3679,
+      lon: -81.5469,
+      elev: 31,
+      category: 'World Showcase Country',
+      land: 'World Showcase · Germany',
+      showcaseZone: 'world_showcase',
+      estimatedWaitMin: 10,
+      snackNote: 'Karamell-Küche Fresh Warm Caramel Popcorn & Pretzel',
+      wikiTitle: 'Germany_Pavilion_at_Epcot',
+      youtubeSearchQuery:
+        'EPCOT Germany Pavilion Karamell Kuche & Train Village 4K',
+      streetBearingDeg: 235,
+      icon: '🇩🇪',
+      lore: 'Timber-framed Bavarian market square anchored by a roaring St. George fountain, glockenspiel tower, and G-scale Alpine garden railway.',
+      companionNote:
+        'Follow your nose straight into Karamell-Küche for warm Werther’s butter-caramel popcorn, then check the tiny mountain trains!',
+    },
+    {
+      id: 'epcot_italy_pavilion',
+      name: 'Italy Pavilion (World Showcase)',
+      lat: 28.3673,
+      lon: -81.5479,
+      elev: 31,
+      category: 'World Showcase Country',
+      land: 'World Showcase · Italy',
+      showcaseZone: 'world_showcase',
+      estimatedWaitMin: 10,
+      snackNote: 'Via Napoli Wood-Fired Margherita Slice & Gelateria Tiramisu',
+      wikiTitle: 'Italy_Pavilion_at_Epcot',
+      youtubeSearchQuery:
+        'EPCOT Italy Pavilion Piazza San Marco 4K Walkthrough',
+      streetBearingDeg: 255,
+      icon: '🇮🇹',
+      lore: 'Scaled Venetian Campanile bell tower and Doge’s Palace loggia overlooking gondolas moored along World Showcase Lagoon.',
+      companionNote:
+        'Tuck out onto the lagoon-side Isola plaza bridge for the cleanest panoramic view back toward Spaceship Earth!',
+    },
+    {
+      id: 'epcot_american_adventure',
+      name: 'The American Adventure (World Showcase)',
+      lat: 28.3671,
+      lon: -81.5494,
+      elev: 33,
+      category: 'World Showcase Host Pavilion',
+      land: 'World Showcase · USA',
+      showcaseZone: 'world_showcase',
+      estimatedWaitMin: 20,
+      snackNote: 'Regal Eagle Smokehouse BBQ & Banana Pudding',
+      wikiTitle: 'The_American_Adventure_(Epcot)',
+      youtubeSearchQuery: 'The American Adventure & Voices of Liberty 4K EPCOT',
+      streetBearingDeg: 270,
+      icon: '🇺🇸',
+      lore: 'Georgian Colonial brick rotunda centered on the South shore housing 35 Audio-Animatronics and the acappella Voices of Liberty Choir under the dome.',
+      companionNote:
+        'Wait 5 minutes on the marble floor before seating so you hear Voices of Liberty echo straight up into the rotunda!',
+    },
+    {
+      id: 'epcot_japan_pavilion',
+      name: 'Japan Pavilion (World Showcase)',
+      lat: 28.3674,
+      lon: -81.551,
+      elev: 32,
+      category: 'World Showcase Country',
+      land: 'World Showcase · Japan',
+      showcaseZone: 'world_showcase',
+      estimatedWaitMin: 10,
+      snackNote: 'Kabuki Cafe Kakigori Shaved Ice & Mitsukoshi Treats',
+      wikiTitle: 'Japan_Pavilion_at_Epcot',
+      youtubeSearchQuery: 'EPCOT Japan Pavilion Katsura Grill & Koi Gardens 4K',
+      streetBearingDeg: 295,
+      icon: '🇯🇵',
+      lore: 'Five-story vermilion Gojunoto pagoda beside tiered Katsura hill gardens, rushing stone waterfalls, and a floating red Shinto torii gate.',
+      companionNote:
+        'Walk all the way up past the koi stream behind Mitsukoshi—one of the quietest garden pockets in Orlando.',
+    },
+    {
+      id: 'epcot_morocco_pavilion',
+      name: 'Morocco Pavilion (World Showcase)',
+      lat: 28.3683,
+      lon: -81.552,
+      elev: 31,
+      category: 'World Showcase Country',
+      land: 'World Showcase · Morocco',
+      showcaseZone: 'world_showcase',
+      estimatedWaitMin: 10,
+      snackNote: 'Tangierine Café Pistachio Baklava & Fresh Mint Tea',
+      wikiTitle: 'Morocco_Pavilion_at_Epcot',
+      youtubeSearchQuery:
+        'EPCOT Morocco Pavilion Medina Tilework 4K Walkthrough',
+      streetBearingDeg: 320,
+      icon: '🇲🇦',
+      lore: 'Authentic hand-cut Fez zellige mosaic fountains and winding medina alleys crafted directly by royal Moroccan artisans beneath a Koutoubia minaret.',
+      companionNote:
+        'Wander deep into the shaded Fez Courtyard tile fountain—zero crowds and craftsmanship you can admire inches away.',
+    },
+    {
+      id: 'epcot_france_pavilion',
+      name: 'France Pavilion (World Showcase)',
+      lat: 28.3694,
+      lon: -81.5526,
+      elev: 31,
+      category: 'World Showcase Country',
+      land: 'World Showcase · France',
+      showcaseZone: 'world_showcase',
+      estimatedWaitMin: 50,
+      snackNote:
+        'Les Halles Boulangerie Warm Baguette & Creperie Buckwheat Galette',
+      wikiTitle: 'France_Pavilion_at_Epcot',
+      youtubeVideoId: 'RrPw9CyuBJg',
+      youtubeSearchQuery:
+        "Remy's Ratatouille Adventure & France Pavilion 4K POV EPCOT",
+      streetBearingDeg: 345,
+      icon: '🇫🇷',
+      lore: 'Haussmann Parisian rooftops crowned by an engineered Eiffel Tower replica leading back into Gusteau’s rat-scaled kitchen trackless ride.',
+      companionNote:
+        'Grab a warm Napoleon or ham-cheese baguette in Les Halles—it beats waiting till dinner every single time!',
+    },
+    {
+      id: 'epcot_united_kingdom_pavilion',
+      name: 'United Kingdom Pavilion (World Showcase)',
+      lat: 28.3706,
+      lon: -81.5519,
+      elev: 31,
+      category: 'World Showcase Country',
+      land: 'World Showcase · United Kingdom',
+      showcaseZone: 'world_showcase',
+      estimatedWaitMin: 10,
+      snackNote: 'Yorkshire County Fish Shop Crispy Fish & Chips',
+      wikiTitle: 'United_Kingdom_Pavilion_at_Epcot',
+      youtubeSearchQuery:
+        'EPCOT United Kingdom Pavilion Hedge Maze & Courtyard 4K',
+      streetBearingDeg: 25,
+      icon: '🇬🇧',
+      lore: 'Thatched Cotswold cottage gardens, red K6 phone boxes, hedge-maze courtyard, and Victorian Rose & Crown pub overlooking the International Gateway.',
+      companionNote:
+        'Take your fish-and-chips basket down the stone steps beside the pub right onto the waterfront seawall!',
+    },
+    {
+      id: 'epcot_canada_pavilion',
+      name: 'Canada Pavilion (World Showcase)',
+      lat: 28.3714,
+      lon: -81.5508,
+      elev: 33,
+      category: 'World Showcase Country',
+      land: 'World Showcase · Canada',
+      showcaseZone: 'world_showcase',
+      estimatedWaitMin: 15,
+      snackNote:
+        'Popcorn Cart Maple Popcorn & Le Cellier Cheddar Soup at Festivals',
+      wikiTitle: 'Canada_Pavilion_at_Epcot',
+      youtubeSearchQuery:
+        'EPCOT Canada Pavilion Waterfall Canyon & Butchart Gardens 4K',
+      streetBearingDeg: 55,
+      icon: '🇨🇦',
+      lore: 'Château-style Hotel du Canada turrets rising behind a cedar totem square, Victoria Butchart terraced gardens, and a 30-foot canyon waterfall.',
+      companionNote:
+        'All eleven nations stamped on the loop—step behind the roaring stone falls and grab maple popcorn for the twilight lagoon walk!',
+    },
+  ],
+  ...STAGE3_THEME_PARK_LANDMARKS,
 });
 
 /**
@@ -1762,6 +2382,47 @@ export const METRO_TOUR_METADATA = Object.freeze({
     country: 'USA',
     populationNote: 'Upper Florida Keys · Starter Easter Egg Island',
   },
+  wdw_magic_kingdom: {
+    id: 'wdw_magic_kingdom',
+    name: 'Magic Kingdom (WDW)',
+    continent: 'North America',
+    country: 'USA',
+    tourScope: 'venue',
+    transitMode: 'walk_midway',
+    itineraryPolicy: 'random',
+    dayCycleEnabled: true,
+    supportedModes: ['all'],
+    dayCycle: {
+      startLocalHour: 9.0,
+      advanceHoursPerStop: 0.75,
+      utcOffsetHours: -4,
+    },
+    centerLat: 28.4187,
+    centerLon: -81.5818,
+    radiusMeters: 2500,
+    populationNote: 'Walt Disney World · 6 Lands · 12 Iconic Attractions',
+  },
+  wdw_epcot: {
+    id: 'wdw_epcot',
+    name: 'EPCOT (WDW)',
+    continent: 'North America',
+    country: 'USA',
+    tourScope: 'venue',
+    transitMode: 'walk_midway',
+    itineraryPolicy: 'epcot_showcase_loop',
+    dayCycleEnabled: true,
+    supportedModes: ['all', 'front_of_park', 'world_showcase'],
+    dayCycle: {
+      startLocalHour: 9.5,
+      advanceHoursPerStop: 0.65,
+      utcOffsetHours: -4,
+    },
+    centerLat: 28.3747,
+    centerLon: -81.5494,
+    radiusMeters: 2500,
+    populationNote: 'Walt Disney World · 11-Country World Showcase · 18 Stops',
+  },
+  ...STAGE3_THEME_PARK_METADATA,
 });
 
 const METRO_TOUR_CITY_ALIASES = Object.freeze({
@@ -1793,6 +2454,16 @@ const METRO_TOUR_CITY_ALIASES = Object.freeze({
   key_loaner: 'key_largo',
   key_loaner_house: 'key_largo',
   florida_keys: 'key_largo',
+  wdw_magic_kingdom: 'wdw_magic_kingdom',
+  magic_kingdom: 'wdw_magic_kingdom',
+  walt_disney_world_magic_kingdom: 'wdw_magic_kingdom',
+  disney_magic_kingdom: 'wdw_magic_kingdom',
+  wdw_epcot: 'wdw_epcot',
+  epcot: 'wdw_epcot',
+  walt_disney_world_epcot: 'wdw_epcot',
+  disney_epcot: 'wdw_epcot',
+  world_showcase: 'wdw_epcot',
+  ...STAGE3_THEME_PARK_ALIASES,
 });
 
 function stripTourDiacritics(raw) {
@@ -1930,6 +2601,23 @@ export function validateTourStopDraft(
   const streetBearingDeg = Number.isFinite(Number(rawBearing))
     ? ((Number(rawBearing) % 360) + 360) % 360
     : 90;
+  const wikiTitle = String(draft?.wikiTitle || '').trim() || null;
+  const rawYoutubeVideoId = String(draft?.youtubeVideoId || '').trim();
+  const youtubeSearchQuery =
+    String(draft?.youtubeSearchQuery || '').trim() || null;
+  const land = String(draft?.land || '').trim() || null;
+  const rawWaitMin =
+    draft?.estimatedWaitMin !== undefined && draft?.estimatedWaitMin !== null
+      ? draft.estimatedWaitMin
+      : draft?.waitTimeMin;
+  const estimatedWaitMin =
+    rawWaitMin === null || rawWaitMin === undefined || rawWaitMin === ''
+      ? null
+      : Number(rawWaitMin);
+  const snackNote =
+    String(draft?.snackNote || draft?.snackTag || '').trim() || null;
+  const showcaseZone =
+    String(draft?.showcaseZone || draft?.dayChapter || '').trim() || null;
 
   if (name.length < 2) {
     errors.push('Stop name must be at least 2 characters.');
@@ -1942,6 +2630,17 @@ export function validateTourStopDraft(
   }
   if (!Number.isFinite(elev)) {
     errors.push('Elevation must be a valid number in meters.');
+  }
+  if (rawYoutubeVideoId && !YOUTUBE_VIDEO_ID_PATTERN.test(rawYoutubeVideoId)) {
+    errors.push(
+      'youtubeVideoId must be a valid 11-character YouTube video ID.',
+    );
+  }
+  if (
+    estimatedWaitMin !== null &&
+    (!Number.isFinite(estimatedWaitMin) || estimatedWaitMin < 0)
+  ) {
+    errors.push('estimatedWaitMin must be a non-negative number.');
   }
   if (lore.length < 6) {
     errors.push(
@@ -1987,6 +2686,18 @@ export function validateTourStopDraft(
     companionNote,
     streetBearingDeg: Math.round(streetBearingDeg),
     icon: String(draft?.icon || '').trim() || getCategoryIcon(category),
+    ...(wikiTitle ? { wikiTitle } : {}),
+    ...(rawYoutubeVideoId ? { youtubeVideoId: rawYoutubeVideoId } : {}),
+    ...(youtubeSearchQuery ? { youtubeSearchQuery } : {}),
+    ...(land ? { land } : {}),
+    ...(estimatedWaitMin !== null
+      ? {
+          estimatedWaitMin: Math.round(estimatedWaitMin),
+          waitTimeMin: Math.round(estimatedWaitMin),
+        }
+      : {}),
+    ...(snackNote ? { snackNote, snackTag: snackNote } : {}),
+    ...(showcaseZone ? { showcaseZone, dayChapter: showcaseZone } : {}),
     isCustom: true,
     createdAt: draft?.createdAt || new Date().toISOString(),
   };
@@ -2034,6 +2745,28 @@ export function validateCustomTourDraft(draft = {}, { existingIds = [] } = {}) {
     id = `${baseSlug}_${idx}`;
   }
 
+  const rawTourScope = String(draft?.tourScope || '').trim();
+  const tourScope =
+    rawTourScope === 'venue' ||
+    rawTourScope === 'city' ||
+    rawTourScope === 'metro'
+      ? rawTourScope
+      : null;
+  const rawTransitMode = String(draft?.transitMode || '').trim();
+  const transitMode =
+    rawTransitMode === 'walk_midway' || rawTransitMode === 'scooter'
+      ? rawTransitMode
+      : null;
+  const itineraryPolicy = String(draft?.itineraryPolicy || '').trim() || null;
+  const dayCycleEnabled =
+    typeof draft?.dayCycleEnabled === 'boolean'
+      ? draft.dayCycleEnabled
+      : Boolean(draft?.dayCycle && typeof draft.dayCycle === 'object');
+  const rawDayCycle =
+    draft?.dayCycle && typeof draft.dayCycle === 'object'
+      ? draft.dayCycle
+      : null;
+
   const normalized = {
     id,
     name,
@@ -2045,6 +2778,11 @@ export function validateCustomTourDraft(draft = {}, { existingIds = [] } = {}) {
     centerLat: Number(centerLat.toFixed(6)),
     centerLon: Number(centerLon.toFixed(6)),
     radiusMeters,
+    ...(tourScope ? { tourScope } : {}),
+    ...(transitMode ? { transitMode } : {}),
+    ...(itineraryPolicy ? { itineraryPolicy } : {}),
+    ...(dayCycleEnabled ? { dayCycleEnabled: true } : {}),
+    ...(rawDayCycle ? { dayCycle: { ...rawDayCycle } } : {}),
     isCustom: true,
     createdAt: draft?.createdAt || new Date().toISOString(),
   };
@@ -2059,6 +2797,522 @@ let customToursRegistry = {
 };
 let customToursLoaded = false;
 const customTourListeners = new Set();
+const runtimeBuiltTours = new Map();
+const runtimeBuiltAliases = new Map();
+
+const CATALOG_PLACE_CACHE = new Map();
+const CATALOG_PLACE_IN_FLIGHT = new Map();
+const ZERO_CREDIT_LOCALITY_MIRROR = new Map();
+const CATALOG_PLACE_CACHE_MAX = 256;
+
+function catalogPlaceCellKey(lat, lon) {
+  return `${Math.round(Number(lat) * 200)}_${Math.round(Number(lon) * 200)}`;
+}
+
+onLocalityResolved(({ lat, lon, locality }) => {
+  if (!Number.isFinite(lat) || !Number.isFinite(lon) || !locality) return;
+  const key = catalogPlaceCellKey(lat, lon);
+  if (ZERO_CREDIT_LOCALITY_MIRROR.size >= CATALOG_PLACE_CACHE_MAX) {
+    const oldest = ZERO_CREDIT_LOCALITY_MIRROR.keys().next().value;
+    ZERO_CREDIT_LOCALITY_MIRROR.delete(oldest);
+  }
+  ZERO_CREDIT_LOCALITY_MIRROR.set(key, locality);
+});
+
+const NON_CONCRETE_MARINE_RE =
+  /(?:^|\s)(?:pacific|atlantic|indian|arctic|southern)\s+ocean$/i;
+const NON_CONCRETE_SEA_RE =
+  /(?:^|\s)(?:mediterranean|caribbean|bering|tasman|arabian|coral|red|black|baltic|north|south china|east china|philippine|adriatic|aegean|caspian|sargasso|chukchi|beaufort|hudson|baffin)\s+sea$/i;
+const NON_CONCRETE_WATER_PREFIX_RE =
+  /^(?:bay|gulf|sea|strait|channel|sound)\s+of\b/i;
+const NON_CONCRETE_WATER_SUFFIX_RE = /\b(?:ocean|sea|gulf|strait)\s*$/i;
+
+/**
+ * Normalizes Tour Framework v2 metadata across built-in, custom, and runtime-built
+ * tours so every catalog entry carries `tourScope`, `radiusMeters`, and `transitMode`.
+ */
+export function normalizeTourV2Metadata(
+  meta = {},
+  cityId = '',
+  landmarks = [],
+) {
+  const id =
+    String(cityId || meta?.id || '').trim() ||
+    generateTourSlug(meta?.name || 'tour', 'tour');
+  const rawScope = String(meta?.tourScope || '').trim();
+  const tourScope =
+    rawScope === 'venue' || rawScope === 'city' || rawScope === 'metro'
+      ? rawScope
+      : 'metro';
+  const rawTransit = String(meta?.transitMode || '').trim();
+  const transitMode =
+    rawTransit === 'walk_midway' || rawTransit === 'scooter'
+      ? rawTransit
+      : tourScope === 'venue'
+        ? 'walk_midway'
+        : 'scooter';
+  const defaultRadius =
+    tourScope === 'venue'
+      ? VENUE_TOUR_DEFAULT_RADIUS_METERS
+      : meta?.isCustom
+        ? CUSTOM_TOUR_RADIUS_METERS
+        : METRO_TOUR_RADIUS_METERS;
+  const radiusMeters = Number.isFinite(Number(meta?.radiusMeters))
+    ? Math.max(1000, Number(meta.radiusMeters))
+    : defaultRadius;
+
+  const cityAnchor = LIVING_CITIES[id] || null;
+  let centerLat = Number(meta?.centerLat ?? meta?.lat ?? cityAnchor?.lat);
+  let centerLon = Number(meta?.centerLon ?? meta?.lon ?? cityAnchor?.lon);
+  if (
+    (!Number.isFinite(centerLat) || !Number.isFinite(centerLon)) &&
+    Array.isArray(landmarks) &&
+    landmarks.length > 0
+  ) {
+    const validStops = landmarks.filter(
+      (s) => Number.isFinite(Number(s?.lat)) && Number.isFinite(Number(s?.lon)),
+    );
+    if (validStops.length > 0) {
+      centerLat =
+        validStops.reduce((sum, s) => sum + Number(s.lat), 0) /
+        validStops.length;
+      centerLon =
+        validStops.reduce((sum, s) => sum + Number(s.lon), 0) /
+        validStops.length;
+    }
+  }
+  if (!Number.isFinite(centerLat)) centerLat = 0;
+  if (!Number.isFinite(centerLon)) centerLon = 0;
+
+  const name =
+    String(meta?.name || cityAnchor?.name || '').trim() ||
+    id
+      .split('_')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+  const continent =
+    String(meta?.continent || '').trim() ||
+    inferContinentFromCoords(centerLat, centerLon);
+  const country =
+    String(meta?.country || cityAnchor?.country || 'Local Area').trim() ||
+    'Local Area';
+
+  return {
+    ...meta,
+    id,
+    name,
+    continent,
+    country,
+    tourScope,
+    radiusMeters,
+    transitMode,
+    centerLat: Number(centerLat.toFixed(6)),
+    centerLon: Number(centerLon.toFixed(6)),
+  };
+}
+
+/**
+ * Registers or updates a Dev-Forge built tour in active RAM so `startCityTour`,
+ * `resolveTourOrPlayContext`, `wanderDrawer`, `tourPoiCards`, and `sightseeingDrawer`
+ * immediately activate Tour v2 stops and metadata without a page reload.
+ */
+export function registerBuiltTourRuntime(
+  cityId,
+  metadata = {},
+  landmarks = [],
+) {
+  const key = generateTourSlug(
+    cityId || metadata?.id || metadata?.name || '',
+    '',
+  );
+  if (!key) {
+    return {
+      ok: false,
+      errors: ['Tour cityId or name is required for runtime registration.'],
+      cityId: null,
+      metadata: null,
+      landmarks: [],
+    };
+  }
+  if (!Array.isArray(landmarks) || landmarks.length === 0) {
+    return {
+      ok: false,
+      errors: ['At least one valid tour landmark stop is required.'],
+      cityId: key,
+      metadata: null,
+      landmarks: [],
+    };
+  }
+
+  const displayName =
+    String(metadata?.name || '').trim() ||
+    key
+      .split('_')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+  const validatedStops = [];
+  const existingIds = [];
+  const errors = [];
+
+  for (let i = 0; i < landmarks.length; i += 1) {
+    const rawStop = landmarks[i];
+    const check = validateTourStopDraft(rawStop, {
+      cityId: key,
+      existingIds,
+    });
+    if (!check.valid || !check.normalized) {
+      errors.push(`Stop #${i + 1}: ${(check.errors || []).join('; ')}`);
+      continue;
+    }
+    existingIds.push(check.normalized.id);
+    const cleanedStop = { ...check.normalized };
+    delete cleanedStop.isCustom;
+    cleanedStop.isRuntimeBuilt = true;
+    validatedStops.push(enrichStopMediaMetadata(cleanedStop, displayName));
+  }
+
+  if (errors.length > 0 || validatedStops.length === 0) {
+    return {
+      ok: false,
+      errors: errors.length > 0 ? errors : ['No valid tour landmarks found.'],
+      cityId: key,
+      metadata: null,
+      landmarks: [],
+    };
+  }
+
+  const normalizedMeta = normalizeTourV2Metadata(
+    {
+      ...metadata,
+      id: key,
+      name: displayName,
+      isRuntimeBuilt: true,
+    },
+    key,
+    validatedStops,
+  );
+
+  runtimeBuiltTours.set(key, {
+    metadata: normalizedMeta,
+    landmarks: validatedStops,
+  });
+
+  const registerAlias = (rawAlias) => {
+    const clean = stripTourDiacritics(rawAlias);
+    if (!clean) return;
+    runtimeBuiltAliases.set(clean, key);
+    runtimeBuiltAliases.set(clean.replace(/[\s-]+/g, '_'), key);
+  };
+  registerAlias(key);
+  registerAlias(displayName);
+  if (Array.isArray(normalizedMeta.aliases)) {
+    for (const alias of normalizedMeta.aliases) {
+      registerAlias(alias);
+    }
+  }
+
+  emitCustomToursChange();
+
+  return {
+    ok: true,
+    errors: [],
+    cityId: key,
+    metadata: { ...normalizedMeta },
+    landmarks: validatedStops.map((s) => ({ ...s })),
+  };
+}
+
+export function getRuntimeBuiltTours() {
+  const out = {};
+  for (const [id, entry] of runtimeBuiltTours.entries()) {
+    out[id] = {
+      metadata: { ...entry.metadata },
+      landmarks: entry.landmarks.map((s) => ({ ...s })),
+    };
+  }
+  return out;
+}
+
+export function clearRuntimeBuiltToursForTest() {
+  runtimeBuiltTours.clear();
+  runtimeBuiltAliases.clear();
+  emitCustomToursChange();
+}
+
+const GENERIC_BIOME_PLACE_LABELS = new Set([
+  'unknown sector',
+  'earth',
+  'current location',
+  'local area',
+  'living world',
+  'dense urban',
+  'urban',
+  'urban core',
+  'suburban',
+  'suburban neighborhood',
+  'rural',
+  'farmland',
+  'agricultural',
+  'coastline',
+  'coastal',
+  'open ocean',
+  'wilderness',
+  'desert',
+  'high desert',
+  'rainforest',
+  'tundra',
+]);
+
+const COORD_PAIR_NAME_RE =
+  /^\s*-?\d+(?:\.\d+)?°?\s*[ns]?\s*[,/\s]+\s*-?\d+(?:\.\d+)?°?\s*[ew]?\s*$/i;
+
+export function isConcreteCatalogPlaceName(name) {
+  const raw = String(name ?? '').trim();
+  if (raw.length < 2) return false;
+  const lower = raw.toLowerCase();
+  if (GENERIC_BIOME_PLACE_LABELS.has(lower)) {
+    return false;
+  }
+  if (
+    /^sector\b/i.test(raw) ||
+    /\d+\.\d+°/.test(raw) ||
+    COORD_PAIR_NAME_RE.test(raw)
+  ) {
+    return false;
+  }
+  for (const meta of Object.values(TYPOLOGY_METADATA || {})) {
+    if (meta?.name && meta.name.toLowerCase() === lower) {
+      return false;
+    }
+  }
+  if (
+    NON_CONCRETE_MARINE_RE.test(raw) ||
+    NON_CONCRETE_SEA_RE.test(raw) ||
+    NON_CONCRETE_WATER_PREFIX_RE.test(raw) ||
+    NON_CONCRETE_WATER_SUFFIX_RE.test(raw)
+  ) {
+    return false;
+  }
+  return true;
+}
+
+export function getCachedCatalogPlaceAt(lat, lon) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+  const key = catalogPlaceCellKey(lat, lon);
+  return CATALOG_PLACE_CACHE.has(key) ? CATALOG_PLACE_CACHE.get(key) : null;
+}
+
+export function clearCatalogPlaceCacheForTest() {
+  CATALOG_PLACE_CACHE.clear();
+  CATALOG_PLACE_IN_FLIGHT.clear();
+  ZERO_CREDIT_LOCALITY_MIRROR.clear();
+}
+
+function storeCatalogPlaceCache(key, value) {
+  if (CATALOG_PLACE_CACHE.size >= CATALOG_PLACE_CACHE_MAX) {
+    const oldestKey = CATALOG_PLACE_CACHE.keys().next().value;
+    CATALOG_PLACE_CACHE.delete(oldestKey);
+  }
+  CATALOG_PLACE_CACHE.set(key, value);
+}
+
+/**
+ * Resolves a concrete settlement / neighborhood name from GEV's bundled offline
+ * place-name catalogs (`us_census_places/`, `populated_places.json`,
+ * `MAJOR_WORLD_METROS`, `wof_neighborhoods/`, or cached zero-credit locality).
+ * Returns `null` over open ocean, rural biome expanses, or generic sector labels.
+ */
+export async function resolveCatalogPlaceAt(
+  lat,
+  lon,
+  { radiusKm = 18, cachedLocality = null, lookupFns = null } = {},
+) {
+  if (
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lon) ||
+    Math.abs(lat) > 90 ||
+    Math.abs(lon) > 180
+  ) {
+    return null;
+  }
+  const cellKey = catalogPlaceCellKey(lat, lon);
+  const useCache = !lookupFns && !cachedLocality;
+  if (useCache && CATALOG_PLACE_CACHE.has(cellKey)) {
+    return CATALOG_PLACE_CACHE.get(cellKey);
+  }
+  if (useCache && CATALOG_PLACE_IN_FLIGHT.has(cellKey)) {
+    return CATALOG_PLACE_IN_FLIGHT.get(cellKey);
+  }
+
+  const findPlaceAreaFn =
+    lookupFns?.findPlaceAreaContainingPoint || findPlaceAreaContainingPoint;
+  const placeBelowFn = lookupFns?.placeBelow || placeBelow;
+  const nearPlaceRecordFn = lookupFns?.nearPlaceRecord || nearPlaceRecord;
+  const findNeighborhoodFn =
+    lookupFns?.findNeighborhoodAreaContainingPoint ||
+    findNeighborhoodAreaContainingPoint;
+  const majorMetros = lookupFns?.majorWorldMetros || MAJOR_WORLD_METROS || [];
+
+  const run = async () => {
+    let below = null;
+
+    // Tier 1: US Census Places (incorporated cities, towns, CDPs)
+    try {
+      const censusArea = await findPlaceAreaFn(lat, lon);
+      if (censusArea?.name) {
+        const cleanName = String(censusArea.name)
+          .replace(/\s+CDP$/i, '')
+          .trim();
+        if (isConcreteCatalogPlaceName(cleanName)) {
+          const regionLabel = censusArea.regionCode || censusArea.region || '';
+          return {
+            name: cleanName,
+            displayName: regionLabel
+              ? `${cleanName}, ${regionLabel}`
+              : cleanName,
+            cityId: generateTourSlug(cleanName, 'local_place'),
+            lat,
+            lon,
+            country: censusArea.country || 'United States of America',
+            region: censusArea.region || '',
+            regionCode: censusArea.regionCode || '',
+            source: 'us-census',
+            isCatalogPlace: true,
+          };
+        }
+      }
+    } catch {
+      /* ignore pack miss */
+    }
+
+    // Tier 2: Natural Earth Countries / Marine + 7,342 Populated Places
+    try {
+      below = await placeBelowFn(lat, lon, { nearKm: null });
+      if (below?.kind === 'ocean' || below?.kind === 'sea') {
+        return null;
+      }
+      const nearRec = await nearPlaceRecordFn(lat, lon, radiusKm);
+      if (nearRec?.name && isConcreteCatalogPlaceName(nearRec.name)) {
+        const country = below?.kind === 'country' ? below.name : '';
+        const division = below?.division || '';
+        return {
+          name: nearRec.name,
+          displayName: [nearRec.name, division, country]
+            .filter(Boolean)
+            .join(', '),
+          cityId: generateTourSlug(nearRec.name, 'local_place'),
+          lat: nearRec.lat,
+          lon: nearRec.lon,
+          country,
+          region: division,
+          source: 'populated-places',
+          isCatalogPlace: true,
+        };
+      }
+    } catch {
+      /* ignore pack miss */
+    }
+
+    // Tier 3: Bundled MAJOR_WORLD_METROS (138 entries within 25km)
+    let bestMetro = null;
+    let bestMetroDist = Infinity;
+    for (const metro of majorMetros) {
+      if (
+        !metro ||
+        !Number.isFinite(metro.lat) ||
+        !Number.isFinite(metro.lon)
+      ) {
+        continue;
+      }
+      const dist = haversineDistanceMeters(lat, lon, metro.lat, metro.lon);
+      if (dist <= 25000 && dist < bestMetroDist) {
+        bestMetroDist = dist;
+        bestMetro = metro;
+      }
+    }
+    if (bestMetro?.name && isConcreteCatalogPlaceName(bestMetro.name)) {
+      return {
+        name: bestMetro.name,
+        displayName: [bestMetro.name, bestMetro.region, bestMetro.country]
+          .filter(Boolean)
+          .join(', '),
+        cityId: generateTourSlug(bestMetro.name, 'local_place'),
+        lat: bestMetro.lat,
+        lon: bestMetro.lon,
+        country:
+          bestMetro.country || (below?.kind === 'country' ? below.name : ''),
+        region: bestMetro.region || below?.division || '',
+        source: 'major-world-metros',
+        isCatalogPlace: true,
+      };
+    }
+
+    // Tier 4: Who's On First Neighborhoods
+    try {
+      const nb = await findNeighborhoodFn(lat, lon);
+      if (nb?.name && isConcreteCatalogPlaceName(nb.name)) {
+        const country =
+          (below?.kind === 'country' ? below.name : '') || nb.country || '';
+        return {
+          name: nb.name,
+          displayName: [nb.name, below?.division, country]
+            .filter(Boolean)
+            .join(', '),
+          cityId: generateTourSlug(nb.name, 'local_place'),
+          lat,
+          lon,
+          country,
+          region: below?.division || '',
+          source: 'wof',
+          isCatalogPlace: true,
+        };
+      }
+    } catch {
+      /* ignore pack miss */
+    }
+
+    // Tier 5: Cached Zero-Credit Locality / Local Gazetteer
+    const zeroCredit =
+      cachedLocality ||
+      ZERO_CREDIT_LOCALITY_MIRROR.get(cellKey) ||
+      resolveKnownLocalGazetteer(lat, lon) ||
+      null;
+    if (
+      zeroCredit?.city &&
+      (zeroCredit.source === 'reverse_geocode' ||
+        zeroCredit.source === 'gazetteer') &&
+      isConcreteCatalogPlaceName(zeroCredit.city)
+    ) {
+      return {
+        name: zeroCredit.city,
+        displayName: zeroCredit.fullLabel || zeroCredit.city,
+        cityId: generateTourSlug(zeroCredit.city, 'local_place'),
+        lat,
+        lon,
+        country: zeroCredit.country || '',
+        region: zeroCredit.region || '',
+        source: 'zero-credit-locality',
+        isCatalogPlace: true,
+      };
+    }
+
+    return null;
+  };
+
+  const pending = run()
+    .then((result) => {
+      if (useCache) storeCatalogPlaceCache(cellKey, result);
+      return result;
+    })
+    .finally(() => {
+      if (useCache) CATALOG_PLACE_IN_FLIGHT.delete(cellKey);
+    });
+
+  if (useCache) {
+    CATALOG_PLACE_IN_FLIGHT.set(cellKey, pending);
+  }
+  return pending;
+}
 
 function cloneCustomRegistry(reg = customToursRegistry) {
   const customTours = {};
@@ -2165,6 +3419,21 @@ function resolveCanonicalOrDynamicCityKey(cityIdOrQuery) {
     }
   }
 
+  if (runtimeBuiltTours.has(underscored)) return underscored;
+  if (runtimeBuiltTours.has(clean)) return clean;
+  if (runtimeBuiltAliases.has(underscored)) {
+    return runtimeBuiltAliases.get(underscored);
+  }
+  if (runtimeBuiltAliases.has(clean)) {
+    return runtimeBuiltAliases.get(clean);
+  }
+  for (const [id, entry] of runtimeBuiltTours.entries()) {
+    const nameClean = stripTourDiacritics(entry?.metadata?.name);
+    if (nameClean && (nameClean === clean || nameClean.includes(clean))) {
+      return id;
+    }
+  }
+
   if (METRO_LANDMARK_CATALOG[underscored]) {
     return underscored;
   }
@@ -2204,28 +3473,70 @@ export function getAllTourCatalogEntries() {
   const catalogByCityId = {};
   const metadataByCityId = {};
   const customCityIds = [];
+  const runtimeBuiltCityIds = [];
 
   for (const [cityKey, builtInStops] of Object.entries(
     METRO_LANDMARK_CATALOG,
   )) {
     const extra = reg.extraStopsByCityId[cityKey] || [];
-    catalogByCityId[cityKey] = [
-      ...builtInStops.map((s) => ({ ...s })),
-      ...extra.map((s) => ({ ...s })),
+    const rawMeta = METRO_TOUR_METADATA[cityKey] || {
+      id: cityKey,
+      name: cityKey,
+    };
+    const mergedStops = [
+      ...builtInStops.map((s) =>
+        enrichStopMediaMetadata(s, rawMeta?.name || cityKey),
+      ),
+      ...extra.map((s) => enrichStopMediaMetadata(s, rawMeta?.name || cityKey)),
     ];
-    metadataByCityId[cityKey] = METRO_TOUR_METADATA[cityKey]
-      ? { ...METRO_TOUR_METADATA[cityKey] }
-      : { id: cityKey, name: cityKey };
+    catalogByCityId[cityKey] = mergedStops;
+    metadataByCityId[cityKey] = normalizeTourV2Metadata(
+      rawMeta,
+      cityKey,
+      mergedStops,
+    );
+  }
+
+  for (const [runtimeId, entry] of runtimeBuiltTours.entries()) {
+    if (!entry?.metadata) continue;
+    runtimeBuiltCityIds.push(runtimeId);
+    const extra = reg.extraStopsByCityId[runtimeId] || [];
+    const mergedStops = [
+      ...(entry.landmarks || []).map((s) =>
+        enrichStopMediaMetadata(s, entry.metadata.name || runtimeId),
+      ),
+      ...extra.map((s) =>
+        enrichStopMediaMetadata(s, entry.metadata.name || runtimeId),
+      ),
+    ];
+    catalogByCityId[runtimeId] = mergedStops;
+    metadataByCityId[runtimeId] = normalizeTourV2Metadata(
+      entry.metadata,
+      runtimeId,
+      mergedStops,
+    );
   }
 
   for (const [customId, entry] of Object.entries(reg.customTours || {})) {
     if (!entry?.metadata) continue;
     customCityIds.push(customId);
-    catalogByCityId[customId] = (entry.stops || []).map((s) => ({ ...s }));
-    metadataByCityId[customId] = { ...entry.metadata };
+    const stops = (entry.stops || []).map((s) =>
+      enrichStopMediaMetadata(s, entry.metadata.name || customId),
+    );
+    catalogByCityId[customId] = stops;
+    metadataByCityId[customId] = normalizeTourV2Metadata(
+      entry.metadata,
+      customId,
+      stops,
+    );
   }
 
-  return { catalogByCityId, metadataByCityId, customCityIds };
+  return {
+    catalogByCityId,
+    metadataByCityId,
+    customCityIds,
+    runtimeBuiltCityIds,
+  };
 }
 
 export function createCustomTour({ tour = {}, firstStop = {} } = {}) {
@@ -2393,14 +3704,17 @@ export function exportTourAsContractJson(cityId) {
   const key = resolveCanonicalOrDynamicCityKey(cityId) || String(cityId || '');
   if (!key) return null;
   const landmarks = getLandmarksForCity(key);
-  const metadata = reg.customTours[key]?.metadata ||
+  const rawMetadata = reg.customTours[key]?.metadata ||
+    runtimeBuiltTours.get(key)?.metadata ||
     METRO_TOUR_METADATA[key] || {
       id: key,
       name: key,
       isCustom: Boolean(reg.customTours[key]),
     };
+  const metadata = normalizeTourV2Metadata(rawMetadata, key, landmarks);
   return JSON.stringify(
     {
+      schemaVersion: 2,
       cityId: key,
       metadata,
       landmarks,
@@ -2433,6 +3747,246 @@ export function shuffleLandmarks(landmarks, rng = Math.random) {
     copy[j] = tmp;
   }
   return copy;
+}
+
+/**
+ * Ensures every tour stop carries non-mutating Tour v2 media defaults
+ * (`wikiTitle` and evergreen `youtubeSearchQuery`) so both Theme Park Days
+ * and classic city tours light up with Wikimedia cards and POV links.
+ */
+export function enrichStopMediaMetadata(stop, cityName = '') {
+  if (!stop || typeof stop !== 'object') return stop;
+  const cleanName = String(stop.name || 'Landmark').trim();
+  const cleanCity = String(cityName || '').trim();
+  const wikiTitle = String(stop.wikiTitle || '').trim() || cleanName;
+  const rawYtId = String(stop.youtubeVideoId || '').trim();
+  const youtubeVideoId = YOUTUBE_VIDEO_ID_PATTERN.test(rawYtId)
+    ? rawYtId
+    : null;
+  const youtubeSearchQuery =
+    String(stop.youtubeSearchQuery || '').trim() ||
+    (cleanCity
+      ? `${cleanName} ${cleanCity} 4K walking tour`
+      : `${cleanName} 4K tour`);
+  const waitVal = Number.isFinite(stop.estimatedWaitMin)
+    ? stop.estimatedWaitMin
+    : Number.isFinite(stop.waitTimeMin)
+      ? stop.waitTimeMin
+      : null;
+  const snackVal = String(stop.snackNote || stop.snackTag || '').trim() || null;
+  const zoneVal =
+    String(stop.showcaseZone || stop.dayChapter || '').trim() || null;
+  return {
+    ...stop,
+    wikiTitle,
+    ...(youtubeVideoId ? { youtubeVideoId } : {}),
+    youtubeSearchQuery,
+    ...(waitVal !== null
+      ? { estimatedWaitMin: waitVal, waitTimeMin: waitVal }
+      : {}),
+    ...(snackVal ? { snackNote: snackVal, snackTag: snackVal } : {}),
+    ...(zoneVal ? { showcaseZone: zoneVal, dayChapter: zoneVal } : {}),
+  };
+}
+
+/**
+ * Filters a stop catalog by tourMode (e.g. 'all', 'front_of_park', 'world_showcase')
+ * and optionally shuffles the resulting itinerary via Fisher-Yates.
+ * For full-park EPCOT runs ('all'), shuffles the 7 front-of-park headliners for
+ * morning/midday and randomly chooses clockwise (Mexico -> Canada),
+ * counterclockwise (Canada -> Mexico), or full shuffle across the 11 World Showcase
+ * countries for golden hour and dusk.
+ */
+export function buildTourItinerary(
+  landmarks,
+  { tourMode = 'all', rng = Math.random, shuffle = true } = {},
+) {
+  if (!Array.isArray(landmarks) || landmarks.length === 0) return [];
+  const normalizedMode = String(tourMode || 'all')
+    .trim()
+    .toLowerCase();
+  let filtered = landmarks;
+  if (normalizedMode && normalizedMode !== 'all') {
+    const modeMatches = landmarks.filter(
+      (stop) =>
+        String(stop?.showcaseZone || stop?.dayChapter || '')
+          .trim()
+          .toLowerCase() === normalizedMode,
+    );
+    if (modeMatches.length > 0) {
+      filtered = modeMatches;
+    }
+  }
+  if (!shuffle) {
+    return filtered.map((lm) => ({ ...lm }));
+  }
+
+  if (!normalizedMode || normalizedMode === 'all') {
+    const frontStops = filtered.filter(
+      (s) =>
+        String(s?.showcaseZone || s?.dayChapter || '')
+          .trim()
+          .toLowerCase() === 'front_of_park',
+    );
+    const showcaseStops = filtered.filter(
+      (s) =>
+        String(s?.showcaseZone || s?.dayChapter || '')
+          .trim()
+          .toLowerCase() === 'world_showcase',
+    );
+    if (
+      frontStops.length > 0 &&
+      showcaseStops.length > 0 &&
+      frontStops.length + showcaseStops.length === filtered.length
+    ) {
+      const shuffledFront = shuffleLandmarks(frontStops, rng);
+      const roll = rng();
+      let orderedShowcase;
+      if (roll < 0.34) {
+        orderedShowcase = showcaseStops.map((lm) => ({ ...lm }));
+      } else if (roll < 0.67) {
+        orderedShowcase = showcaseStops
+          .slice()
+          .reverse()
+          .map((lm) => ({ ...lm }));
+      } else {
+        orderedShowcase = shuffleLandmarks(showcaseStops, rng);
+      }
+      return [...shuffledFront, ...orderedShowcase];
+    }
+  }
+
+  return shuffleLandmarks(filtered, rng);
+}
+
+/**
+ * Computes the solar clock state for a stop along a day-cycle venue tour
+ * so sunlight progresses gracefully from morning rope-drop toward dusk.
+ */
+export function computeDayCycleSolarState({
+  dayCycle = null,
+  stopIndex = 0,
+  totalStops = 1,
+  nowDate = new Date(),
+} = {}) {
+  const startLocalHour = Number.isFinite(dayCycle?.startLocalHour)
+    ? dayCycle.startLocalHour
+    : 9.0;
+  const advanceHoursPerStop = Number.isFinite(dayCycle?.advanceHoursPerStop)
+    ? dayCycle.advanceHoursPerStop
+    : 0.75;
+  const utcOffsetHours = Number.isFinite(dayCycle?.utcOffsetHours)
+    ? dayCycle.utcOffsetHours
+    : -4;
+  const safeIdx = Math.max(0, Number(stopIndex) || 0);
+  const localHour = Math.min(
+    20.5,
+    Math.max(6.0, startLocalHour + safeIdx * advanceHoursPerStop),
+  );
+  const utcHour = localHour - utcOffsetHours;
+  const refDate =
+    nowDate instanceof Date && !Number.isNaN(nowDate.getTime())
+      ? nowDate
+      : new Date('2026-06-21T12:00:00.000Z');
+  const utcMidnightMs = Date.UTC(
+    refDate.getUTCFullYear(),
+    refDate.getUTCMonth(),
+    refDate.getUTCDate(),
+    0,
+    0,
+    0,
+    0,
+  );
+  const targetDate = new Date(
+    utcMidnightMs + Math.round(utcHour * 3600 * 1000),
+  );
+  const isoString = targetDate.toISOString();
+  let julianDate = null;
+  try {
+    julianDate = Cesium.JulianDate.fromIso8601(isoString);
+  } catch {
+    julianDate = null;
+  }
+  return {
+    stopIndex: safeIdx,
+    totalStops: Math.max(1, Number(totalStops) || 1),
+    localHour,
+    utcHour,
+    isoString,
+    julianDate,
+  };
+}
+
+/**
+ * Finds the nearest curated tight-radius venue tour (e.g. WDW Magic Kingdom or EPCOT)
+ * within its configured venue radius. Keeps theme parks out of LIVING_CITIES.
+ */
+export function findNearestVenueTour(lat, lon) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+  let best = null;
+  let bestDist = Infinity;
+  const venueCandidates = [
+    ...Object.values(METRO_TOUR_METADATA || {}),
+    ...Array.from(runtimeBuiltTours.values()).map((entry) => entry?.metadata),
+  ];
+  for (const meta of venueCandidates) {
+    if (
+      meta?.tourScope !== 'venue' ||
+      !Number.isFinite(meta.centerLat) ||
+      !Number.isFinite(meta.centerLon)
+    ) {
+      continue;
+    }
+    const radius = Number.isFinite(meta.radiusMeters)
+      ? meta.radiusMeters
+      : VENUE_TOUR_DEFAULT_RADIUS_METERS;
+    const dist = haversineDistanceMeters(
+      lat,
+      lon,
+      meta.centerLat,
+      meta.centerLon,
+    );
+    if (dist <= radius && dist < bestDist) {
+      bestDist = dist;
+      best = {
+        ...normalizeTourV2Metadata(meta, meta.id),
+        distanceMeters: dist,
+        landmarks: getLandmarksForCity(meta.id),
+      };
+    }
+  }
+  return best;
+}
+
+function findNearestRuntimeBuiltTour(lat, lon) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+  let best = null;
+  let bestDist = Infinity;
+  for (const [id, entry] of runtimeBuiltTours.entries()) {
+    const meta = entry?.metadata;
+    const stops = Array.isArray(entry?.landmarks) ? entry.landmarks : [];
+    if (!meta || stops.length === 0) continue;
+    const anchorLat = Number.isFinite(meta.centerLat)
+      ? meta.centerLat
+      : stops[0]?.lat;
+    const anchorLon = Number.isFinite(meta.centerLon)
+      ? meta.centerLon
+      : stops[0]?.lon;
+    if (!Number.isFinite(anchorLat) || !Number.isFinite(anchorLon)) continue;
+    const dist = haversineDistanceMeters(lat, lon, anchorLat, anchorLon);
+    const radius = meta.radiusMeters || METRO_TOUR_RADIUS_METERS;
+    if (dist <= radius && dist < bestDist) {
+      bestDist = dist;
+      best = {
+        cityId: id,
+        cityName: meta.name || id,
+        metadata: normalizeTourV2Metadata(meta, id, stops),
+        landmarks: getLandmarksForCity(id),
+        distanceMeters: dist,
+      };
+    }
+  }
+  return best;
 }
 
 /**
@@ -2535,12 +4089,17 @@ export function resolveNearestMetroForTour(lat, lon) {
   }
 
   const nearestCustom = findNearestCustomTour(lat, lon);
+  const nearestVenue = findNearestVenueTour(lat, lon);
+  const nearestRuntime = findNearestRuntimeBuiltTour(lat, lon);
 
   let bestCity = null;
   let bestCityDist = Infinity;
   for (const city of Object.values(LIVING_CITIES || {})) {
     const dist = haversineDistanceMeters(lat, lon, city.lat, city.lon);
-    if (dist < bestCityDist && METRO_LANDMARK_CATALOG[city.id]) {
+    if (
+      dist < bestCityDist &&
+      (METRO_LANDMARK_CATALOG[city.id] || runtimeBuiltTours.has(city.id))
+    ) {
       bestCityDist = dist;
       bestCity = city;
     }
@@ -2558,6 +4117,10 @@ export function resolveNearestMetroForTour(lat, lon) {
 
   if (
     nearestCustom &&
+    (!nearestVenue ||
+      nearestCustom.distanceMeters <= nearestVenue.distanceMeters) &&
+    (!nearestRuntime ||
+      nearestCustom.distanceMeters <= nearestRuntime.distanceMeters) &&
     nearestCustom.distanceMeters <= bestCityDist &&
     nearestCustom.distanceMeters <= bestMetroDist
   ) {
@@ -2566,6 +4129,37 @@ export function resolveNearestMetroForTour(lat, lon) {
       cityName: nearestCustom.cityName,
       landmarks: nearestCustom.landmarks,
       isCustomTour: true,
+      metadata: normalizeTourV2Metadata(
+        nearestCustom.metadata,
+        nearestCustom.cityId,
+        nearestCustom.landmarks,
+      ),
+    };
+  }
+
+  if (nearestVenue) {
+    return {
+      cityId: nearestVenue.id,
+      cityName: nearestVenue.name,
+      landmarks: nearestVenue.landmarks,
+      tourScope: 'venue',
+      metadata: nearestVenue,
+    };
+  }
+
+  if (
+    nearestRuntime &&
+    nearestRuntime.distanceMeters <= bestCityDist &&
+    (nearestRuntime.distanceMeters <= bestMetroDist ||
+      nearestRuntime.distanceMeters <= METRO_TOUR_RADIUS_METERS)
+  ) {
+    return {
+      cityId: nearestRuntime.cityId,
+      cityName: nearestRuntime.cityName,
+      landmarks: nearestRuntime.landmarks,
+      tourScope: nearestRuntime.metadata?.tourScope || 'metro',
+      isRuntimeBuilt: true,
+      metadata: nearestRuntime.metadata,
     };
   }
 
@@ -2582,10 +4176,17 @@ export function resolveNearestMetroForTour(lat, lon) {
 
   if (bestMetro) {
     const canonicalKey = normalizeMetroTourCityKey(bestMetro.name);
-    if (canonicalKey && METRO_LANDMARK_CATALOG[canonicalKey]) {
+    if (
+      canonicalKey &&
+      (METRO_LANDMARK_CATALOG[canonicalKey] ||
+        runtimeBuiltTours.has(canonicalKey))
+    ) {
       return {
         cityId: canonicalKey,
-        cityName: METRO_TOUR_METADATA[canonicalKey]?.name || bestMetro.name,
+        cityName:
+          runtimeBuiltTours.get(canonicalKey)?.metadata?.name ||
+          METRO_TOUR_METADATA[canonicalKey]?.name ||
+          bestMetro.name,
         landmarks: getLandmarksForCity(canonicalKey),
       };
     }
@@ -2607,10 +4208,14 @@ export function resolveNearestMetroForTour(lat, lon) {
 
 /**
  * Resolves the landmark list for a given city ID or coordinate pair,
- * merging built-in catalog/dynamic stops with any user-authored custom stops.
+ * merging built-in catalog/dynamic/runtime stops with any user-authored custom stops.
  */
 export function getLandmarksForCity(cityIdOrQuery, lat = null, lon = null) {
   const reg = loadCustomToursRegistry();
+  const finalizeStops = (stops, cityLabel = '') =>
+    (Array.isArray(stops) ? stops : []).map((s) =>
+      enrichStopMediaMetadata(s, cityLabel),
+    );
   if (
     typeof cityIdOrQuery === 'string' &&
     cityIdOrQuery.trim() &&
@@ -2618,20 +4223,40 @@ export function getLandmarksForCity(cityIdOrQuery, lat = null, lon = null) {
   ) {
     const canonicalKey = normalizeMetroTourCityKey(cityIdOrQuery);
     if (canonicalKey && reg.customTours[canonicalKey]) {
-      return (reg.customTours[canonicalKey].stops || []).map((s) => ({ ...s }));
+      const cityLabel =
+        reg.customTours[canonicalKey].metadata?.name || canonicalKey;
+      return finalizeStops(reg.customTours[canonicalKey].stops, cityLabel);
+    }
+    if (canonicalKey && runtimeBuiltTours.has(canonicalKey)) {
+      const entry = runtimeBuiltTours.get(canonicalKey);
+      const extra = reg.extraStopsByCityId[canonicalKey] || [];
+      const cityLabel = entry.metadata?.name || canonicalKey;
+      return finalizeStops([...entry.landmarks, ...extra], cityLabel);
     }
     if (canonicalKey && METRO_LANDMARK_CATALOG[canonicalKey]) {
       const extra = reg.extraStopsByCityId[canonicalKey] || [];
-      return [
-        ...METRO_LANDMARK_CATALOG[canonicalKey],
-        ...extra.map((s) => ({ ...s })),
-      ];
+      const cityLabel =
+        METRO_TOUR_METADATA[canonicalKey]?.name ||
+        LIVING_CITIES[canonicalKey]?.name ||
+        canonicalKey;
+      return finalizeStops(
+        [...METRO_LANDMARK_CATALOG[canonicalKey], ...extra],
+        cityLabel,
+      );
     }
 
     const clean = stripTourDiacritics(cityIdOrQuery);
     const underscored = clean.replace(/[\s-]+/g, '_');
     if (reg.customTours[underscored]) {
-      return (reg.customTours[underscored].stops || []).map((s) => ({ ...s }));
+      const cityLabel =
+        reg.customTours[underscored].metadata?.name || underscored;
+      return finalizeStops(reg.customTours[underscored].stops, cityLabel);
+    }
+    if (runtimeBuiltTours.has(underscored)) {
+      const entry = runtimeBuiltTours.get(underscored);
+      const extra = reg.extraStopsByCityId[underscored] || [];
+      const cityLabel = entry.metadata?.name || underscored;
+      return finalizeStops([...entry.landmarks, ...extra], cityLabel);
     }
     const matchedMetro = (MAJOR_WORLD_METROS || []).find((m) => {
       const metroClean = stripTourDiacritics(m.name);
@@ -2643,13 +4268,16 @@ export function getLandmarksForCity(cityIdOrQuery, lat = null, lon = null) {
         reg.extraStopsByCityId[underscored] ||
         reg.extraStopsByCityId[clean] ||
         [];
-      return [...dynamicStops, ...extra.map((s) => ({ ...s }))];
+      return finalizeStops(
+        [...dynamicStops, ...extra],
+        matchedMetro.name || '',
+      );
     }
     if (
       Array.isArray(reg.extraStopsByCityId[underscored]) &&
       reg.extraStopsByCityId[underscored].length > 0
     ) {
-      return reg.extraStopsByCityId[underscored].map((s) => ({ ...s }));
+      return finalizeStops(reg.extraStopsByCityId[underscored], underscored);
     }
   }
 
@@ -2658,10 +4286,10 @@ export function getLandmarksForCity(cityIdOrQuery, lat = null, lon = null) {
   }
 
   const laExtra = reg.extraStopsByCityId.los_angeles || [];
-  return [
-    ...METRO_LANDMARK_CATALOG.los_angeles,
-    ...laExtra.map((s) => ({ ...s })),
-  ];
+  return finalizeStops(
+    [...METRO_LANDMARK_CATALOG.los_angeles, ...laExtra],
+    'Los Angeles',
+  );
 }
 
 /**
@@ -2884,8 +4512,11 @@ export function resolveTourOrPlayContext(lat, lon, elevationMeters = 0) {
   const safeLat = Number.isFinite(lat) ? lat : 34.0522;
   const safeLon = Number.isFinite(lon) ? lon : -118.2437;
 
-  // 0. Check user-authored custom tours first (if closer than nearby metro centers or outside metros)
+  // 0. Check user-authored custom tours, tight-radius curated venues (e.g. Theme Park Days),
+  // and Dev-Forge runtime-registered tours
   const nearestCustom = findNearestCustomTour(safeLat, safeLon);
+  const nearestVenue = findNearestVenueTour(safeLat, safeLon);
+  const nearestRuntime = findNearestRuntimeBuiltTour(safeLat, safeLon);
 
   let nearestCity = null;
   let minCityDist = Infinity;
@@ -2914,20 +4545,85 @@ export function resolveTourOrPlayContext(lat, lon, elevationMeters = 0) {
 
   if (
     nearestCustom &&
+    (!nearestVenue ||
+      nearestCustom.distanceMeters <= nearestVenue.distanceMeters) &&
     (nearestCustom.distanceMeters <= Math.min(minCityDist, minMetroDist) ||
       nearestCustom.distanceMeters <= 8000)
   ) {
+    const customMeta = normalizeTourV2Metadata(
+      nearestCustom.metadata,
+      nearestCustom.cityId,
+      nearestCustom.landmarks,
+    );
     return {
       mode: 'tour',
       hasExistingTour: true,
+      hasCuratedOrCustomTour: true,
       isCustomTour: true,
+      isDynamicPlaceholder: false,
+      tourScope: customMeta.tourScope,
+      radiusMeters: customMeta.radiusMeters,
+      transitMode: customMeta.transitMode,
       title: `${nearestCustom.cityName} Electric Scooter Tour`,
       label: nearestCustom.cityName,
       actionButtonLabel: `🛴 Tour ${nearestCustom.cityName}`,
       cityId: nearestCustom.cityId,
       cityName: nearestCustom.cityName,
       landmarks: nearestCustom.landmarks,
-      metadata: nearestCustom.metadata,
+      metadata: customMeta,
+    };
+  }
+
+  if (nearestVenue) {
+    const shortVenueName = String(nearestVenue.name || '')
+      .replace(/\s*\((?:WDW|DLR|UOR|USH|TDR|DLP)\)$/i, '')
+      .trim();
+    return {
+      mode: 'tour',
+      hasExistingTour: true,
+      hasCuratedOrCustomTour: true,
+      isCustomTour: false,
+      isDynamicPlaceholder: false,
+      tourScope: 'venue',
+      radiusMeters:
+        nearestVenue.radiusMeters || VENUE_TOUR_DEFAULT_RADIUS_METERS,
+      transitMode: nearestVenue.transitMode || 'walk_midway',
+      supportedModes: nearestVenue.supportedModes || ['all'],
+      title: `${nearestVenue.name} Park Day Tour`,
+      label: nearestVenue.name,
+      actionButtonLabel: `🎢 Park Day: ${shortVenueName || nearestVenue.name}`,
+      cityId: nearestVenue.id,
+      cityName: nearestVenue.name,
+      landmarks: nearestVenue.landmarks,
+      metadata: nearestVenue,
+    };
+  }
+
+  if (nearestRuntime && nearestRuntime.distanceMeters <= 5000) {
+    const rtMeta = nearestRuntime.metadata;
+    const isVenue = rtMeta?.tourScope === 'venue';
+    return {
+      mode: 'tour',
+      hasExistingTour: true,
+      hasCuratedOrCustomTour: true,
+      isCustomTour: false,
+      isRuntimeBuilt: true,
+      isDynamicPlaceholder: false,
+      tourScope: rtMeta?.tourScope || 'metro',
+      radiusMeters: rtMeta?.radiusMeters || METRO_TOUR_RADIUS_METERS,
+      transitMode: rtMeta?.transitMode || 'scooter',
+      supportedModes: rtMeta?.supportedModes || ['all'],
+      title: isVenue
+        ? `${nearestRuntime.cityName} Park Day Tour`
+        : `${nearestRuntime.cityName} Electric Scooter Tour`,
+      label: nearestRuntime.cityName,
+      actionButtonLabel: isVenue
+        ? `🎢 Park Day: ${nearestRuntime.cityName}`
+        : `🛴 Tour ${nearestRuntime.cityName}`,
+      cityId: nearestRuntime.cityId,
+      cityName: nearestRuntime.cityName,
+      landmarks: nearestRuntime.landmarks,
+      metadata: rtMeta,
     };
   }
 
@@ -2947,6 +4643,8 @@ export function resolveTourOrPlayContext(lat, lon, elevationMeters = 0) {
       return {
         mode: 'play',
         hasExistingTour: false,
+        hasCuratedOrCustomTour: false,
+        isDynamicPlaceholder: false,
         title: `Play in ${loc.name}`,
         label: loc.name,
         typologyName: TYPOLOGY_METADATA[loc.typology]?.name || loc.name,
@@ -2961,36 +4659,106 @@ export function resolveTourOrPlayContext(lat, lon, elevationMeters = 0) {
     }
   }
 
-  // 2. Check if inside a major LIVING_CITIES metro
-  if (nearestCity) {
-    const landmarks = getLandmarksForCity(nearestCity.id, safeLat, safeLon);
+  if (nearestRuntime) {
+    const rtMeta = nearestRuntime.metadata;
+    const isVenue = rtMeta?.tourScope === 'venue';
     return {
       mode: 'tour',
       hasExistingTour: true,
+      hasCuratedOrCustomTour: true,
       isCustomTour: false,
+      isRuntimeBuilt: true,
+      isDynamicPlaceholder: false,
+      tourScope: rtMeta?.tourScope || 'metro',
+      radiusMeters: rtMeta?.radiusMeters || METRO_TOUR_RADIUS_METERS,
+      transitMode: rtMeta?.transitMode || 'scooter',
+      supportedModes: rtMeta?.supportedModes || ['all'],
+      title: isVenue
+        ? `${nearestRuntime.cityName} Park Day Tour`
+        : `${nearestRuntime.cityName} Electric Scooter Tour`,
+      label: nearestRuntime.cityName,
+      actionButtonLabel: isVenue
+        ? `🎢 Park Day: ${nearestRuntime.cityName}`
+        : `🛴 Tour ${nearestRuntime.cityName}`,
+      cityId: nearestRuntime.cityId,
+      cityName: nearestRuntime.cityName,
+      landmarks: nearestRuntime.landmarks,
+      metadata: rtMeta,
+    };
+  }
+
+  // 2. Check if inside a major LIVING_CITIES metro
+  if (nearestCity) {
+    const landmarks = getLandmarksForCity(nearestCity.id, safeLat, safeLon);
+    const isAuthored = Boolean(
+      METRO_LANDMARK_CATALOG[nearestCity.id] ||
+      runtimeBuiltTours.has(nearestCity.id),
+    );
+    const rawMeta = runtimeBuiltTours.get(nearestCity.id)?.metadata ||
+      METRO_TOUR_METADATA[nearestCity.id] || {
+        id: nearestCity.id,
+        name: nearestCity.name,
+        centerLat: nearestCity.lat,
+        centerLon: nearestCity.lon,
+      };
+    const meta = normalizeTourV2Metadata(rawMeta, nearestCity.id, landmarks);
+    return {
+      mode: 'tour',
+      hasExistingTour: true,
+      hasCuratedOrCustomTour: isAuthored,
+      isDynamicPlaceholder: !isAuthored,
+      isCustomTour: false,
+      tourScope: meta.tourScope,
+      radiusMeters: meta.radiusMeters,
+      transitMode: meta.transitMode,
       title: `${nearestCity.name} Electric Scooter Tour`,
       label: nearestCity.name,
       actionButtonLabel: `🛴 Tour ${nearestCity.name}`,
       cityId: nearestCity.id,
       cityName: nearestCity.name,
       landmarks,
+      metadata: meta,
     };
   }
 
   // 3. Check if inside any MAJOR_WORLD_METROS city
   if (nearestMetro) {
-    const cityKey = nearestMetro.name.toLowerCase().replace(/\s+/g, '_');
+    const canonicalKey = normalizeMetroTourCityKey(nearestMetro.name);
+    const runtimeEntry = canonicalKey
+      ? runtimeBuiltTours.get(canonicalKey)
+      : null;
+    const isAuthored = Boolean(
+      canonicalKey && (METRO_LANDMARK_CATALOG[canonicalKey] || runtimeEntry),
+    );
+    const cityKey = isAuthored
+      ? canonicalKey
+      : stripTourDiacritics(nearestMetro.name).replace(/\s+/g, '_');
     const landmarks = getLandmarksForCity(cityKey, safeLat, safeLon);
+    const rawMeta =
+      runtimeEntry?.metadata ||
+      (isAuthored ? METRO_TOUR_METADATA[canonicalKey] : null) ||
+      null;
+    const meta = rawMeta
+      ? normalizeTourV2Metadata(rawMeta, cityKey, landmarks)
+      : null;
+    const displayName = meta?.name || nearestMetro.name;
     return {
       mode: 'tour',
       hasExistingTour: true,
+      hasCuratedOrCustomTour: isAuthored,
+      isDynamicPlaceholder: !isAuthored,
       isCustomTour: false,
-      title: `${nearestMetro.name} Electric Scooter Tour`,
-      label: nearestMetro.name,
-      actionButtonLabel: `🛴 Tour ${nearestMetro.name}`,
+      isRuntimeBuilt: Boolean(runtimeEntry),
+      tourScope: meta?.tourScope || 'metro',
+      radiusMeters: meta?.radiusMeters || METRO_TOUR_RADIUS_METERS,
+      transitMode: meta?.transitMode || 'scooter',
+      title: `${displayName} Electric Scooter Tour`,
+      label: displayName,
+      actionButtonLabel: `🛴 Tour ${displayName}`,
       cityId: cityKey,
-      cityName: nearestMetro.name,
+      cityName: displayName,
       landmarks,
+      ...(meta ? { metadata: meta } : {}),
     };
   }
 
@@ -3010,6 +4778,8 @@ export function resolveTourOrPlayContext(lat, lon, elevationMeters = 0) {
   return {
     mode: 'play',
     hasExistingTour: false,
+    hasCuratedOrCustomTour: false,
+    isDynamicPlaceholder: false,
     title: `Play — ${classification.name}`,
     label: classification.name,
     typologyName: classification.name,
@@ -3133,9 +4903,24 @@ function resolveLandmarkStreetBearingDeg(landmark) {
 export function buildStreetAndSidewalkRoute(
   startCoord,
   targetLandmark,
-  { sidewalkOffsetMeters = TOUR_SIDEWALK_OFFSET_METERS } = {},
+  {
+    sidewalkOffsetMeters = null,
+    approachCorridorMaxMeters = null,
+    transitMode = 'scooter',
+  } = {},
 ) {
   if (!targetLandmark) return [];
+
+  const effectiveCorridorMax = Number.isFinite(approachCorridorMaxMeters)
+    ? approachCorridorMaxMeters
+    : transitMode === 'walk_midway'
+      ? TOUR_WALK_MIDWAY_CORRIDOR_MAX_METERS
+      : TOUR_APPROACH_CORRIDOR_MAX_METERS;
+  const effectiveSidewalkOffset = Number.isFinite(sidewalkOffsetMeters)
+    ? sidewalkOffsetMeters
+    : transitMode === 'walk_midway'
+      ? 0
+      : TOUR_SIDEWALK_OFFSET_METERS;
 
   const targetLat = Number(targetLandmark.lat) || 34.1016;
   const targetLon = Number(targetLandmark.lon) || -118.3267;
@@ -3162,26 +4947,38 @@ export function buildStreetAndSidewalkRoute(
   const reverseBoulevardDeg = (streetBearingDeg + 180) % 360;
   const crossStreetDeg = (streetBearingDeg + 270) % 360; // 90-deg perpendicular cross street
 
-  const hasCloseStart =
+  const startDistMeters =
     startCoord &&
     Number.isFinite(startCoord.lat) &&
-    Number.isFinite(startCoord.lon) &&
-    haversineDistanceMeters(
-      startCoord.lat,
-      startCoord.lon,
-      targetLat,
-      targetLon,
-    ) <= TOUR_APPROACH_CORRIDOR_MAX_METERS &&
-    haversineDistanceMeters(
-      startCoord.lat,
-      startCoord.lon,
-      targetLat,
-      targetLon,
-    ) >= 18;
+    Number.isFinite(startCoord.lon)
+      ? haversineDistanceMeters(
+          startCoord.lat,
+          startCoord.lon,
+          targetLat,
+          targetLon,
+        )
+      : Infinity;
+  const hasCloseStart =
+    startDistMeters <= effectiveCorridorMax && startDistMeters >= 18;
+  const hasVeryCloseStart = startDistMeters < 18;
 
   let roadCenterlinePoints = [];
 
-  if (hasCloseStart) {
+  if (hasVeryCloseStart) {
+    roadCenterlinePoints = [
+      {
+        lat: startCoord.lat,
+        lon: startCoord.lon,
+        elev: startCoord.elev ?? targetElev,
+      },
+      {
+        lat: (startCoord.lat + targetLat) * 0.5,
+        lon: (startCoord.lon + targetLon) * 0.5,
+        elev: targetElev,
+      },
+      { lat: targetLat, lon: targetLon, elev: targetElev },
+    ];
+  } else if (hasCloseStart) {
     // Project an orthogonal L-turn along the local street axes from startCoord to targetLandmark
     // with a chamfered intersection corner so the scooter follows streets instead of cutting diagonally.
     const dNorthTotal = (targetLat - startCoord.lat) * 111139.0;
@@ -3276,7 +5073,7 @@ export function buildStreetAndSidewalkRoute(
     ];
   }
 
-  return projectRouteToSidewalk(roadCenterlinePoints, sidewalkOffsetMeters);
+  return projectRouteToSidewalk(roadCenterlinePoints, effectiveSidewalkOffset);
 }
 
 /**
@@ -3285,6 +5082,7 @@ export function buildStreetAndSidewalkRoute(
 export function createTourAndPlayEngine({
   wanderEngine = null,
   cityEngine = null,
+  viewer = null,
   dwellDurationSeconds = TOUR_LANDMARK_DWELL_SECONDS,
   scooterSpeedMps = TOUR_SCOOTER_SPEED_MPS,
   walkSpeedMps = TOUR_WALK_DWELL_SPEED_MPS,
@@ -3292,8 +5090,16 @@ export function createTourAndPlayEngine({
   fetchImpl = null,
 } = {}) {
   let state = TOUR_PLAY_STATES.IDLE;
+  let activeViewer = viewer;
   let activeCityId = null;
   let activeCityName = '';
+  let activeTourScope = 'city';
+  let activeTransitMode = 'scooter';
+  let activeTourMode = 'all';
+  let activeTourMetadata = null;
+  let mediaPaused = false;
+  let savedClockState = null;
+  let lastSolarState = null;
   let tourOrder = []; // Randomized array of landmarks for the current tour
   let currentLandmarkIndex = 0;
   let dwellRemainingSec = 0;
@@ -3310,6 +5116,105 @@ export function createTourAndPlayEngine({
   let activeTourCompanion = true;
   let activeTourCameraMode = WANDER_CAMERA_MODES.ISO_CHASE;
   const stateListeners = new Set();
+
+  function getActiveTransitSpeedMps() {
+    return activeTransitMode === 'walk_midway'
+      ? TOUR_WALK_MIDWAY_SPEED_MPS
+      : scooterSpeedMps;
+  }
+
+  function getActiveCorridorMaxMeters() {
+    return activeTransitMode === 'walk_midway'
+      ? TOUR_WALK_MIDWAY_CORRIDOR_MAX_METERS
+      : TOUR_APPROACH_CORRIDOR_MAX_METERS;
+  }
+
+  function buildTransitBubbleSpec(target, stopIndex = currentLandmarkIndex) {
+    if (!target) return null;
+    const isWalk = activeTransitMode === 'walk_midway';
+    const prefix = isWalk ? '🚶 Walking to' : '🛴 Scootering to';
+    const pathDesc = isWalk ? 'along park midway' : 'via street & sidewalk';
+    return {
+      name: `${prefix} ${target.name}`,
+      vibeColor: '#22d3ee',
+      occupation: `Stop ${stopIndex + 1} of ${tourOrder.length} · ${pathDesc}`,
+      thought: `Next Landmark: ${target.name} (${target.category}). ${target.companionNote}`,
+      currentThought: `Next Landmark: ${target.name} (${target.category}). ${target.companionNote}`,
+      city: `${activeCityName} ${isWalk ? 'Park Day Walk' : 'Scooter Tour'}`,
+      isCompanion: true,
+    };
+  }
+
+  function applyDayCycleClockForStop(stopIndex) {
+    const rawDayCycle = activeTourMetadata?.dayCycle;
+    const isEnabled =
+      Boolean(rawDayCycle) || activeTourMetadata?.dayCycleEnabled === true;
+    if (!isEnabled) {
+      lastSolarState = null;
+      return;
+    }
+    const approxLon =
+      Number(activeTourMetadata?.centerLon) ||
+      Number(tourOrder[stopIndex]?.lon) ||
+      -81.55;
+    const dayCycle = rawDayCycle || {
+      startLocalHour: 9.0,
+      advanceHoursPerStop: 0.75,
+      utcOffsetHours: Math.round(approxLon / 15),
+    };
+    const solar = computeDayCycleSolarState({
+      dayCycle,
+      stopIndex,
+      totalStops: tourOrder.length || 1,
+    });
+    lastSolarState = solar;
+    const clock = activeViewer?.clock;
+    if (!clock || !solar?.julianDate) return;
+    try {
+      if (!savedClockState) {
+        savedClockState = {
+          currentTime: clock.currentTime
+            ? Cesium.JulianDate.clone(clock.currentTime)
+            : null,
+          shouldAnimate: Boolean(clock.shouldAnimate),
+          multiplier: Number.isFinite(clock.multiplier) ? clock.multiplier : 1,
+        };
+      }
+      if (clock.currentTime && Cesium.JulianDate.clone) {
+        Cesium.JulianDate.clone(solar.julianDate, clock.currentTime);
+      } else {
+        clock.currentTime = solar.julianDate;
+      }
+      clock.shouldAnimate = false;
+      clock.multiplier = 1;
+    } catch {
+      // Safe no-op for lightweight headless mocks
+    }
+  }
+
+  function restoreDayCycleClock() {
+    const clock = activeViewer?.clock;
+    if (clock && savedClockState) {
+      try {
+        if (savedClockState.currentTime) {
+          if (clock.currentTime && Cesium.JulianDate.clone) {
+            Cesium.JulianDate.clone(
+              savedClockState.currentTime,
+              clock.currentTime,
+            );
+          } else {
+            clock.currentTime = savedClockState.currentTime;
+          }
+        }
+        clock.shouldAnimate = savedClockState.shouldAnimate;
+        clock.multiplier = savedClockState.multiplier;
+      } catch {
+        // Safe no-op for lightweight headless mocks
+      }
+    }
+    savedClockState = null;
+    lastSolarState = null;
+  }
 
   function notifyListeners() {
     const snapshot = getStatus();
@@ -3403,12 +5308,19 @@ export function createTourAndPlayEngine({
           )
         : Infinity;
 
+    const corridorMaxMeters = getActiveCorridorMaxMeters();
     const needsCorridorStaging =
-      isInitialSpawn || currentDist > TOUR_APPROACH_CORRIDOR_MAX_METERS;
+      isInitialSpawn || currentDist > corridorMaxMeters;
 
     const route = buildStreetAndSidewalkRoute(
       needsCorridorStaging ? null : currentCoord,
       targetLandmark,
+      {
+        transitMode: activeTransitMode,
+        approachCorridorMaxMeters: corridorMaxMeters,
+        sidewalkOffsetMeters:
+          activeTransitMode === 'walk_midway' ? 0 : TOUR_SIDEWALK_OFFSET_METERS,
+      },
     );
 
     activeRouteWaypoints = route;
@@ -3461,7 +5373,9 @@ export function createTourAndPlayEngine({
           }
           const sidewalkPts = projectRouteToSidewalk(
             snappedRoadPts,
-            TOUR_SIDEWALK_OFFSET_METERS,
+            activeTransitMode === 'walk_midway'
+              ? 0
+              : TOUR_SIDEWALK_OFFSET_METERS,
           );
           if (sidewalkPts.length >= 3 && transitElapsedSec < 0.35) {
             activeRouteWaypoints = sidewalkPts;
@@ -3486,6 +5400,20 @@ export function createTourAndPlayEngine({
   function updateStep({ coordinates, deltaTimeSeconds = 0.016 } = {}) {
     const dt = Math.min(Math.max(deltaTimeSeconds, 0.001), 0.25);
 
+    if (
+      mediaPaused &&
+      (state === TOUR_PLAY_STATES.SCOOTER_TRANSIT ||
+        state === TOUR_PLAY_STATES.LANDMARK_DWELL)
+    ) {
+      return {
+        lat: coordinates.lat,
+        lon: coordinates.lon,
+        elev: coordinates.height ?? 50,
+        heading: coordinates.heading ?? dwellAnchorHeadingDeg,
+        speedMps: 0,
+      };
+    }
+
     if (state === TOUR_PLAY_STATES.SCOOTER_TRANSIT) {
       const target = tourOrder[currentLandmarkIndex];
       if (!target) {
@@ -3494,6 +5422,7 @@ export function createTourAndPlayEngine({
       }
 
       // Ensure street & sidewalk route is initialized and never attempts a cross-city supersonic leap
+      const corridorMaxMeters = getActiveCorridorMaxMeters();
       const directDistToTarget = haversineDistanceMeters(
         coordinates.lat,
         coordinates.lon,
@@ -3502,13 +5431,13 @@ export function createTourAndPlayEngine({
       );
       if (
         activeRouteWaypoints.length === 0 ||
-        directDistToTarget > TOUR_APPROACH_CORRIDOR_MAX_METERS * 1.35
+        directDistToTarget > corridorMaxMeters * 1.35
       ) {
         const staged = prepareScooterTransitToLandmark(target, {
           currentCoord: coordinates,
           isInitialSpawn: false,
         });
-        if (staged && directDistToTarget > TOUR_APPROACH_CORRIDOR_MAX_METERS) {
+        if (staged && directDistToTarget > corridorMaxMeters) {
           coordinates = {
             ...coordinates,
             lat: staged.startLat,
@@ -3520,8 +5449,9 @@ export function createTourAndPlayEngine({
 
       transitElapsedSec += dt;
 
-      // Smooth ease-in takeoff over the first 1.5s (from walking speed 1.2 m/s to 6.7 m/s scooter cruise)
-      // and gentle arrival slowdown over the final 15m. NEVER exceeds scooterSpeedMps (6.7 m/s)!
+      // Smooth ease-in takeoff over the first 1.5s and gentle arrival slowdown over the final 15m.
+      // Respects walk_midway (2.0 m/s) or scooter (6.7 m/s)!
+      const activeTransitSpeedMps = getActiveTransitSpeedMps();
       const accelT = Math.min(1.0, transitElapsedSec / 1.5);
       const smoothAccel = accelT * accelT * (3 - 2 * accelT);
       const remainingDistMeters = computeRemainingRouteDistanceMeters(
@@ -3534,9 +5464,9 @@ export function createTourAndPlayEngine({
           ? Math.max(0.25, remainingDistMeters / 15.0)
           : 1.0;
       const effectiveSpeedMps = Math.min(
-        scooterSpeedMps,
+        activeTransitSpeedMps,
         walkSpeedMps +
-          (scooterSpeedMps - walkSpeedMps) * smoothAccel * decelFactor,
+          (activeTransitSpeedMps - walkSpeedMps) * smoothAccel * decelFactor,
       );
 
       // Advance along street & sidewalk polyline waypoints
@@ -3653,22 +5583,16 @@ export function createTourAndPlayEngine({
         // Advance to next landmark in randomized sequence (loops back to 0 when complete)
         currentLandmarkIndex = (currentLandmarkIndex + 1) % tourOrder.length;
         state = TOUR_PLAY_STATES.SCOOTER_TRANSIT;
+        applyDayCycleClockForStop(currentLandmarkIndex);
         const nextTarget = tourOrder[currentLandmarkIndex];
         const staged = prepareScooterTransitToLandmark(nextTarget, {
           currentCoord: coordinates,
           isInitialSpawn: false,
         });
-        const nextBubbleSpec = nextTarget
-          ? {
-              name: `🛴 Scootering to ${nextTarget.name}`,
-              vibeColor: '#22d3ee',
-              occupation: `Stop ${currentLandmarkIndex + 1} of ${tourOrder.length} · via street & sidewalk`,
-              thought: `Next Landmark: ${nextTarget.name} (${nextTarget.category}). ${nextTarget.companionNote}`,
-              currentThought: `Next Landmark: ${nextTarget.name} (${nextTarget.category}). ${nextTarget.companionNote}`,
-              city: `${activeCityName} Scooter Tour`,
-              isCompanion: true,
-            }
-          : null;
+        const nextBubbleSpec = buildTransitBubbleSpec(
+          nextTarget,
+          currentLandmarkIndex,
+        );
         if (nextBubbleSpec) {
           wanderEngine?.showDialogBubble?.(nextBubbleSpec);
         }
@@ -3843,9 +5767,16 @@ export function createTourAndPlayEngine({
     cameraMode = WANDER_CAMERA_MODES.ISO_CHASE,
     companion = true,
     startStopId = null,
+    tourMode = 'all',
+    viewer: overrideViewer = null,
   } = {}) {
+    if (overrideViewer) activeViewer = overrideViewer;
     activeTourCompanion = companion;
     activeTourCameraMode = cameraMode || WANDER_CAMERA_MODES.ISO_CHASE;
+    const effectiveTourMode =
+      String(tourMode || 'all')
+        .trim()
+        .toLowerCase() || 'all';
     let effectiveCityId =
       typeof cityId === 'string' && cityId.trim().toLowerCase() !== 'auto'
         ? normalizeMetroTourCityKey(cityId.trim()) || cityId.trim()
@@ -3859,7 +5790,11 @@ export function createTourAndPlayEngine({
     const rawLandmarks =
       nearestMetroInfo?.landmarks ||
       getLandmarksForCity(effectiveCityId, lat, lon);
-    let shuffled = shuffleLandmarks(rawLandmarks, rng);
+    let shuffled = buildTourItinerary(rawLandmarks, {
+      tourMode: effectiveTourMode,
+      rng,
+      shuffle: true,
+    });
 
     if (startStopId) {
       const idx = shuffled.findIndex((l) => l.id === startStopId);
@@ -3887,6 +5822,10 @@ export function createTourAndPlayEngine({
       reg.customTours?.[normalizedKey]?.metadata ||
       reg.customTours?.[effectiveCityId]?.metadata ||
       null;
+    const runtimeMeta =
+      runtimeBuiltTours.get(normalizedKey)?.metadata ||
+      runtimeBuiltTours.get(effectiveCityId)?.metadata ||
+      null;
     const resolvedCity =
       (normalizedKey && LIVING_CITIES[normalizedKey]) ||
       (effectiveCityId && LIVING_CITIES[effectiveCityId.toLowerCase()]) ||
@@ -3894,6 +5833,7 @@ export function createTourAndPlayEngine({
       null;
     activeCityId =
       customMeta?.id ||
+      runtimeMeta?.id ||
       resolvedCity?.id ||
       normalizedKey ||
       effectiveCityId ||
@@ -3901,6 +5841,7 @@ export function createTourAndPlayEngine({
     activeCityName =
       nearestMetroInfo?.cityName ||
       customMeta?.name ||
+      runtimeMeta?.name ||
       METRO_TOUR_METADATA[activeCityId]?.name ||
       resolvedCity?.name ||
       (activeCityId === 'los_angeles'
@@ -3909,11 +5850,22 @@ export function createTourAndPlayEngine({
             .split('_')
             .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
             .join(' '));
+    activeTourMetadata =
+      customMeta ||
+      runtimeMeta ||
+      METRO_TOUR_METADATA[activeCityId] ||
+      nearestMetroInfo?.metadata ||
+      null;
+    activeTourScope = activeTourMetadata?.tourScope || 'city';
+    activeTransitMode = activeTourMetadata?.transitMode || 'scooter';
+    activeTourMode = effectiveTourMode;
+    mediaPaused = false;
 
     const firstStop = tourOrder[0];
     state = TOUR_PLAY_STATES.SCOOTER_TRANSIT;
     dwellRemainingSec = 0;
     dwellElapsedSec = 0;
+    applyDayCycleClockForStop(0);
 
     // Build street & sidewalk approach route for Landmark #1
     const staged = prepareScooterTransitToLandmark(firstStop, {
@@ -3962,15 +5914,7 @@ export function createTourAndPlayEngine({
       });
 
       if (firstStop) {
-        wanderEngine.showDialogBubble?.({
-          name: `🛴 Scootering to ${firstStop.name}`,
-          vibeColor: '#22d3ee',
-          occupation: `Stop 1 of ${tourOrder.length} · via street & sidewalk`,
-          thought: `Next Landmark: ${firstStop.name} (${firstStop.category}). ${firstStop.companionNote}`,
-          currentThought: `Next Landmark: ${firstStop.name} (${firstStop.category}). ${firstStop.companionNote}`,
-          city: `${activeCityName} Scooter Tour`,
-          isCompanion: true,
-        });
+        wanderEngine.showDialogBubble?.(buildTransitBubbleSpec(firstStop, 0));
       }
     }
 
@@ -4009,15 +5953,28 @@ export function createTourAndPlayEngine({
    * Resumes the electric scooter tour from user take-over (or skips the remaining dwell)
    * and heads to the next landmark in the randomized itinerary along streets and sidewalks.
    */
-  function continueTour({ advanceToNext = true } = {}) {
+  function continueTour(options = {}) {
     if (!tourOrder.length) return getStatus();
+    const { advanceToNext, resumeFromCurrent = true } = options || {};
+    const hasExplicitAdvance = typeof advanceToNext === 'boolean';
+    const hasExplicitResumeOnly =
+      !hasExplicitAdvance &&
+      options &&
+      Object.prototype.hasOwnProperty.call(options, 'resumeFromCurrent') &&
+      options.resumeFromCurrent === true;
+    const shouldAdvance = hasExplicitAdvance
+      ? advanceToNext
+      : !hasExplicitResumeOnly;
+
     wanderEngine?.clearInputState?.();
-    if (advanceToNext && state !== TOUR_PLAY_STATES.SCOOTER_TRANSIT) {
+    mediaPaused = false;
+    if (shouldAdvance) {
       currentLandmarkIndex = (currentLandmarkIndex + 1) % tourOrder.length;
     }
     state = TOUR_PLAY_STATES.SCOOTER_TRANSIT;
     dwellRemainingSec = 0;
     dwellElapsedSec = 0;
+    applyDayCycleClockForStop(currentLandmarkIndex);
 
     const nextStop = tourOrder[currentLandmarkIndex];
     const currentTelemetry = wanderEngine?.isWandering
@@ -4029,7 +5986,10 @@ export function createTourAndPlayEngine({
       wanderEngine?.getUserAvatar?.()?.isDestroyed;
 
     const staged = prepareScooterTransitToLandmark(nextStop, {
-      currentCoord: currentTelemetry?.coordinates || null,
+      currentCoord:
+        resumeFromCurrent !== false
+          ? currentTelemetry?.coordinates || null
+          : null,
       isInitialSpawn: wasMissingAvatar,
       skipRelocate: true,
     });
@@ -4064,17 +6024,25 @@ export function createTourAndPlayEngine({
     });
 
     if (nextStop) {
-      wanderEngine?.showDialogBubble?.({
-        name: `🛴 Scootering to ${nextStop.name}`,
-        vibeColor: '#22d3ee',
-        occupation: `Stop ${currentLandmarkIndex + 1} of ${tourOrder.length} · via street & sidewalk`,
-        thought: `Next Landmark: ${nextStop.name} (${nextStop.category}). ${nextStop.companionNote}`,
-        currentThought: `Next Landmark: ${nextStop.name} (${nextStop.category}). ${nextStop.companionNote}`,
-        city: `${activeCityName} Scooter Tour`,
-        isCompanion: true,
-      });
+      wanderEngine?.showDialogBubble?.(
+        buildTransitBubbleSpec(nextStop, currentLandmarkIndex),
+      );
     }
 
+    notifyListeners();
+    return getStatus();
+  }
+
+  function pauseForMedia() {
+    if (state === TOUR_PLAY_STATES.IDLE) return getStatus();
+    mediaPaused = true;
+    notifyListeners();
+    return getStatus();
+  }
+
+  function resumeFromMedia() {
+    if (!mediaPaused) return getStatus();
+    mediaPaused = false;
     notifyListeners();
     return getStatus();
   }
@@ -4179,6 +6147,7 @@ export function createTourAndPlayEngine({
   }
 
   function stop() {
+    restoreDayCycleClock();
     state = TOUR_PLAY_STATES.IDLE;
     tourOrder = [];
     activeRouteWaypoints = [];
@@ -4188,6 +6157,11 @@ export function createTourAndPlayEngine({
     dwellElapsedSec = 0;
     transitElapsedSec = 0;
     activePlayActivity = null;
+    activeTourScope = 'city';
+    activeTransitMode = 'scooter';
+    activeTourMode = 'all';
+    activeTourMetadata = null;
+    mediaPaused = false;
     if (wanderEngine) {
       wanderEngine.setExternalController?.(null);
       wanderEngine.setWalkSpeedOverride?.(null);
@@ -4205,6 +6179,42 @@ export function createTourAndPlayEngine({
     stateListeners.clear();
   }
 
+  function getLinkedParkHops() {
+    return getParkHopperBridgesForPark(activeCityId);
+  }
+
+  function hopToLinkedPark(targetCityId = null, { bridgeId = null } = {}) {
+    const bridges = getParkHopperBridgesForPark(activeCityId);
+    const normalizedTarget = normalizeMetroTourCityKey(targetCityId);
+    const bridge =
+      bridges.find(
+        (b) =>
+          (bridgeId && b.id === bridgeId) ||
+          (targetCityId &&
+            (b.toCityId === targetCityId || b.toCityId === normalizedTarget)),
+      ) || (!targetCityId && !bridgeId ? bridges[0] : null);
+    if (!bridge) {
+      return { ok: false, reason: 'no_bridge', bridges };
+    }
+    wanderEngine?.showDialogBubble?.({
+      name: `${bridge.icon} Boarding ${bridge.transitLabel}`,
+      vibeColor: '#38bdf8',
+      occupation: bridge.durationNote,
+      thought: `Next stop: ${bridge.toParkName} via ${bridge.transitLabel}!`,
+      currentThought: `Next stop: ${bridge.toParkName} via ${bridge.transitLabel}!`,
+      city: bridge.toParkName,
+      isCompanion: true,
+    });
+    const status = startCityTour({
+      cityId: bridge.toCityId,
+      startStopId: bridge.arrivalStopId,
+      tourMode: 'all',
+      cameraMode: activeTourCameraMode || WANDER_CAMERA_MODES.ISO_CHASE,
+      companion: activeTourCompanion,
+    });
+    return { ok: true, bridge, status };
+  }
+
   function getStatus() {
     const currentStop = tourOrder[currentLandmarkIndex] || null;
     const nextStop =
@@ -4218,6 +6228,16 @@ export function createTourAndPlayEngine({
     const isPlay =
       state === TOUR_PLAY_STATES.PLAY_ACTIVE ||
       (state === TOUR_PLAY_STATES.USER_TAKEOVER && Boolean(activePlayActivity));
+    const parkHopperBridges = isTour
+      ? getParkHopperBridgesForPark(activeCityId)
+      : [];
+    const isFinalEveningStop = Boolean(
+      isTour &&
+      activeTourScope === 'venue' &&
+      tourOrder.length > 0 &&
+      (currentLandmarkIndex >= tourOrder.length - 1 ||
+        (lastSolarState?.localHour ?? 0) >= 19.25),
+    );
     return {
       ok: true,
       state,
@@ -4227,6 +6247,17 @@ export function createTourAndPlayEngine({
       isPlay,
       cityId: activeCityId,
       cityName: activeCityName,
+      tourScope: activeTourScope,
+      transitMode: activeTransitMode,
+      tourMode: activeTourMode,
+      supportedModes: activeTourMetadata?.supportedModes || ['all'],
+      dayCycle: lastSolarState,
+      isFinalEveningStop,
+      parkHopperBridges,
+      mediaPaused,
+      canResume:
+        state === TOUR_PLAY_STATES.USER_TAKEOVER && tourOrder.length > 0,
+      metadata: activeTourMetadata ? { ...activeTourMetadata } : null,
       landmarks: tourOrder.map((l) => ({ ...l })),
       tourOrder: tourOrder.map((l) => ({ ...l })),
       landmarkIndex: currentLandmarkIndex,
@@ -4239,7 +6270,7 @@ export function createTourAndPlayEngine({
       dwellRemainingSec: Math.ceil(dwellRemainingSec),
       dwellDurationSeconds,
       dwellAnchorHeadingDeg,
-      scooterSpeedMps,
+      scooterSpeedMps: getActiveTransitSpeedMps(),
       walkSpeedMps,
       activePlayActivity,
       activity: activePlayActivity,
@@ -4253,6 +6284,10 @@ export function createTourAndPlayEngine({
     startPlayActivity,
     takeOverAtLandmark,
     continueTour,
+    hopToLinkedPark,
+    getLinkedParkHops,
+    pauseForMedia,
+    resumeFromMedia,
     arriveAtCurrentLandmarkNow,
     resolveContext: resolveTourOrPlayContext,
     stop,

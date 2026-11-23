@@ -285,9 +285,9 @@ const loadPopulatedPlaces = createRetryableLoader(
  * The most prominent populated place within `radiusKm` of a point (lowest
  * Natural Earth scalerank, then the larger population class, then the
  * nearer), or null.
- * @returns {Promise<string|null>}
+ * @returns {Promise<{name:string, lat:number, lon:number, scalerank:number, rankMax:number, distanceKm:number}|null>}
  */
-export async function nearPlace(lat, lon, radiusKm) {
+export async function nearPlaceRecord(lat, lon, radiusKm) {
   if (!(radiusKm > 0) || !Number.isFinite(lat) || !Number.isFinite(lon))
     return null;
   const places = await loadPopulatedPlaces();
@@ -307,9 +307,29 @@ export async function nearPlace(lat, lon, radiusKm) {
       (scalerank === best.scalerank &&
         (rankMax > best.rankMax || (rankMax === best.rankMax && km < best.km)))
     )
-      best = { name, scalerank, rankMax, km };
+      best = { name, lat: pLat, lon: pLon, scalerank, rankMax, km };
   }
-  return best ? best.name : null;
+  return best
+    ? {
+        name: best.name,
+        lat: best.lat,
+        lon: best.lon,
+        scalerank: best.scalerank,
+        rankMax: best.rankMax,
+        distanceKm: best.km,
+      }
+    : null;
+}
+
+/**
+ * The most prominent populated place within `radiusKm` of a point (lowest
+ * Natural Earth scalerank, then the larger population class, then the
+ * nearer), or null.
+ * @returns {Promise<string|null>}
+ */
+export async function nearPlace(lat, lon, radiusKm) {
+  const rec = await nearPlaceRecord(lat, lon, radiusKm);
+  return rec ? rec.name : null;
 }
 
 function normalizePlaceToken(value) {

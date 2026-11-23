@@ -11,6 +11,8 @@ import {
 import {
   assertCleanPublicAncestry,
   assertSafePublicRemoteUrl,
+  auditPublicSyncDiff,
+  formatDiffAuditReport,
   loadOssExcludeList,
   syncPublicFork,
 } from '../../scripts/sync-public-fork.mjs';
@@ -375,6 +377,183 @@ test('check-public-hygiene enforces generic security/privacy rules, private rule
     assert.ok(genericRulesHit.has('tailscale-host'));
     assert.ok(genericRulesHit.has('personal-email'));
     assert.equal(genericRulesHit.has('synthetic-overlay-coords'), false);
+  } finally {
+    fs.rmSync(tmpRepo, { recursive: true, force: true });
+  }
+});
+
+test('check-public-hygiene scans image assets for EXIF/XMP/GPS/paths and blocks non-fixture secrets', () => {
+  const tmpRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'gev-media-secret-'));
+  try {
+    git(tmpRepo, ['init', '-b', 'main']);
+    git(tmpRepo, [
+      'config',
+      'user.email',
+      '12345+oss-test@users.noreply.github.com',
+    ]);
+    git(tmpRepo, ['config', 'user.name', 'OSS Maintainer']);
+
+    fs.mkdirSync(path.join(tmpRepo, 'public'), { recursive: true });
+    fs.mkdirSync(path.join(tmpRepo, 'src'), { recursive: true });
+
+    // Clean PNG passes
+    const pngMagic = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+    fs.writeFileSync(path.join(tmpRepo, 'public', 'clean.png'), pngMagic);
+
+    // Dirty images carrying EXIF/GPS, XMP, and workstation path markers
+    const dirtyExifJpg = Buffer.concat([
+      Buffer.from([0xff, 0xd8, 0xff, 0xe1]),
+      Buffer.from('Exif\x00\x00GPSLatitude=33.7', 'latin1'),
+    ]);
+    fs.writeFileSync(
+      path.join(tmpRepo, 'public', 'exif-gps.jpg'),
+      dirtyExifJpg,
+    );
+
+    const dirtyXmpPng = Buffer.concat([
+      pngMagic,
+      Buffer.from(
+        `<x:xmpmeta><exif:UserComment>C:${'\\'}Users${'\\'}janedoe${'\\'}shot.png</exif:UserComment></x:xmpmeta>`,
+        'latin1',
+      ),
+    ]);
+    fs.writeFileSync(path.join(tmpRepo, 'public', 'xmp-path.png'), dirtyXmpPng);
+
+    // Synthetic secrets (constructed dynamically so this test file stays hygiene-clean)
+    const fakeOpenAi = ['sk', 'proj', 'AbCdEfGhIjKlMnOpQrStUvWx012345'].join(
+      '-',
+    );
+    const fakeGoogle = ['AIza', 'SyAbCdEfGhIjKlMnOpQrStUvWxYz0123456'].join('');
+    const fakeGithub = ['ghp', '0123456789abcdefghijklmnopqrstuvwxyz'].join(
+      '_',
+    );
+    const fakeSlack = ['xoxb', '123456789012', '1234567890123'].join('-');
+    const fakePem = ['-----BEGIN', 'RSA', 'PRIVATE', 'KEY-----'].join(' ');
+    const fakeJwt = [
+      'eyJhbGciOiJIUzI1NiJ9',
+      'eyJzdWIiOiIxMjM0NTY3ODkwIn0',
+      'abc123signatureXYZ',
+    ].join('.');
+
+    fs.writeFileSync(
+      path.join(tmpRepo, 'src', 'secrets.js'),
+      [
+        `export const k1 = ${JSON.stringify(fakeOpenAi)};`,
+        `export const k2 = ${JSON.stringify(fakeGoogle)};`,
+        `export const k3 = ${JSON.stringify(fakeGithub)};`,
+        `export const k4 = ${JSON.stringify(fakeSlack)};`,
+        `export const k5 = ${JSON.stringify(fakePem)};`,
+        `export const k6 = ${JSON.stringify(fakeJwt)};`,
+      ].join('\n'),
+    );
+
+    // Allowlisted fixture placeholders must pass
+    fs.writeFileSync(
+      path.join(tmpRepo, 'src', 'fixtures.test.mjs'),
+      [
+        "export const f1 = 'sk-fixture-only-not-a-real-key-123456';",
+        "export const f2 = 'AIzaSyFake01234567890123456789012345678';",
+        "export const f3 = 'MLY|0|qa-fixture';",
+      ].join('\n'),
+    );
+
+    git(tmpRepo, ['add', '-A']);
+
+    const { violations } = scanFiles(tmpRepo, { includeOverlay: false });
+    const rulesHit = new Set(violations.map((v) => v.rule));
+
+    assert.equal(
+      violations.some((v) => v.file === 'public/clean.png'),
+      false,
+      'Clean PNG must not be flagged',
+    );
+    assert.equal(
+      violations.some((v) => v.file === 'src/fixtures.test.mjs'),
+      false,
+      'Explicit fixture tokens must pass',
+    );
+    assert.ok(rulesHit.has('image-exif-header'));
+    assert.ok(rulesHit.has('image-gps-tag'));
+    assert.ok(rulesHit.has('image-xmp-metadata'));
+    assert.ok(rulesHit.has('image-workstation-path'));
+    assert.ok(rulesHit.has('secret-openai-key'));
+    assert.ok(rulesHit.has('secret-google-api-key'));
+    assert.ok(rulesHit.has('secret-github-token'));
+    assert.ok(rulesHit.has('secret-slack-token'));
+    assert.ok(rulesHit.has('secret-pem-private-key'));
+    assert.ok(rulesHit.has('secret-live-jwt'));
+  } finally {
+    fs.rmSync(tmpRepo, { recursive: true, force: true });
+  }
+});
+
+test('auditPublicSyncDiff flags new media assets and high-precision coordinates added in test files', () => {
+  const tmpRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'gev-diff-audit-'));
+  try {
+    git(tmpRepo, ['init', '-b', 'main']);
+    git(tmpRepo, [
+      'config',
+      'user.email',
+      '12345+oss-test@users.noreply.github.com',
+    ]);
+    git(tmpRepo, ['config', 'user.name', 'OSS Maintainer']);
+
+    fs.mkdirSync(path.join(tmpRepo, 'scripts'), { recursive: true });
+    fs.mkdirSync(path.join(tmpRepo, 'src'), { recursive: true });
+    fs.writeFileSync(path.join(tmpRepo, 'README.md'), 'base\n');
+    fs.writeFileSync(path.join(tmpRepo, 'scripts', 'oss-exclude.json'), '[]\n');
+    git(tmpRepo, ['add', '-A']);
+    git(tmpRepo, ['commit', '-m', 'base commit']);
+    const baseSha = git(tmpRepo, ['rev-parse', 'HEAD']);
+    git(tmpRepo, ['update-ref', 'refs/remotes/upstream/main', baseSha]);
+
+    fs.mkdirSync(path.join(tmpRepo, 'public'), { recursive: true });
+    fs.writeFileSync(
+      path.join(tmpRepo, 'public', 'preview.png'),
+      Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    );
+    fs.writeFileSync(
+      path.join(tmpRepo, 'src', 'sample.test.mjs'),
+      "const austin = { lat: 30.2672, lon: -97.7431 };\nconst version = '2026.1121';\n",
+    );
+    git(tmpRepo, ['add', '-A']);
+    git(tmpRepo, ['commit', '-m', 'add media and test coords']);
+
+    const res = syncPublicFork({
+      cwd: tmpRepo,
+      sourceRef: 'main',
+      explicitBaseRef: 'refs/remotes/upstream/main',
+      targetBranch: 'oss/public-earth-sim',
+      authorName: 'OSS Maintainer',
+      authorEmail: '12345+oss-test@users.noreply.github.com',
+      auditDiff: true,
+      runInvariantsImpl: () => ({ ok: true, results: [] }),
+    });
+
+    assert.equal(res.ok, true);
+    assert.ok(res.audit);
+    assert.equal(res.audit.addedFileCount, 2);
+    assert.deepEqual(res.audit.addedMediaAssets, ['public/preview.png']);
+    assert.equal(res.audit.authorVerified, true);
+    assert.equal(res.audit.novelTestCoordinates.length, 1);
+    assert.equal(res.audit.novelTestCoordinates[0].file, 'src/sample.test.mjs');
+    assert.equal(res.audit.novelTestCoordinates[0].line, 1);
+    assert.deepEqual(res.audit.novelTestCoordinates[0].matches, [
+      '30.2672',
+      '-97.7431',
+    ]);
+
+    const directAudit = auditPublicSyncDiff({
+      cwd: tmpRepo,
+      baseSha,
+      targetTreeOrSha: res.commitSha,
+      excludesApplied: 3,
+      authorResult: { checkedCount: 1, violations: [] },
+    });
+    assert.equal(directAudit.excludesApplied, 3);
+    const report = formatDiffAuditReport(directAudit);
+    assert.match(report, /public\/preview\.png/);
+    assert.match(report, /30\.2672, -97\.7431/);
   } finally {
     fs.rmSync(tmpRepo, { recursive: true, force: true });
   }

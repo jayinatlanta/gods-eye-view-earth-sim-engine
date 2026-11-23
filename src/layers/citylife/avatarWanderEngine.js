@@ -33,6 +33,7 @@ import {
   resolveZeroCreditLocality,
   getGlobalDrawerCoordinator,
 } from '../../ui/worldSimDock.js';
+import { hitTestWorldOverlay } from '../../overlays/worldOverlay.js';
 
 export const WANDER_CAMERA_MODES = Object.freeze({
   FIRST_PERSON: 'first_person',
@@ -398,6 +399,16 @@ export function createAvatarWanderEngine({
     } else if (code === 'KeyP' || key === 'p') {
       toggleCompanion();
     } else if (code === 'Escape' || key === 'escape') {
+      const sightseeingDrawerEl =
+        typeof document !== 'undefined'
+          ? document.getElementById('gev-sightseeing-drawer')
+          : null;
+      if (
+        sightseeingDrawerEl &&
+        !sightseeingDrawerEl.classList?.contains('hidden')
+      ) {
+        return;
+      }
       if (isPointerLocked) {
         exitPointerLock();
       } else if (externalController) {
@@ -413,6 +424,17 @@ export function createAvatarWanderEngine({
     }
 
     if (handled) {
+      if (
+        (keyState.forward ||
+          keyState.backward ||
+          keyState.strafeLeft ||
+          keyState.strafeRight) &&
+        externalController &&
+        !externalController.isManualTakeover?.() &&
+        typeof externalController.onManualInput === 'function'
+      ) {
+        externalController.onManualInput();
+      }
       event.preventDefault?.();
       event.stopPropagation?.();
     }
@@ -1029,6 +1051,13 @@ export function createAvatarWanderEngine({
             return;
           }
           if (!movement?.position) return;
+          if (
+            hitTestWorldOverlay(movement.position.x, movement.position.y, {
+              sourceId: 'tour-poi',
+            })
+          ) {
+            return;
+          }
           relocateToScreenPosition(movement.position);
         }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
       }

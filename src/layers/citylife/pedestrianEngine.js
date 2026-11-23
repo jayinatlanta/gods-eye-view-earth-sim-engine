@@ -41,6 +41,10 @@ import {
   classifySettlementTypology,
   SETTLEMENT_TYPOLOGIES,
 } from './localeClassifier.js';
+import {
+  getCachedCatalogPlaceAt,
+  resolveCatalogPlaceAt,
+} from './tourAndPlayEngine.js';
 
 export const PEDESTRIAN_DENSITIES = {
   calm: { label: 'Calm', count: 40 },
@@ -81,6 +85,8 @@ export function createPedestrianEngine({
   let onPedestrianLatchedCallback = null;
   let lastFrameTime = null;
   let renderHoldActive = false;
+  let depthLookupGeneration = 0;
+  let lastCatalogLookupCellKey = null;
 
   const cameraGroundTracker = createSurfaceTracker({
     sampleIntervalMs: 120,
@@ -1465,27 +1471,76 @@ export function createPedestrianEngine({
         if (!isSimActive && altAGL <= ALTITUDE_DEPTH_THRESHOLD_M) {
           const nearest = findNearestCity(lat, lon, 25000);
           if (nearest && onCityDepthCallback) {
-            onCityDepthCallback(nearest, altAGL);
+            onCityDepthCallback(
+              { ...nearest, cameraLat: lat, cameraLon: lon },
+              altAGL,
+            );
           } else if (onCityDepthCallback) {
             const classification = classifySettlementTypology({
               lat,
               lon,
               elevationMeters: groundElev,
             });
+            const cachedPlace = getCachedCatalogPlaceAt(lat, lon);
             onCityDepthCallback(
               {
                 id: 'current_location',
-                name: classification.name,
+                name: cachedPlace?.name || classification.name,
                 icon: classification.icon,
                 typology: classification.typology,
                 lat,
                 lon,
+                cameraLat: lat,
+                cameraLon: lon,
+                elev: groundElev,
                 isDynamic: true,
+                catalogPlace: cachedPlace || null,
+                catalogPlaceName: cachedPlace?.name || null,
+                catalogPlaceSource: cachedPlace?.source || null,
               },
               altAGL,
             );
+
+            const cellKey = `${Math.round(lat * 200)}_${Math.round(lon * 200)}`;
+            if (!cachedPlace && cellKey !== lastCatalogLookupCellKey) {
+              lastCatalogLookupCellKey = cellKey;
+              const myDepthGen = ++depthLookupGeneration;
+              void resolveCatalogPlaceAt(lat, lon)
+                .then((resolvedPlace) => {
+                  if (
+                    isDestroyed ||
+                    isSimActive ||
+                    myDepthGen !== depthLookupGeneration ||
+                    !resolvedPlace ||
+                    !onCityDepthCallback
+                  ) {
+                    return;
+                  }
+                  onCityDepthCallback(
+                    {
+                      id: 'current_location',
+                      name: resolvedPlace.name || classification.name,
+                      icon: classification.icon,
+                      typology: classification.typology,
+                      lat,
+                      lon,
+                      cameraLat: lat,
+                      cameraLon: lon,
+                      elev: groundElev,
+                      isDynamic: true,
+                      catalogPlace: resolvedPlace,
+                      catalogPlaceName: resolvedPlace.name || null,
+                      catalogPlaceSource: resolvedPlace.source || null,
+                    },
+                    altAGL,
+                  );
+                })
+                .catch(() => {});
+            }
           }
         } else if (!isSimActive && altAGL > ALTITUDE_DEPTH_THRESHOLD_M) {
+          depthLookupGeneration += 1;
+          lastCatalogLookupCellKey = null;
           if (onCityDepthExitCallback) {
             onCityDepthExitCallback();
           }

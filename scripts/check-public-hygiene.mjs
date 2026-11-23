@@ -47,6 +47,20 @@ const SCAN_EXTENSIONS = new Set([
   '.glb',
 ]);
 
+const IMAGE_METADATA_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp']);
+
+const BENIGN_UPSTREAM_XMP_IMAGES = new Set([
+  'docs/media/open-source-survey.png',
+  'docs/media/youtube-popular-videos.png',
+]);
+
+const SECRET_FIXTURE_RE =
+  /\bsk-fixture-only\b|\bAIzaSyFake|MLY\|0\|qa-fixture/i;
+
+function isAllowlistedSecretFixture(_relPath, lines, idx) {
+  return SECRET_FIXTURE_RE.test(lines[idx] || '');
+}
+
 const EXACT_BASENAMES = new Set([
   '.env.example',
   '_ENVIRONMENT',
@@ -90,6 +104,42 @@ export const RULES = [
     message: 'Never pass req/body.cliBinary directly into spawn()',
     regex: /\bspawn\s*\(\s*(?:body|req)\./,
     onlyPrefix: 'server/',
+  },
+  {
+    id: 'secret-openai-key',
+    message: 'Possible OpenAI API key committed',
+    regex: /(?<![A-Za-z0-9_-])sk-(?:proj-|live-|test-)?[A-Za-z0-9_-]{20,}\b/,
+    ignoreLine: isAllowlistedSecretFixture,
+  },
+  {
+    id: 'secret-google-api-key',
+    message: 'Possible Google API key committed',
+    regex: /\bAIza[0-9A-Za-z_-]{35}\b/,
+    ignoreLine: isAllowlistedSecretFixture,
+  },
+  {
+    id: 'secret-github-token',
+    message: 'Possible GitHub personal access token committed',
+    regex: /\b(?:ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{22,})\b/,
+    ignoreLine: isAllowlistedSecretFixture,
+  },
+  {
+    id: 'secret-slack-token',
+    message: 'Possible Slack API token committed',
+    regex: /\bxox[baprs]-[0-9A-Za-z-]{10,}\b/,
+    ignoreLine: isAllowlistedSecretFixture,
+  },
+  {
+    id: 'secret-pem-private-key',
+    message: 'Private cryptographic PEM key block committed',
+    regex: /-----BEGIN (?:[A-Z0-9 ]+ )?PRIVATE KEY-----/,
+  },
+  {
+    id: 'secret-live-jwt',
+    message: 'Possible live JWT bearer token committed',
+    regex:
+      /\beyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/,
+    ignoreLine: isAllowlistedSecretFixture,
   },
 ];
 
@@ -177,8 +227,70 @@ export function collectCandidateFiles(root = ROOT) {
       if (SELF_SKIP_FILES.has(f)) return false;
       const ext = path.extname(f).toLowerCase();
       const base = path.basename(f);
-      return SCAN_EXTENSIONS.has(ext) || EXACT_BASENAMES.has(base);
+      return (
+        SCAN_EXTENSIONS.has(ext) ||
+        IMAGE_METADATA_EXTENSIONS.has(ext) ||
+        EXACT_BASENAMES.has(base)
+      );
     });
+}
+
+const IMAGE_METADATA_CHECKS = [
+  {
+    id: 'image-exif-header',
+    message: 'Image asset contains unstripped EXIF header bytes',
+    regex: /Exif\x00\x00/,
+  },
+  {
+    id: 'image-xmp-metadata',
+    message: 'Image asset contains embedded XMP metadata packet',
+    regex: /<x:xmpmeta\b|http:\/\/ns\.adobe\.com\/xap\/1\.0\//i,
+    allowBenignUpstreamXmp: true,
+  },
+  {
+    id: 'image-gps-tag',
+    message: 'Image asset contains embedded GPS metadata tags',
+    regex: /GPSLatitude|GPSLongitude/i,
+  },
+  {
+    id: 'image-workstation-path',
+    message: 'Image asset embeds local workstation or Pinokio path markers',
+    regex:
+      /(?:[A-Za-z]:[\\/]+Users[\\/]+|\/Users\/|\/home\/)(?!(?:runner|docker|ubuntu|user|example|alice|bob|test)\b)[A-Za-z0-9._-]+|[A-Za-z]:[\\/]+pinokio[\\/]+api\b|\/pinokio\/api\//i,
+  },
+];
+
+function isBenignUpstreamScreenshotXmp(rawText, relPath) {
+  if (!BENIGN_UPSTREAM_XMP_IMAGES.has(relPath)) return false;
+  if (/http:\/\/ns\.adobe\.com\/xap\/1\.0\//i.test(rawText)) return false;
+  const match = rawText.match(/<x:xmpmeta\b[\s\S]*?<\/x:xmpmeta>/i);
+  if (!match) return false;
+  return !/GPS|CreatorTool|DateTime|Author|Artist|Software|Make|Model|Serial|Users|pinokio/i.test(
+    match[0],
+  );
+}
+
+export function scanImageMetadata(absPath, relPath) {
+  const rawText = fs.readFileSync(absPath).toString('latin1');
+  const violations = [];
+  for (const check of IMAGE_METADATA_CHECKS) {
+    const match = rawText.match(check.regex);
+    if (!match) continue;
+    if (
+      check.allowBenignUpstreamXmp &&
+      isBenignUpstreamScreenshotXmp(rawText, relPath)
+    ) {
+      continue;
+    }
+    violations.push({
+      rule: check.id,
+      file: relPath,
+      line: 0,
+      message: check.message,
+      snippet: match[0].replace(/[^\x20-\x7E]/g, '.').slice(0, 140),
+    });
+  }
+  return violations;
 }
 
 function readHygieneText(absPath, relPath) {
@@ -229,6 +341,16 @@ export function scanFiles(
     }
 
     const absPath = path.join(root, relPath);
+    const ext = path.extname(relPath).toLowerCase();
+    if (IMAGE_METADATA_EXTENSIONS.has(ext)) {
+      try {
+        violations.push(...scanImageMetadata(absPath, relPath));
+      } catch {
+        continue;
+      }
+      continue;
+    }
+
     let content;
     try {
       content = readHygieneText(absPath, relPath);

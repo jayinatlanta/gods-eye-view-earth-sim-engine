@@ -245,6 +245,19 @@ Before committing features or exporting changes to a public community fork:
    `npm run oss:sync` (`scripts/sync-public-fork.mjs`), which verifies clean
    ancestry, strips any paths listed in `scripts/oss-exclude.json`, runs
    `check:oss`, and blocks pushes targeting `upstream` or `origin`.
+4. **Public-Safe Test Fixture Discipline:** All tracked unit and regression
+   tests (`*.test.mjs`) must use neutral civic landmarks (e.g. Austin <->
+   Dallas, Downtown Orlando <-> Downtown Atlanta) or synthetic fixtures
+   (`example.com`, `12.3456`, `janedoe`) — never real personal coordinates,
+   residences, emails, or private identifiers. Place any personal repro scripts
+   strictly inside gitignored `tests-private/` or `*.private.test.mjs`.
+5. **Private Maintainer Hygiene Overlay & Pre-Commit Hook:** On private forks,
+   add newly introduced private patterns as a single JSON entry inside the
+   excluded overlay `scripts/private-hygiene-rules.json` (stripped on
+   `oss:sync`), install the local commit-time gate with
+   `node scripts/install-sovereign-hooks.mjs`, and pass `--audit-diff` to
+   `npm run oss:sync` before publishing to review added media and test-file
+   coordinates.
 
 ## Pull requests
 

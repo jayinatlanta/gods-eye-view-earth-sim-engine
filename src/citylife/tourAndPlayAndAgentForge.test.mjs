@@ -5,6 +5,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { Readable } from 'node:stream';
 import * as Cesium from 'cesium';
+import { Window } from 'happy-dom';
+import { createWanderDrawer } from './wanderDrawer.js';
+import { createCityDrawer } from './cityDrawer.js';
 import {
   createAvatarWanderEngine,
   WANDER_CAMERA_MODES,
@@ -16,17 +19,39 @@ import {
   METRO_TOUR_METADATA,
   TOUR_OR_PLAY_STATES,
   TOUR_SCOOTER_SPEED_MPS,
+  TOUR_WALK_MIDWAY_SPEED_MPS,
+  TOUR_WALK_MIDWAY_CORRIDOR_MAX_METERS,
   TOUR_LANDMARK_DWELL_SECONDS,
   TOUR_SIDEWALK_OFFSET_METERS,
   normalizeMetroTourCityKey,
   getLandmarksForCity,
   shuffleLandmarks,
+  buildTourItinerary,
+  computeDayCycleSolarState,
+  findNearestVenueTour,
+  validateTourStopDraft,
+  exportTourAsContractJson,
   resolveTourOrPlayContext,
   resolveNearestMetroForTour,
   getPlayActivitiesForEnvironment,
   buildStreetAndSidewalkRoute,
   lerpHeadingDegrees,
+  normalizeTourV2Metadata,
+  registerBuiltTourRuntime,
+  getRuntimeBuiltTours,
+  clearRuntimeBuiltToursForTest,
+  getAllTourCatalogEntries,
+  isConcreteCatalogPlaceName,
+  getCachedCatalogPlaceAt,
+  clearCatalogPlaceCacheForTest,
+  resolveCatalogPlaceAt,
 } from '../layers/citylife/tourAndPlayEngine.js';
+import {
+  createTourPoiCards,
+  TOUR_POI_OVERLAY_SOURCE_ID,
+} from '../layers/citylife/tourPoiCards.js';
+import { createSightseeingDrawer } from '../discovery/sightseeingDrawer.js';
+import { clearLocalityCacheForTests } from '../ui/worldSimDock.js';
 import { SETTLEMENT_TYPOLOGIES } from '../layers/citylife/localeClassifier.js';
 import { createPedestrianEngine } from '../layers/citylife/pedestrianEngine.js';
 import {
@@ -46,6 +71,7 @@ import {
   AGENT_MODEL_OPTIONS,
   AGENT_MODE_OPTIONS,
   buildClientNeuroLayeredPreview,
+  isTourForgeAvailable,
 } from '../ui/selfModifyingAgentPanel.js';
 import {
   buildNeuroLayeredForgePrompt,
@@ -66,6 +92,10 @@ import {
   parseAgyModelsOutput,
   handleAgyModels,
   handleAssistantCapabilities,
+  normalizeTourBuildDirective,
+  buildTourBuildForgePrompt,
+  extractBuiltTourContractFromOutput,
+  loadBuiltTourContractFromRepo,
   DEFAULT_FORGE_CLI_BINARY,
   DEFAULT_FORGE_CLI_ARGS,
   DEFAULT_FORGE_MODEL,
@@ -2203,4 +2233,1392 @@ test('Google 3D City Tour Tile Resolution, Screenshot/Blur Input Hygiene & Conti
       wanderEngine.destroy();
     },
   );
+});
+
+test('Tour Framework v2 — Flagship Theme Park Days (Magic Kingdom 12 stops across 6 lands, EPCOT 18 stops with all 11 World Showcase countries)', async () => {
+  const mkStops = getLandmarksForCity('wdw_magic_kingdom');
+  assert.equal(mkStops.length, 12, 'Magic Kingdom must have 12 stops');
+  const mkLands = new Set(mkStops.map((s) => s.land));
+  assert.ok(mkLands.has('Main Street, U.S.A.'));
+  assert.ok(mkLands.has('Adventureland'));
+  assert.ok(mkLands.has('Frontierland'));
+  assert.ok(mkLands.has('Liberty Square'));
+  assert.ok(
+    mkStops.some((s) => String(s.land || '').includes('Fantasyland')),
+  );
+  assert.ok(mkLands.has('Tomorrowland'));
+  assert.ok(
+    mkStops.some((s) => /^[A-Za-z0-9_-]{11}$/.test(s.youtubeVideoId || '')),
+    'Magic Kingdom must embed verified 11-char YouTube IDs on marquee icons',
+  );
+
+  const epcotAll = getLandmarksForCity('wdw_epcot');
+  assert.equal(
+    epcotAll.length,
+    18,
+    'EPCOT must have 18 stops (7 front-of-park + all 11 World Showcase nations)',
+  );
+  const frontOfPark = buildTourItinerary(epcotAll, {
+    tourMode: 'front_of_park',
+    shuffle: false,
+  });
+  const worldShowcase = buildTourItinerary(epcotAll, {
+    tourMode: 'world_showcase',
+    shuffle: false,
+  });
+  assert.equal(frontOfPark.length, 7);
+  assert.equal(worldShowcase.length, 11);
+
+  for (const nation of [
+    'Mexico',
+    'Norway',
+    'China',
+    'Germany',
+    'Italy',
+    'USA',
+    'Japan',
+    'Morocco',
+    'France',
+    'United Kingdom',
+    'Canada',
+  ]) {
+    assert.ok(
+      worldShowcase.some((s) => String(s.land || '').includes(nation)),
+      `EPCOT World Showcase must include ${nation}`,
+    );
+  }
+
+  // Tight-radius venue resolution takes priority over Orlando / Play Mode
+  const epcotVenue = findNearestVenueTour(28.3747, -81.5494);
+  assert.equal(epcotVenue?.id, 'wdw_epcot');
+  const epcotCtx = resolveTourOrPlayContext(28.3747, -81.5494, 30);
+  assert.equal(epcotCtx.mode, 'tour');
+  assert.equal(epcotCtx.tourScope, 'venue');
+  assert.equal(epcotCtx.cityId, 'wdw_epcot');
+  assert.match(epcotCtx.actionButtonLabel, /Park Day: EPCOT/);
+
+  const mkCtx = resolveTourOrPlayContext(28.4187, -81.5818, 32);
+  assert.equal(mkCtx.mode, 'tour');
+  assert.equal(mkCtx.tourScope, 'venue');
+  assert.equal(mkCtx.cityId, 'wdw_magic_kingdom');
+  assert.match(mkCtx.actionButtonLabel, /Park Day: Magic Kingdom/);
+
+  // Draft v2 validation & schemaVersion 2 export
+  const validDraft = validateTourStopDraft({
+    name: 'Test Park Plaza',
+    lat: 28.374,
+    lon: -81.549,
+    lore: 'Scenic promenade plaza inside the park.',
+    wikiTitle: 'Spaceship_Earth_(Epcot)',
+    youtubeVideoId: '8AI0yNMpt1E',
+    youtubeSearchQuery: 'Spaceship Earth 4K POV',
+    land: 'World Celebration',
+    estimatedWaitMin: 15,
+    snackNote: 'Waffle & Cold Brew',
+  });
+  assert.equal(validDraft.valid, true);
+  assert.equal(validDraft.normalized.youtubeVideoId, '8AI0yNMpt1E');
+  assert.equal(validDraft.normalized.land, 'World Celebration');
+
+  const badYtDraft = validateTourStopDraft({
+    name: 'Invalid Video ID Stop',
+    lat: 28.374,
+    lon: -81.549,
+    lore: 'Testing strict 11-char YouTube validation.',
+    youtubeVideoId: 'invalid-id!',
+  });
+  assert.equal(badYtDraft.valid, false);
+
+  const contractParsed = JSON.parse(exportTourAsContractJson('wdw_epcot'));
+  assert.equal(contractParsed.schemaVersion, 2);
+  assert.equal(contractParsed.landmarks.length, 18);
+});
+
+test('Tour Framework v2 — walk_midway routing/speed, day-cycle solar clock save/advance/restore, pauseForMedia, and Rejoin/Next resume', async () => {
+  const initialTime = Cesium.JulianDate.fromIso8601('2026-06-21T06:00:00Z');
+  const mockViewer = {
+    clock: {
+      currentTime: Cesium.JulianDate.clone(initialTime),
+      shouldAnimate: true,
+      multiplier: 2,
+    },
+  };
+
+  const mockWander = {
+    isWandering: false,
+    cameraMode: 'iso_chase',
+    clearInputState() {},
+    setWalkSpeedOverride() {},
+    setExternalController() {},
+    startWandering() {
+      this.isWandering = true;
+    },
+    stopWandering() {
+      this.isWandering = false;
+    },
+    relocateTo() {},
+    showDialogBubble() {},
+    getCameraMode() {
+      return this.cameraMode;
+    },
+    getUserAvatar() {
+      return { isDestroyed: false };
+    },
+    getTelemetry() {
+      return {
+        coordinates: { lat: 28.3747, lon: -81.5494, height: 32, heading: 180 },
+      };
+    },
+  };
+
+  const engine = createTourAndPlayEngine({
+    wanderEngine: mockWander,
+    viewer: mockViewer,
+    dwellDurationSeconds: 10,
+    rng: () => 0.15,
+  });
+
+  const status = engine.startCityTour({
+    cityId: 'wdw_epcot',
+    tourMode: 'world_showcase',
+  });
+  assert.equal(status.totalLandmarks, 11);
+  assert.equal(status.tourScope, 'venue');
+  assert.equal(status.transitMode, 'walk_midway');
+  assert.equal(
+    status.scooterSpeedMps,
+    TOUR_WALK_MIDWAY_SPEED_MPS,
+    'Park venue tour must run at 2.0 m/s walk_midway speed',
+  );
+  assert.equal(mockViewer.clock.shouldAnimate, false);
+
+  const solarStop0 = computeDayCycleSolarState({
+    dayCycle: METRO_TOUR_METADATA.wdw_epcot.dayCycle,
+    stopIndex: 0,
+    totalStops: 11,
+  });
+  const solarStop10 = computeDayCycleSolarState({
+    dayCycle: METRO_TOUR_METADATA.wdw_epcot.dayCycle,
+    stopIndex: 10,
+    totalStops: 11,
+  });
+  assert.ok(
+    solarStop10.localHour > solarStop0.localHour,
+    'Day-cycle clock must advance monotonically from morning toward dusk',
+  );
+
+  // Continuous walk_midway corridor up to 650m without cross-city corridor staging
+  const route = buildStreetAndSidewalkRoute(
+    { lat: 28.3712, lon: -81.5469, elev: 31 },
+    { lat: 28.368, lon: -81.5469, elev: 31, streetBearingDeg: 180 },
+    { transitMode: 'walk_midway' },
+  );
+  assert.ok(route.length >= 2);
+  assert.equal(TOUR_WALK_MIDWAY_CORRIDOR_MAX_METERS, 650);
+  assert.equal(TOUR_WALK_MIDWAY_SPEED_MPS, 3.2);
+
+  // Short (<18m) free-roam rejoin route starts directly at startCoord instead of staging 145m back
+  const shortRejoinRoute = buildStreetAndSidewalkRoute(
+    { lat: 28.37128, lon: -81.5469, elev: 31 },
+    { lat: 28.3712, lon: -81.5469, elev: 31, streetBearingDeg: 180 },
+    { transitMode: 'walk_midway' },
+  );
+  assert.ok(shortRejoinRoute.length >= 2);
+  assert.ok(Math.abs(shortRejoinRoute[0].lat - 28.37128) < 0.00002);
+
+  // Smart EPCOT full-park randomization keeps 7 front_of_park headliners in morning/midday
+  // and 11 world_showcase pavilions in afternoon/dusk
+  const epcotFullItinerary = buildTourItinerary(getLandmarksForCity('wdw_epcot'), {
+    tourMode: 'all',
+    shuffle: true,
+    rng: () => 0.4,
+  });
+  assert.equal(epcotFullItinerary.length, 18);
+  assert.equal(
+    epcotFullItinerary.slice(0, 7).every((s) => s.showcaseZone === 'front_of_park'),
+    true,
+  );
+  assert.equal(
+    epcotFullItinerary.slice(7).every((s) => s.showcaseZone === 'world_showcase'),
+    true,
+  );
+  assert.equal(METRO_TOUR_METADATA.wdw_epcot.dayCycleEnabled, true);
+  assert.equal(
+    METRO_TOUR_METADATA.wdw_epcot.itineraryPolicy,
+    'epcot_showcase_loop',
+  );
+
+  // Pause & resume for Experience Card media
+  const stopBefore = engine.getStatus().currentLandmark.id;
+  engine.pauseForMedia();
+  assert.equal(engine.getStatus().mediaPaused, true);
+  engine.resumeFromMedia();
+  assert.equal(engine.getStatus().mediaPaused, false);
+
+  // User takeover + continueTour({ advanceToNext: false, resumeFromCurrent: true }) vs advanceToNext: true
+  engine.takeOverAtLandmark();
+  assert.equal(engine.getStatus().state, TOUR_OR_PLAY_STATES.USER_TAKEOVER);
+  assert.equal(engine.getStatus().canResume, true);
+
+  engine.continueTour({ advanceToNext: false, resumeFromCurrent: true });
+  assert.equal(engine.getStatus().state, TOUR_OR_PLAY_STATES.TOUR_TRANSIT);
+  assert.equal(
+    engine.getStatus().currentLandmark.id,
+    stopBefore,
+    'Rejoin Stop must stay anchored on current landmark',
+  );
+
+  engine.takeOverAtLandmark();
+  engine.continueTour({ advanceToNext: true, resumeFromCurrent: true });
+  assert.notEqual(
+    engine.getStatus().currentLandmark.id,
+    stopBefore,
+    'Next Stop must advance to the following stop even when resumeFromCurrent is true',
+  );
+
+  // Stopping restores original viewer clock state cleanly
+  engine.stop();
+  assert.equal(
+    Cesium.JulianDate.equals(mockViewer.clock.currentTime, initialTime),
+    true,
+    'stop() must restore Cesium clock currentTime',
+  );
+  assert.equal(mockViewer.clock.shouldAnimate, true);
+  assert.equal(mockViewer.clock.multiplier, 2);
+
+  engine.destroy();
+});
+
+test('Tour Framework v2 UI — grouped Theme Park Days selector, .gev-tour-resume-pill visibility, and cityDrawer Park Day ambient pill', async () => {
+  clearLocalityCacheForTests();
+  const win = new Window({ url: 'http://localhost/' });
+  const prevDoc = globalThis.document;
+  const prevWin = globalThis.window;
+  const prevRaf = globalThis.requestAnimationFrame;
+  const prevFetch = globalThis.fetch;
+  win.fetch = async () => ({ ok: false, status: 404, json: async () => ({}) });
+  globalThis.fetch = win.fetch;
+  globalThis.window = win;
+  globalThis.document = win.document;
+  globalThis.requestAnimationFrame = (cb) => setTimeout(cb, 0);
+
+  try {
+    const engine = createTourAndPlayEngine({
+      wanderEngine: {
+        isWandering: false,
+        cameraMode: 'iso_chase',
+        clearInputState() {},
+        setWalkSpeedOverride() {},
+        setExternalController() {},
+        startWandering() {
+          this.isWandering = true;
+        },
+        stopWandering() {
+          this.isWandering = false;
+        },
+        relocateTo() {},
+        showDialogBubble() {},
+        getCameraMode() {
+          return 'iso_chase';
+        },
+        getUserAvatar() {
+          return { isDestroyed: false };
+        },
+        getTelemetry() {
+          return {
+            coordinates: {
+              lat: 28.3747,
+              lon: -81.5494,
+              height: 30,
+              heading: 180,
+            },
+          };
+        },
+      },
+      rng: () => 0.2,
+    });
+
+    const wanderDrawer = createWanderDrawer({
+      tourAndPlayEngine: engine,
+      container: win.document.body,
+    });
+    wanderDrawer.open();
+
+    const optgroupLabels = Array.from(
+      win.document.querySelectorAll('.gev-tour-city-select optgroup'),
+    ).map((g) => g.getAttribute('label'));
+    assert.ok(
+      optgroupLabels.includes('🎢 Theme Park Days'),
+      'Selector must include grouped Theme Park Days optgroup',
+    );
+    assert.ok(
+      optgroupLabels.includes('🏙️ City Tours'),
+      'Selector must include grouped City Tours optgroup',
+    );
+
+    const resumePill = win.document.querySelector('.gev-tour-resume-pill');
+    assert.ok(resumePill, 'Floating resume pill must be mounted');
+    assert.equal(resumePill.classList.contains('visible'), false);
+
+    // Start EPCOT via engine -> still hidden while autonomous
+    engine.startCityTour({ cityId: 'wdw_epcot' });
+    assert.equal(resumePill.classList.contains('visible'), false);
+    const firstId = engine.getStatus().currentLandmark.id;
+
+    // Enter USER_TAKEOVER -> pill becomes visible with Rejoin & Next buttons
+    engine.takeOverAtLandmark();
+    assert.equal(resumePill.classList.contains('visible'), true);
+
+    resumePill.querySelector('.gev-tour-resume-current-btn').click();
+    assert.equal(engine.getStatus().state, TOUR_OR_PLAY_STATES.TOUR_TRANSIT);
+    assert.equal(engine.getStatus().currentLandmark.id, firstId);
+    assert.equal(resumePill.classList.contains('visible'), false);
+
+    engine.takeOverAtLandmark();
+    assert.equal(resumePill.classList.contains('visible'), true);
+    resumePill.querySelector('.gev-tour-resume-next-btn').click();
+    assert.notEqual(engine.getStatus().currentLandmark.id, firstId);
+    assert.equal(resumePill.classList.contains('visible'), false);
+
+    // City drawer Park Day ambient pill test when over Orlando/EPCOT camera coords
+    let depthCb = null;
+    const cityDrawer = createCityDrawer({
+      tourAndPlayEngine: engine,
+      cityEngine: {
+        onCityDepth(cb) {
+          depthCb = cb;
+          return () => {};
+        },
+      },
+      container: win.document.body,
+    });
+    wanderDrawer.close();
+    engine.stop();
+    depthCb?.(
+      {
+        id: 'orlando',
+        name: 'Orlando',
+        lat: 28.5383,
+        lon: -81.3792,
+        cameraLat: 28.3747,
+        cameraLon: -81.5494,
+      },
+      400,
+    );
+    const ambientLabel = win.document.querySelector(
+      '.gev-ambient-tour-play-label',
+    );
+    assert.match(ambientLabel.textContent, /Park Day: EPCOT/);
+
+    cityDrawer.destroy();
+    wanderDrawer.destroy();
+    engine.destroy();
+  } finally {
+    clearLocalityCacheForTests();
+    try {
+      await win.close();
+    } catch {}
+    if (prevFetch === undefined) delete globalThis.fetch;
+    else globalThis.fetch = prevFetch;
+    if (prevDoc === undefined) delete globalThis.document;
+    else globalThis.document = prevDoc;
+    if (prevWin === undefined) delete globalThis.window;
+    else globalThis.window = prevWin;
+    if (prevRaf === undefined) delete globalThis.requestAnimationFrame;
+    else globalThis.requestAnimationFrame = prevRaf;
+  }
+});
+
+function buildSampleSavannahContract() {
+  return {
+    schemaVersion: 2,
+    cityId: 'savannah',
+    metadata: {
+      id: 'savannah',
+      name: 'Savannah',
+      cityId: 'savannah',
+      displayName: 'Savannah',
+      country: 'United States',
+      region: 'Georgia',
+      lat: 32.0809,
+      lon: -81.0912,
+      tourScope: 'city',
+      radiusMeters: 6000,
+      transitMode: 'scooter',
+      wikiTitle: 'Savannah, Georgia',
+      youtubeSearchQuery: 'Savannah Georgia historic squares walking tour 4k',
+      itineraryPolicy: {
+        avoidRepetition: true,
+        categoryRotation: true,
+      },
+    },
+    landmarks: [
+      {
+        id: 'savannah_forsyth_fountain',
+        name: 'Forsyth Park Fountain',
+        lat: 32.0676,
+        lon: -81.0964,
+        category: 'Historic Landmark',
+        lore: 'Iconic 1858 cast-iron fountain anchors Savannahs thirty-acre Forsyth Park under Spanish moss.',
+        wikiTitle: 'Forsyth Park',
+        youtubeSearchQuery: 'Forsyth Park Fountain Savannah 4k',
+        dayChapter: 'Morning Squares',
+        estimatedWaitMin: 0,
+        snackNote: 'Pralines & cold brew along Bull Street',
+      },
+      {
+        id: 'savannah_chippewa_square',
+        name: 'Chippewa Square',
+        lat: 32.0757,
+        lon: -81.0931,
+        category: 'Historic Landmark',
+        lore: 'Laid out in 1815 with a central statue of Georgia founder James Oglethorpe.',
+        wikiTitle: 'Chippewa Square',
+        youtubeSearchQuery: 'Chippewa Square Savannah Georgia tour',
+        dayChapter: 'Morning Squares',
+        estimatedWaitMin: 0,
+      },
+      {
+        id: 'savannah_river_street',
+        name: 'River Street Cobblestones',
+        lat: 32.0815,
+        lon: -81.0897,
+        category: 'Scenic Overlook',
+        lore: 'Historic cotton-factor warehouses and ballast-stone ramps overlooking the Savannah River.',
+        wikiTitle: 'Savannah Riverfront',
+        youtubeSearchQuery: 'Savannah River Street waterfront 4k',
+        dayChapter: 'Afternoon Riverfront',
+        estimatedWaitMin: 5,
+      },
+      {
+        id: 'savannah_cathedral_basilica',
+        name: 'Cathedral Basilica of St. John the Baptist',
+        lat: 32.0734,
+        lon: -81.0914,
+        category: 'Architecture',
+        lore: 'Twin French Gothic spires rise above Lafayette Square with restored stained glass.',
+        wikiTitle: 'Cathedral Basilica of St. John the Baptist (Savannah, Georgia)',
+        youtubeSearchQuery: 'Cathedral Basilica Savannah interior tour',
+        dayChapter: 'Afternoon Riverfront',
+      },
+      {
+        id: 'savannah_telfair_academy',
+        name: 'Telfair Academy & Squares',
+        lat: 32.0793,
+        lon: -81.0955,
+        category: 'Art & Culture',
+        lore: 'Neoclassical Regency mansion opened in 1886 as the oldest public art museum in the South.',
+        wikiTitle: 'Telfair Academy',
+        youtubeSearchQuery: 'Telfair Academy Savannah tour',
+        dayChapter: 'Golden Hour',
+      },
+      {
+        id: 'savannah_jones_street',
+        name: 'Jones Street Live Oak Canopy',
+        lat: 32.0714,
+        lon: -81.0942,
+        category: 'Park & Trail',
+        lore: 'Brick townhouses and ancient live oaks form a quiet shaded corridor across downtown.',
+        wikiTitle: 'Savannah Historic District',
+        youtubeSearchQuery: 'Jones Street Savannah oak canopy walk',
+        dayChapter: 'Golden Hour',
+      },
+    ],
+  };
+}
+
+function buildSampleDahlonegaContract() {
+  return {
+    schemaVersion: 2,
+    cityId: 'dahlonega',
+    metadata: {
+      id: 'dahlonega',
+      name: 'Dahlonega',
+      cityId: 'dahlonega',
+      displayName: 'Dahlonega',
+      country: 'United States',
+      region: 'Georgia',
+      lat: 34.5326,
+      lon: -83.9849,
+      tourScope: 'city',
+      radiusMeters: 4500,
+      transitMode: 'scooter',
+      wikiTitle: 'Dahlonega, Georgia',
+      youtubeSearchQuery: 'Dahlonega Georgia public square gold museum 4k',
+    },
+    landmarks: [
+      {
+        id: 'dahlonega_gold_museum',
+        name: 'Dahlonega Gold Museum Historic Site',
+        lat: 34.5326,
+        lon: -83.9849,
+        category: 'Historic Landmark',
+        lore: 'Built in 1836 as the Lumpkin County Courthouse at the center of Americas first major gold rush.',
+        wikiTitle: 'Dahlonega Gold Museum Historic Site',
+        youtubeSearchQuery: 'Dahlonega Gold Museum tour',
+      },
+      {
+        id: 'dahlonega_holly_theater',
+        name: 'Historic Holly Theater',
+        lat: 34.5319,
+        lon: -83.9855,
+        category: 'Art & Culture',
+        lore: 'Restored 1948 neighborhood cinema and playhouse hosting concerts off the public square.',
+        wikiTitle: 'Dahlonega, Georgia',
+        youtubeSearchQuery: 'Dahlonega Historic District walking tour',
+      },
+      {
+        id: 'dahlonega_ung_price_memorial',
+        name: 'Price Memorial Hall Gold Steeple',
+        lat: 34.5284,
+        lon: -83.9866,
+        category: 'Architecture',
+        lore: 'Gilded steeple topped with twenty-four karat Dahlonega gold overlooking the Blue Ridge foothills.',
+        wikiTitle: 'University of North Georgia',
+        youtubeSearchQuery: 'Price Memorial Hall Dahlonega',
+      },
+    ],
+  };
+}
+
+function createFakeCityDrawerHarness(win, { lat = 32.0809, lon = -81.0912, height = 320 } = {}) {
+  const statusListeners = new Set();
+  const depthListeners = new Set();
+  const depthExitListeners = new Set();
+  const wanderListeners = new Set();
+  const flyTos = [];
+  const state = {
+    coords: { lat, lon, height },
+    altAGL: height,
+    depthEligible: height <= 1500,
+    catalogPlace: null,
+  };
+  const viewer = {
+    camera: {
+      positionCartographic: {
+        latitude: (lat * Math.PI) / 180,
+        longitude: (lon * Math.PI) / 180,
+        height,
+      },
+      heading: 0,
+      pitch: -0.4,
+      roll: 0,
+      flyTo(opts) {
+        flyTos.push(opts);
+      },
+      changed: {
+        addEventListener() {},
+        removeEventListener() {},
+      },
+    },
+    scene: {
+      globe: {
+        getHeight() {
+          return 0;
+        },
+      },
+    },
+  };
+  const emitCity = () => {
+    const snap = cityEngine.getStatus();
+    for (const cb of statusListeners) cb(snap);
+  };
+  const emitWander = () => {
+    const snap = wanderEngine.getStatus();
+    for (const cb of wanderListeners) cb(snap);
+  };
+  const cityEngine = {
+    setCoordinates(nextLat, nextLon, nextHeight = 320, catalogPlace = null) {
+      state.coords = { lat: nextLat, lon: nextLon, height: nextHeight };
+      state.altAGL = nextHeight;
+      state.depthEligible = nextHeight <= 1500;
+      state.catalogPlace = catalogPlace;
+      viewer.camera.positionCartographic.latitude = (nextLat * Math.PI) / 180;
+      viewer.camera.positionCartographic.longitude = (nextLon * Math.PI) / 180;
+      viewer.camera.positionCartographic.height = nextHeight;
+      emitCity();
+      if (state.depthEligible) {
+        const cityPayload = {
+          id: catalogPlace?.cityId || null,
+          name: catalogPlace?.name || 'Local Area',
+          lat: nextLat,
+          lon: nextLon,
+          cameraLat: nextLat,
+          cameraLon: nextLon,
+          elev: nextHeight,
+          catalogPlace,
+        };
+        for (const cb of depthListeners) cb(cityPayload);
+      } else {
+        for (const cb of depthExitListeners) cb();
+      }
+    },
+    onCityDepth(cb) {
+      depthListeners.add(cb);
+      return () => depthListeners.delete(cb);
+    },
+    onCityDepthExit(cb) {
+      depthExitListeners.add(cb);
+      return () => depthExitListeners.delete(cb);
+    },
+    getStatus() {
+      return {
+        active: true,
+        depthEligible: state.depthEligible,
+        altAGL: state.altAGL,
+        coordinates: { ...state.coords },
+        catalogPlace: state.catalogPlace,
+      };
+    },
+    onStatusChange(cb) {
+      statusListeners.add(cb);
+      return () => statusListeners.delete(cb);
+    },
+    getTelemetry() {
+      return { coordinates: { ...state.coords } };
+    },
+    setDepthGate() {},
+    enterCity() {},
+    exitCity() {},
+  };
+  const wanderEngine = {
+    isWandering: false,
+    cameraMode: 'iso_chase',
+    clearInputState() {},
+    setWalkSpeedOverride() {},
+    setExternalController() {},
+    startWandering() {
+      this.isWandering = true;
+      emitWander();
+    },
+    stopWandering() {
+      this.isWandering = false;
+      emitWander();
+    },
+    relocateTo(nextLat, nextLon, nextHeight) {
+      if (Number.isFinite(nextLat) && Number.isFinite(nextLon)) {
+        state.coords = { lat: nextLat, lon: nextLon, height: nextHeight ?? state.coords.height };
+      }
+    },
+    showDialogBubble() {},
+    getCameraMode() {
+      return this.cameraMode;
+    },
+    getUserAvatar() {
+      return { isDestroyed: false };
+    },
+    onStatusChange(cb) {
+      wanderListeners.add(cb);
+      return () => wanderListeners.delete(cb);
+    },
+    getStatus() {
+      return {
+        active: this.isWandering,
+        cameraMode: this.cameraMode,
+        coordinates: { ...state.coords },
+      };
+    },
+    getTelemetry() {
+      return { coordinates: { ...state.coords } };
+    },
+  };
+  const stadiumEngine = {
+    getStatus: () => ({ active: false }),
+    onStatusChange: () => () => {},
+  };
+  return { viewer, cityEngine, wanderEngine, stadiumEngine, flyTos };
+}
+
+test('Stage 2 Pillar 1 — Dev Forge gate fails closed without liveForgeEnabled + CLI, and server rejects tourBuild with 403 when forge disabled', async () => {
+  assert.equal(isTourForgeAvailable(null), false);
+  assert.equal(isTourForgeAvailable({ liveForgeEnabled: false, availableClis: ['agy'] }), false);
+  assert.equal(isTourForgeAvailable({ liveForgeEnabled: true, availableClis: [] }), false);
+  assert.equal(isTourForgeAvailable({ liveForgeEnabled: true, availableClis: [''] }), false);
+  assert.equal(isTourForgeAvailable({ liveForgeEnabled: true, availableClis: ['agy'] }), true);
+
+  const win = new Window({ url: 'http://localhost/' });
+  const prevDoc = globalThis.document;
+  const prevWin = globalThis.window;
+  globalThis.window = win;
+  globalThis.document = win.document;
+
+  let capsPayload = { ok: true, liveForgeEnabled: false, availableClis: ['agy'], defaultProvider: 'agy' };
+  let forgeFetchCalls = 0;
+
+  try {
+    const panel = createSelfModifyingAgentPanel({
+      container: win.document.body,
+      autoLoadCapabilities: false,
+      capabilitiesFetchImpl: async () => ({
+        ok: true,
+        status: 200,
+        json: async () => capsPayload,
+      }),
+      fetchImpl: async () => {
+        forgeFetchCalls += 1;
+        return { ok: true, status: 200, json: async () => ({ ok: true }) };
+      },
+    });
+
+    let changeEvents = 0;
+    const unsub = panel.onCapabilitiesChange(() => {
+      changeEvents += 1;
+    });
+
+    await panel.refreshCapabilities();
+    assert.equal(panel.canBuildTourWithForge(), false);
+    assert.equal(changeEvents, 1);
+
+    const disabledRes = await panel.runTourBuildForge({
+      placeName: 'Savannah',
+      lat: 32.0809,
+      lon: -81.0912,
+    });
+    assert.equal(disabledRes.ok, false);
+    assert.equal(disabledRes.code, 'forge-disabled');
+    assert.equal(forgeFetchCalls, 0, 'Must fail closed before calling fetch');
+
+    capsPayload = {
+      ok: true,
+      liveForgeEnabled: true,
+      availableClis: ['claude'],
+      defaultProvider: 'claude',
+    };
+    await panel.refreshCapabilities();
+    assert.equal(panel.canBuildTourWithForge(), true);
+    assert.equal(panel.resolveForgeCliProviderId(), 'claude');
+    assert.equal(changeEvents, 2);
+
+    unsub();
+    panel.destroy();
+  } finally {
+    try {
+      await win.close();
+    } catch {}
+    if (prevDoc === undefined) delete globalThis.document;
+    else globalThis.document = prevDoc;
+    if (prevWin === undefined) delete globalThis.window;
+    else globalThis.window = prevWin;
+  }
+
+  // Server endpoint enforcement: tourBuild forces forge mode and returns 403 when disabled
+  const reqBody = JSON.stringify({
+    mode: 'guide',
+    tourBuild: { placeName: 'Savannah', lat: 32.0809, lon: -81.0912 },
+  });
+  let statusCode = 0;
+  let resBody = '';
+  const fakeReq = Object.assign(Readable.from([Buffer.from(reqBody)]), {
+    method: 'POST',
+    url: '/api/agy/self-modify',
+    socket: { remoteAddress: '127.0.0.1' },
+    headers: {
+      host: 'localhost:4173',
+      origin: 'http://localhost:4173',
+      'content-type': 'application/json',
+    },
+  });
+  const fakeRes = {
+    headers: {},
+    setHeader(k, v) {
+      this.headers[k] = v;
+    },
+    end(payload) {
+      statusCode = this.statusCode;
+      resBody = String(payload || '');
+    },
+  };
+  await handleAgySelfModify(fakeReq, fakeRes, {
+    env: { ...process.env, GEV_ENABLE_LIVE_FORGE: '' },
+  });
+  assert.equal(statusCode, 403);
+  const parsed = JSON.parse(resBody);
+  assert.equal(parsed.code, 'forge-disabled');
+});
+
+test('Stage 2 Pillar 2 — 5-tier resolveCatalogPlaceAt & curated vs dynamic placeholder detection', async () => {
+  clearCatalogPlaceCacheForTest();
+  clearLocalityCacheForTests();
+  clearRuntimeBuiltToursForTest();
+
+  try {
+    // Reject generic terrain/biome/coords labels; accept concrete city/town names
+    for (const bad of ['', 'Dense Urban', 'Suburban', 'Rural', 'Open Ocean', 'Coastline', '32.08, -81.09']) {
+      assert.equal(isConcreteCatalogPlaceName(bad), false, `Expected '${bad}' to be rejected`);
+    }
+    for (const good of ['Savannah', 'Dahlonega', 'Kyoto', 'Asheville']) {
+      assert.equal(isConcreteCatalogPlaceName(good), true, `Expected '${good}' to be accepted`);
+    }
+
+    const savannah = await resolveCatalogPlaceAt(32.0809, -81.0912);
+    assert.ok(savannah && savannah.isCatalogPlace === true);
+    assert.match(savannah.name, /Savannah/i);
+    assert.equal(getCachedCatalogPlaceAt(32.0809, -81.0912)?.cityId, savannah.cityId);
+
+    const dahlonega = await resolveCatalogPlaceAt(34.5326, -83.9849);
+    assert.ok(dahlonega && dahlonega.isCatalogPlace === true);
+    assert.match(dahlonega.name, /Dahlonega/i);
+
+    const kyoto = await resolveCatalogPlaceAt(35.0116, 135.7681);
+    assert.ok(kyoto && kyoto.isCatalogPlace === true);
+    assert.match(kyoto.name, /Kyoto/i);
+
+    const ocean = await resolveCatalogPlaceAt(30.0, -45.0);
+    assert.equal(ocean, null, 'Atlantic Ocean marine body must return null');
+
+    // Curated vs dynamic placeholder matrix
+    const epcotCtx = resolveTourOrPlayContext(28.3747, -81.5494, { label: 'EPCOT' });
+    assert.equal(epcotCtx.mode, 'tour');
+    assert.equal(epcotCtx.hasCuratedOrCustomTour, true);
+    assert.equal(epcotCtx.isDynamicPlaceholder, false);
+    assert.equal(epcotCtx.tourScope, 'venue');
+    assert.equal(epcotCtx.transitMode, 'walk_midway');
+
+    const atlantaCtx = resolveTourOrPlayContext(33.749, -84.388, { label: 'Atlanta' });
+    assert.equal(atlantaCtx.mode, 'tour');
+    assert.equal(atlantaCtx.hasCuratedOrCustomTour, true);
+    assert.equal(atlantaCtx.isDynamicPlaceholder, false);
+
+    const savannahCtx = resolveTourOrPlayContext(32.0809, -81.0912, { label: 'Savannah' });
+    assert.equal(savannahCtx.mode, 'tour');
+    assert.equal(savannahCtx.hasCuratedOrCustomTour, false);
+    assert.equal(savannahCtx.isDynamicPlaceholder, true);
+    assert.match(savannahCtx.cityName, /Savannah/i);
+
+    const dahlonegaCtx = resolveTourOrPlayContext(34.5326, -83.9849, { label: 'Dahlonega' });
+    assert.equal(dahlonegaCtx.mode, 'play');
+    assert.equal(dahlonegaCtx.hasCuratedOrCustomTour, false);
+    assert.equal(dahlonegaCtx.isDynamicPlaceholder, false);
+  } finally {
+    clearCatalogPlaceCacheForTest();
+    clearLocalityCacheForTests();
+    clearRuntimeBuiltToursForTest();
+  }
+});
+
+test('Stage 2 Pillar 4 — structured tourBuild prompt/extraction, live handler builtTour, and zero-reload registerBuiltTourRuntime + tourPoiCards', async () => {
+  clearRuntimeBuiltToursForTest();
+  clearCatalogPlaceCacheForTest();
+  clearLocalityCacheForTests();
+
+  const win = new Window({ url: 'http://localhost/' });
+  const prevDoc = globalThis.document;
+  const prevWin = globalThis.window;
+  globalThis.window = win;
+  globalThis.document = win.document;
+
+  try {
+    const directive = normalizeTourBuildDirective({
+      placeName: 'Savannah',
+      displayName: 'Savannah, Georgia',
+      cityId: 'savannah',
+      lat: 32.0809,
+      lon: -81.0912,
+      country: 'United States',
+      region: 'Georgia',
+    });
+    assert.equal(directive.cityId, 'savannah');
+    assert.equal(directive.placeName, 'Savannah');
+
+    const prompt = buildTourBuildForgePrompt({
+      tourBuild: directive,
+      appName: "God's Eye View",
+      repoRoot: process.cwd(),
+      autoCommit: false,
+    });
+    assert.match(prompt, /Savannah/);
+    assert.match(prompt, /tourScope/);
+    assert.match(prompt, /radiusMeters/);
+    assert.match(prompt, /transitMode/);
+    assert.match(prompt, /wikiTitle/);
+    assert.match(prompt, /youtubeSearchQuery/);
+
+    const sampleContract = buildSampleSavannahContract();
+    const extracted = extractBuiltTourContractFromOutput(
+      `Implemented tour cleanly.\n\`\`\`json\n${JSON.stringify(sampleContract, null, 2)}\n\`\`\``,
+    );
+    assert.ok(extracted);
+    assert.equal(extracted.schemaVersion, 2);
+    assert.equal(extracted.cityId, 'savannah');
+    assert.equal(extracted.landmarks.length, 6);
+
+    // dryRun tourBuild handler under GEV_ENABLE_LIVE_FORGE=1
+    {
+      let statusCode = 0;
+      let raw = '';
+      await handleAgySelfModify(
+        Object.assign(
+          Readable.from([
+            Buffer.from(
+              JSON.stringify({
+                tourBuild: { placeName: 'Savannah', lat: 32.0809, lon: -81.0912 },
+                dryRun: true,
+              }),
+            ),
+          ]),
+          {
+            method: 'POST',
+            url: '/api/agy/self-modify',
+            socket: { remoteAddress: '127.0.0.1' },
+            headers: {
+              host: 'localhost:4173',
+              origin: 'http://localhost:4173',
+              'content-type': 'application/json',
+            },
+          },
+        ),
+        {
+          setHeader() {},
+          end(d) {
+            statusCode = this.statusCode;
+            raw = String(d || '');
+          },
+        },
+        { env: { ...process.env, GEV_ENABLE_LIVE_FORGE: '1' } },
+      );
+      assert.equal(statusCode, 200);
+      const parsed = JSON.parse(raw);
+      assert.equal(parsed.ok, true);
+      assert.equal(parsed.mode, 'forge');
+      assert.match(parsed.neuroPrompt, /Savannah/);
+      assert.match(parsed.neuroPrompt, /tourScope/);
+    }
+
+    // Live mock tourBuild handler returns builtTour from agent output
+    {
+      let statusCode = 0;
+      let raw = '';
+      await handleAgySelfModify(
+        Object.assign(
+          Readable.from([
+            Buffer.from(
+              JSON.stringify({
+                tourBuild: { placeName: 'Savannah', lat: 32.0809, lon: -81.0912 },
+              }),
+            ),
+          ]),
+          {
+            method: 'POST',
+            url: '/api/agy/self-modify',
+            socket: { remoteAddress: '127.0.0.1' },
+            headers: {
+              host: 'localhost:4173',
+              origin: 'http://localhost:4173',
+              'content-type': 'application/json',
+            },
+          },
+        ),
+        {
+          setHeader() {},
+          end(d) {
+            statusCode = this.statusCode;
+            raw = String(d || '');
+          },
+        },
+        {
+          env: { ...process.env, GEV_ENABLE_LIVE_FORGE: '1' },
+          runProcessImpl: async () => ({
+            ok: true,
+            exitCode: 0,
+            stdout: `Done.\n\`\`\`json\n${JSON.stringify(sampleContract)}\n\`\`\``,
+            stderr: '',
+          }),
+          postForgeCheckImpl: async () => ({ ok: true, results: [] }),
+        },
+      );
+      assert.equal(statusCode, 200);
+      const parsed = JSON.parse(raw);
+      assert.equal(parsed.ok, true);
+      assert.ok(parsed.builtTour, 'Live handler must return extracted builtTour');
+      assert.equal(parsed.builtTour.schemaVersion, 2);
+      assert.equal(parsed.builtTour.cityId, 'savannah');
+    }
+
+    // Validation rejection on invalid contract
+    const badReg = registerBuiltTourRuntime(
+      'bad_town',
+      { displayName: 'Bad Town', lat: 32, lon: -81 },
+      [{ id: 'bad1', name: 'Bad Stop', lat: 32, lon: -81, youtubeVideoId: 'invalid-short' }],
+    );
+    assert.equal(badReg.ok, false);
+    assert.ok(badReg.errors.length > 0);
+    assert.equal(Boolean(getRuntimeBuiltTours().bad_town), false);
+
+    // Valid hot-registration lights up Tour v2, export v2, resolveTourOrPlayContext, and tourPoiCards immediately
+    const reg = registerBuiltTourRuntime('savannah', sampleContract.metadata, sampleContract.landmarks);
+    assert.equal(reg.ok, true);
+    assert.equal(reg.cityId, 'savannah');
+    assert.equal(reg.metadata.tourScope, 'city');
+    assert.equal(reg.metadata.transitMode, 'scooter');
+    assert.ok(reg.metadata.radiusMeters > 0);
+    assert.equal(Boolean(getRuntimeBuiltTours().savannah), true);
+
+    const catalogSnapshot = getAllTourCatalogEntries();
+    assert.ok(catalogSnapshot.runtimeBuiltCityIds.includes('savannah'));
+    assert.ok(catalogSnapshot.catalogByCityId.savannah?.length === 6);
+
+    const postCtx = resolveTourOrPlayContext(32.0809, -81.0912, { label: 'Savannah' });
+    assert.equal(postCtx.hasCuratedOrCustomTour, true);
+    assert.equal(postCtx.isDynamicPlaceholder, false);
+    assert.equal(postCtx.isRuntimeBuilt, true);
+
+    const exported = JSON.parse(exportTourAsContractJson('savannah'));
+    assert.equal(exported.schemaVersion, 2);
+    assert.equal(exported.metadata.tourScope, 'city');
+    assert.equal(exported.metadata.transitMode, 'scooter');
+    assert.equal(exported.landmarks.length, 6);
+
+    // Zero-reload integration with tourPoiCards + SightseeingDrawer
+    const harness = createFakeCityDrawerHarness(win, { lat: 32.0809, lon: -81.0912, height: 320 });
+    const engine = createTourAndPlayEngine({ wanderEngine: harness.wanderEngine, rng: () => 0.1 });
+    const drawer = createSightseeingDrawer({ container: win.document.body });
+    let overlayEntries = [];
+    const cards = createTourPoiCards({
+      viewer: harness.viewer,
+      tourAndPlayEngine: engine,
+      sightseeingDrawer: drawer,
+      fetchImpl: async () => ({
+        ok: true,
+        async json() {
+          return {
+            ok: true,
+            count: 1,
+            billboards: [
+              {
+                title: 'Forsyth Park',
+                thumbnailUrl: '',
+                originalUrl: '',
+                extract: 'Historic 30-acre park in Savannah, Georgia.',
+                url: 'https://en.wikipedia.org/wiki/Forsyth_Park',
+              },
+            ],
+          };
+        },
+      }),
+      overlayApi: {
+        setOverlayEntries(sourceId, entries) {
+          if (sourceId === TOUR_POI_OVERLAY_SOURCE_ID) overlayEntries = entries;
+        },
+        clearOverlaySource() {
+          overlayEntries = [];
+        },
+        hitTestWorldOverlay: () => null,
+      },
+    });
+
+    engine.startCityTour({ cityId: 'savannah' });
+    assert.ok(overlayEntries.length > 0, 'tourPoiCards must immediately illuminate billboards for runtime-built tour');
+    assert.equal(engine.getStatus().cityId, 'savannah');
+
+    cards.destroy();
+    drawer.destroy();
+    engine.destroy();
+  } finally {
+    clearRuntimeBuiltToursForTest();
+    clearCatalogPlaceCacheForTest();
+    clearLocalityCacheForTests();
+    try {
+      await win.close();
+    } catch {}
+    if (prevDoc === undefined) delete globalThis.document;
+    else globalThis.document = prevDoc;
+    if (prevWin === undefined) delete globalThis.window;
+    else globalThis.window = prevWin;
+  }
+});
+
+test('Stage 2 Pillars 3 & 5 — cityDrawer + wanderDrawer Dev Forge OFF vs ON, [T] key, single-flight lock, error/retry, <=35km auto-launch, >35km ready badge, and permanent Tour pill', async () => {
+  clearRuntimeBuiltToursForTest();
+  clearCatalogPlaceCacheForTest();
+  clearLocalityCacheForTests();
+
+  const win = new Window({ url: 'http://localhost/' });
+  const prevDoc = globalThis.document;
+  const prevWin = globalThis.window;
+  const prevRaf = globalThis.requestAnimationFrame;
+  const prevFetch = globalThis.fetch;
+  const prevKeyboardEvent = globalThis.KeyboardEvent;
+  const prevCustomEvent = globalThis.CustomEvent;
+  win.fetch = async () => ({ ok: false, status: 404, json: async () => ({}) });
+  globalThis.fetch = win.fetch;
+  globalThis.window = win;
+  globalThis.document = win.document;
+  globalThis.KeyboardEvent = win.KeyboardEvent;
+  globalThis.CustomEvent = win.CustomEvent;
+  globalThis.requestAnimationFrame = (cb) => setTimeout(cb, 0);
+
+  try {
+    let capsPayload = { ok: true, liveForgeEnabled: false, availableClis: ['agy'], defaultProvider: 'agy' };
+    let deferredResolve = null;
+    let forgeRequests = [];
+
+    const agentForgePanel = createSelfModifyingAgentPanel({
+      container: win.document.body,
+      autoLoadCapabilities: false,
+      capabilitiesFetchImpl: async () => ({
+        ok: true,
+        status: 200,
+        json: async () => capsPayload,
+      }),
+      fetchImpl: async (_url, init) => {
+        const body = JSON.parse(init.body);
+        forgeRequests.push(body);
+        return await new Promise((resolve) => {
+          deferredResolve = resolve;
+        });
+      },
+    });
+    await agentForgePanel.refreshCapabilities();
+
+    const harness = createFakeCityDrawerHarness(win, { lat: 32.0809, lon: -81.0912, height: 320 });
+    const engine = createTourAndPlayEngine({ wanderEngine: harness.wanderEngine, rng: () => 0.25 });
+    const sightseeingDrawer = createSightseeingDrawer({ container: win.document.body });
+    const tourPoiCards = createTourPoiCards({
+      viewer: harness.viewer,
+      tourAndPlayEngine: engine,
+      sightseeingDrawer,
+      fetchImpl: win.fetch,
+      overlayApi: {
+        setOverlayEntries() {},
+        clearOverlaySource() {},
+        hitTestWorldOverlay: () => null,
+      },
+    });
+
+    const wanderDrawer = createWanderDrawer({
+      wanderEngine: harness.wanderEngine,
+      cityEngine: harness.cityEngine,
+      tourAndPlayEngine: engine,
+      tourPoiCards,
+      agentForgePanel,
+      onRequestTourBuild: (place, coords) => cityDrawer.triggerBuildTourForPlace(place, coords),
+      viewer: harness.viewer,
+      container: win.document.body,
+    });
+
+    const cityDrawer = createCityDrawer({
+      cityEngine: harness.cityEngine,
+      wanderEngine: harness.wanderEngine,
+      tourAndPlayEngine: engine,
+      agentForgePanel,
+      stadiumEngine: harness.stadiumEngine,
+      viewer: harness.viewer,
+      container: win.document.body,
+    });
+
+    const tick = () => new Promise((r) => setTimeout(r, 15));
+    const savannahCatalog = {
+      name: 'Savannah',
+      displayName: 'Savannah, Georgia',
+      cityId: 'savannah',
+      lat: 32.0809,
+      lon: -81.0912,
+      country: 'United States',
+      region: 'Georgia',
+      isCatalogPlace: true,
+    };
+    const dahlonegaCatalog = {
+      name: 'Dahlonega',
+      displayName: 'Dahlonega, Georgia',
+      cityId: 'dahlonega',
+      lat: 34.5326,
+      lon: -83.9849,
+      country: 'United States',
+      region: 'Georgia',
+      isCatalogPlace: true,
+    };
+
+    // Phase A: Dev Forge OFF — Savannah keeps generic "Tour Savannah", Dahlonega keeps Play, zero Build UI
+    harness.cityEngine.setCoordinates(32.0809, -81.0912, 320, savannahCatalog);
+    await tick();
+    const pillBtn = win.document.querySelector('.gev-ambient-tour-play-btn');
+    assert.ok(pillBtn);
+    assert.equal(pillBtn.dataset.pillState, 'tour');
+    assert.doesNotMatch(pillBtn.textContent, /Build:\s*Tour/i);
+
+    harness.cityEngine.setCoordinates(34.5326, -83.9849, 320, dahlonegaCatalog);
+    await tick();
+    assert.equal(pillBtn.dataset.pillState, 'play');
+    assert.doesNotMatch(pillBtn.textContent, /Build:\s*Tour/i);
+    wanderDrawer.open();
+    await tick();
+    assert.equal(
+      win.document.querySelector('.gev-tour-forge-build-btn')?.style?.display || 'none',
+      'none',
+      'No Forge CTA visible when Dev Forge is OFF',
+    );
+    wanderDrawer.close();
+
+    // Phase B: Enable Dev Forge + available CLI
+    capsPayload = { ok: true, liveForgeEnabled: true, availableClis: ['agy'], defaultProvider: 'agy' };
+    await agentForgePanel.refreshCapabilities();
+    await tick();
+
+    // Curated EPCOT venue stays Park Day, NEVER Build: Tour
+    harness.cityEngine.setCoordinates(28.3747, -81.5494, 320, null);
+    await tick();
+    assert.equal(pillBtn.dataset.pillState, 'tour');
+    assert.doesNotMatch(pillBtn.textContent, /Build:\s*Tour/i);
+
+    // Atlantic Ocean marine exclusion -> zero Build: Tour
+    harness.cityEngine.setCoordinates(30.0, -45.0, 320, null);
+    await tick();
+    assert.doesNotMatch(pillBtn.textContent, /Build:\s*Tour/i);
+
+    // Savannah flips immediately to Build: Tour Savannah + wanderDrawer shows Forge CTA
+    harness.cityEngine.setCoordinates(32.0809, -81.0912, 320, savannahCatalog);
+    await tick();
+    assert.equal(pillBtn.dataset.pillState, 'build_tour');
+    assert.match(pillBtn.textContent, /Build:\s*Tour Savannah/i);
+    assert.equal(pillBtn.classList.contains('gev-pill-build-tour'), true);
+
+    wanderDrawer.open();
+    await tick();
+    const forgeCta = win.document.querySelector('.gev-tour-forge-build-btn');
+    assert.equal(Boolean(forgeCta), true, 'wanderDrawer must expose Forge CTA for dynamic Savannah placeholder');
+    assert.equal(forgeCta?.style?.display, 'inline-block');
+    assert.match(forgeCta.textContent, /Build:\s*Tour Savannah/i);
+    wanderDrawer.close();
+    await tick();
+
+    // Test single-flight lock + non-blocking building overlay + [T] key stopImmediatePropagation + error/retry
+    let secondaryListenerHit = false;
+    win.addEventListener('keydown', () => {
+      secondaryListenerHit = true;
+    });
+    const tEvent = new win.KeyboardEvent('keydown', { key: 't', code: 'KeyT', bubbles: true, cancelable: true });
+    win.dispatchEvent(tEvent);
+    await tick();
+
+    assert.equal(secondaryListenerHit, false, '[T] key handled by cityDrawer must stopImmediatePropagation');
+    assert.equal(forgeRequests.length, 1);
+    assert.equal(forgeRequests[0].tourBuild.cityId, 'savannah');
+    assert.equal(pillBtn.dataset.pillState, 'building');
+    assert.equal(pillBtn.classList.contains('gev-pill-building'), true);
+
+    const buildOverlay = win.document.querySelector('.gev-tour-build-overlay');
+    assert.equal(Boolean(buildOverlay && buildOverlay.classList.contains('visible')), true);
+    assert.match(buildOverlay.textContent, /Building Tour:\s*Savannah/i);
+
+    // Second trigger while building must be ignored (single-flight)
+    pillBtn.click();
+    await tick();
+    assert.equal(forgeRequests.length, 1);
+
+    // Fail first build -> overlay enters state-error with Retry & Dismiss
+    deferredResolve({
+      ok: false,
+      status: 500,
+      json: async () => ({ error: 'Simulated CLI error' }),
+    });
+    deferredResolve = null;
+    await tick();
+    assert.equal(buildOverlay.classList.contains('state-error'), true);
+    assert.equal(pillBtn.dataset.pillState, 'build_tour');
+
+    // Click Retry -> succeed -> auto-register + auto-open wanderDrawer + auto-start startCityTour + permanent Tour pill
+    const retryBtn = win.document.querySelector('.gev-tour-build-action-btn');
+    assert.equal(Boolean(retryBtn), true);
+    retryBtn.click();
+    await tick();
+    assert.equal(forgeRequests.length, 2);
+
+    const savannahBuilt = buildSampleSavannahContract();
+    deferredResolve({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        ok: true,
+        mode: 'forge',
+        builtTour: savannahBuilt,
+      }),
+    });
+    deferredResolve = null;
+    await tick();
+    await tick();
+
+    assert.equal(Boolean(getRuntimeBuiltTours().savannah), true);
+    assert.equal(engine.getStatus().isActive, true, 'Must auto-launch Savannah tour when camera <= 35 km');
+    assert.equal(engine.getStatus().cityId, 'savannah');
+
+    // Verify dropdown now lists Savannah under City Tours
+    const selectEl = win.document.querySelector('.gev-tour-city-select');
+    assert.equal(Boolean(selectEl), true);
+    const savannahOpt = Array.from(selectEl.querySelectorAll('option')).find((o) => o.value === 'savannah');
+    assert.equal(Boolean(savannahOpt), true, 'Runtime-built Savannah must appear in .gev-tour-city-select');
+
+    // Stop active tour and close drawer so ambient pill re-renders permanently as "Tour Savannah"
+    engine.stop();
+    wanderDrawer.close();
+    harness.cityEngine.setCoordinates(32.0809, -81.0912, 320, savannahCatalog);
+    await tick();
+    assert.equal(pillBtn.dataset.pillState, 'tour', 'Steady-state ambient pill permanently transitions back to Tour');
+    assert.match(pillBtn.textContent, /Tour Savannah/i);
+    assert.doesNotMatch(pillBtn.textContent, /Build:\s*Tour/i);
+
+    // Out-of-range (> 35 km) completion shows ready badge instead of hijacking camera
+    harness.cityEngine.setCoordinates(34.5326, -83.9849, 320, dahlonegaCatalog);
+    await tick();
+    assert.equal(pillBtn.dataset.pillState, 'build_tour');
+    assert.match(pillBtn.textContent, /Build:\s*Tour Dahlonega/i);
+
+    pillBtn.click();
+    await tick();
+    assert.equal(forgeRequests.length, 3);
+    // Pan camera > 35 km away (New York) while build completes
+    harness.cityEngine.setCoordinates(40.7128, -74.006, 320, null);
+    await tick();
+
+    deferredResolve({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        ok: true,
+        mode: 'forge',
+        builtTour: buildSampleDahlonegaContract(),
+      }),
+    });
+    deferredResolve = null;
+    await tick();
+    await tick();
+
+    assert.equal(Boolean(getRuntimeBuiltTours().dahlonega), true);
+    assert.equal(engine.getStatus().isActive, false, 'Must NOT force-start tour when camera > 35 km away');
+    assert.equal(buildOverlay.classList.contains('visible'), true);
+    assert.equal(buildOverlay.classList.contains('state-ready'), true);
+    assert.match(buildOverlay.textContent, /Dahlonega Tour Ready/i);
+    const flyStartBtn = win.document.querySelector('.gev-tour-build-action-btn');
+    assert.equal(Boolean(flyStartBtn), true);
+    assert.match(flyStartBtn.textContent, /Fly & Start Dahlonega/i);
+    flyStartBtn.click();
+    await tick();
+    assert.equal(engine.getStatus().isActive, true);
+    assert.equal(engine.getStatus().cityId, 'dahlonega');
+
+    cityDrawer.destroy();
+    wanderDrawer.destroy();
+    tourPoiCards.destroy();
+    sightseeingDrawer.destroy();
+    engine.destroy();
+    agentForgePanel.destroy();
+  } finally {
+    clearRuntimeBuiltToursForTest();
+    clearCatalogPlaceCacheForTest();
+    clearLocalityCacheForTests();
+    try {
+      await win.close();
+    } catch {}
+    if (prevKeyboardEvent === undefined) delete globalThis.KeyboardEvent;
+    else globalThis.KeyboardEvent = prevKeyboardEvent;
+    if (prevCustomEvent === undefined) delete globalThis.CustomEvent;
+    else globalThis.CustomEvent = prevCustomEvent;
+    if (prevFetch === undefined) delete globalThis.fetch;
+    else globalThis.fetch = prevFetch;
+    if (prevDoc === undefined) delete globalThis.document;
+    else globalThis.document = prevDoc;
+    if (prevWin === undefined) delete globalThis.window;
+    else globalThis.window = prevWin;
+    if (prevRaf === undefined) delete globalThis.requestAnimationFrame;
+    else globalThis.requestAnimationFrame = prevRaf;
+  }
 });
