@@ -26,8 +26,7 @@ import {
   governorRequestRender,
 } from '../../renderGovernor.js';
 import {
-  MONORAIL_MODEL_URI,
-  MONORAIL_MODEL_LENGTH_M,
+  resolveFleetTransitModelSpec,
   computeFleetGlbOrientationQuat,
 } from '../citylife/syntheticMetroEngine.js';
 
@@ -54,6 +53,9 @@ export const DEFAULT_CARS_PER_CORRIDOR = {
   northeast_corridor_acela: 6,
   tokaido_shinkansen: 8,
   wdw_monorail: 0,
+  dlr_monorail: 0,
+  wdw_mk_railroad: 0,
+  dlr_railroad: 0,
 };
 
 /**
@@ -488,9 +490,12 @@ export function createRailwayEngine({
       options.cameraMode || (options.cabRide === false ? 'chase' : 'cab');
     const isCabRide = requestedCam === 'cab';
     cameraMode = requestedCam;
-    const isMonorail =
-      corridor.activeProfile?.vehicleMode === 'monorail' ||
-      options.vehicleMode === 'monorail';
+    const vehicleMode =
+      options.vehicleMode || corridor.activeProfile?.vehicleMode || 'rail';
+    const fleetModelSpec = resolveFleetTransitModelSpec(vehicleMode);
+    const isMonorail = vehicleMode === 'monorail';
+    const isSteamRail = vehicleMode === 'steam_rail';
+    const usesFleetGlb = Boolean(fleetModelSpec);
     activeRailOffsetM = Number.isFinite(
       corridor.activeProfile?.railOffsetMeters,
     )
@@ -502,9 +507,9 @@ export function createRailwayEngine({
 
     let orderedWaypoints = corridor.waypoints;
 
-    // Optional dynamic Overpass vector ingestion (skipped for dedicated monorail beamways
-    // so curated elevated Disney straddle-beam coordinates are preserved verbatim).
-    if (options.useOverpass && corridor.bbox && !isMonorail) {
+    // Optional dynamic Overpass vector ingestion (skipped for dedicated Disney monorail beamways
+    // and narrow-gauge park steam loops so curated resort coordinates are preserved verbatim).
+    if (options.useOverpass && corridor.bbox && !usesFleetGlb) {
       try {
         const elements = await fetchOverpassRailways(corridor.bbox, fetchImpl);
         if (elements) {
@@ -523,7 +528,7 @@ export function createRailwayEngine({
     }
 
     const trajectoryCartesians = generateRailTrajectory(orderedWaypoints, {
-      sampleIntervalMeters: isMonorail ? 12 : 20,
+      sampleIntervalMeters: usesFleetGlb ? 12 : 20,
       railOffsetMeters: activeRailOffsetM,
       scene: viewer?.scene,
     });
@@ -531,7 +536,7 @@ export function createRailwayEngine({
     if (trajectoryCartesians.length < 2) return null;
 
     // Consist configuration
-    const carsCount = isMonorail
+    const carsCount = usesFleetGlb
       ? 0
       : options.carsCount !== undefined
         ? Number(options.carsCount)
@@ -618,12 +623,12 @@ export function createRailwayEngine({
       },
     });
 
-    // 2. 3D Locomotive / Monorail Entity
-    // For procedural fleet `monorail.glb` (built glTF Y-up, nose toward local -X),
+    // 2. 3D Locomotive / Monorail / Steam Trainset Entity
+    // For procedural fleet GLBs (`monorail.glb`, `regional_dmu.glb` — built glTF Y-up, nose toward local -X),
     // compute orientation dynamically from track forward vector via `computeFleetGlbOrientationQuat`
     // so glTF(-1,0,0) aligns strictly along travel direction (dot = +1.0, zero 90°/180° offset).
-    let lastValidMonorailQuat = null;
-    if (isMonorail && trajectoryCartesians.length >= 2) {
+    let lastValidFleetQuat = null;
+    if (usesFleetGlb && trajectoryCartesians.length >= 2) {
       const initFwd = Cesium.Cartesian3.subtract(
         trajectoryCartesians[1],
         trajectoryCartesians[0],
@@ -631,18 +636,18 @@ export function createRailwayEngine({
       );
       if (Cesium.Cartesian3.magnitudeSquared(initFwd) > 1e-6) {
         Cesium.Cartesian3.normalize(initFwd, initFwd);
-        lastValidMonorailQuat = computeFleetGlbOrientationQuat(
+        lastValidFleetQuat = computeFleetGlbOrientationQuat(
           trajectoryCartesians[0],
           initFwd,
         );
       }
     }
 
-    const orientationProperty = isMonorail
+    const orientationProperty = usesFleetGlb
       ? new Cesium.CallbackProperty((time, result) => {
           const evalTime = time || viewer.clock?.currentTime;
           const p0 = evalTime ? positionProperty.getValue(evalTime) : null;
-          if (!p0) return lastValidMonorailQuat || undefined;
+          if (!p0) return lastValidFleetQuat || undefined;
           const futureTime = Cesium.JulianDate.addSeconds(
             evalTime,
             0.35,
@@ -671,9 +676,9 @@ export function createRailwayEngine({
             Cesium.Cartesian3.normalize(fwd, fwd);
             const q = computeFleetGlbOrientationQuat(p0, fwd);
             if (q) {
-              lastValidMonorailQuat = Cesium.Quaternion.clone(
+              lastValidFleetQuat = Cesium.Quaternion.clone(
                 q,
-                lastValidMonorailQuat || new Cesium.Quaternion(),
+                lastValidFleetQuat || new Cesium.Quaternion(),
               );
               return Cesium.Quaternion.clone(
                 q,
@@ -681,9 +686,9 @@ export function createRailwayEngine({
               );
             }
           }
-          return lastValidMonorailQuat
+          return lastValidFleetQuat
             ? Cesium.Quaternion.clone(
-                lastValidMonorailQuat,
+                lastValidFleetQuat,
                 result || new Cesium.Quaternion(),
               )
             : undefined;
@@ -692,9 +697,12 @@ export function createRailwayEngine({
 
     const trainName =
       options.trainName ||
+      corridor.activeProfile?.trainName ||
       (isMonorail
         ? 'WDW Monorail Mark VI'
-        : `Locomotive ${corridor.activeProfileKey || 'CSX-4500'}`);
+        : isSteamRail
+          ? 'Disney Park Steam Railroad'
+          : `Locomotive ${corridor.activeProfileKey || 'CSX-4500'}`);
     const locoColor = corridor.activeProfile?.locoColor || '#0284c7';
     const carColor = corridor.activeProfile?.carColor || '#0369a1';
 
@@ -732,15 +740,15 @@ export function createRailwayEngine({
       name: trainName,
       position: dynamicTrainPosition,
       orientation: orientationProperty,
-      ...(isMonorail
+      ...(usesFleetGlb
         ? {
             model: {
-              uri: MONORAIL_MODEL_URI,
+              uri: fleetModelSpec.uri,
               scale: 1.0,
               minimumPixelSize: 48,
               color: Cesium.Color.fromCssColorString(locoColor),
               colorBlendMode: Cesium.ColorBlendMode.MIX,
-              colorBlendAmount: 0.25,
+              colorBlendAmount: fleetModelSpec.colorBlendAmount,
               show: !isCabRide,
             },
           }
@@ -863,8 +871,8 @@ export function createRailwayEngine({
     activeTrainEntity.viewFrom = initialViewOffset.clone();
     viewer.trackedEntity = activeTrainEntity;
     cameraMode = requestedCam;
-    const consistLength = isMonorail
-      ? MONORAIL_MODEL_LENGTH_M
+    const consistLength = usesFleetGlb
+      ? fleetModelSpec.lengthMeters
       : carsCount * carPitch;
 
     const syncTrainAndCamera = () => {
@@ -1059,12 +1067,28 @@ export function createRailwayEngine({
     }
 
     const corridor = activeRouteData.corridor;
+    const wps = corridor.waypoints || [];
     const from = corridor.from;
     const to = corridor.to;
-    const midLat = (from.lat + to.lat) / 2;
-    const midLon = (from.lon + to.lon) / 2;
+    const isClosedLoop =
+      from &&
+      to &&
+      Math.abs(from.lat - to.lat) < 1e-4 &&
+      Math.abs(from.lon - to.lon) < 1e-4 &&
+      wps.length >= 3;
+    const midLat = isClosedLoop
+      ? wps.reduce((s, w) => s + w.lat, 0) / wps.length
+      : (from.lat + to.lat) / 2;
+    const midLon = isClosedLoop
+      ? wps.reduce((s, w) => s + w.lon, 0) / wps.length
+      : (from.lon + to.lon) / 2;
     const distM = corridor.totalDistanceMeters || 10000;
-    const altitude = Math.max(3000, Math.min(18000, distM * 0.22));
+    const minOverviewAlt = resolveFleetTransitModelSpec(
+      corridor.activeProfile?.vehicleMode,
+    )
+      ? 950
+      : 3000;
+    const altitude = Math.max(minOverviewAlt, Math.min(18000, distM * 0.22));
 
     if (viewer.camera?.flyTo) {
       viewer.camera.flyTo({
@@ -1117,11 +1141,11 @@ export function createRailwayEngine({
           Cesium.Cartesian3.normalize(fwd, fwd);
         }
         if (fwd) {
-          const isMono =
-            activeRouteData?.corridor?.activeProfile?.vehicleMode ===
-            'monorail';
-          const consistLength = isMono
-            ? MONORAIL_MODEL_LENGTH_M
+          const activeFleetSpec = resolveFleetTransitModelSpec(
+            activeRouteData?.corridor?.activeProfile?.vehicleMode,
+          );
+          const consistLength = activeFleetSpec
+            ? activeFleetSpec.lengthMeters
             : (activeRouteData?.carsCount || 4) *
               (RAIL_CAR_DIMENSIONS.length + RAIL_CAR_DIMENSIONS.couplerGap);
           applyRailCameraFollow(
@@ -1241,7 +1265,9 @@ export function createRailwayEngine({
       carsCount:
         corridor?.activeProfile?.vehicleMode === 'monorail'
           ? 6
-          : activeCarEntities.length + 1,
+          : corridor?.activeProfile?.vehicleMode === 'steam_rail'
+            ? 5
+            : activeCarEntities.length + 1,
     };
   }
 

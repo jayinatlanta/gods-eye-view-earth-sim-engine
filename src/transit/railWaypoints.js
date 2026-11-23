@@ -363,6 +363,266 @@ export const WDW_MONORAIL_EPCOT_TO_MK_TRANSFER = Object.freeze([
   },
 ]);
 
+/**
+ * Disneyland Monorail — Anaheim (2.5-mile Elevated Straddle-Beam Closed Loop, +7.5m)
+ * Tomorrowland Monorail Station → Submarine Lagoon & Matterhorn curve → Harbor/Esplanade crossing →
+ * Downtown Disney Station → Disney's Grand Californian / DCA edge loop → Tomorrowland Monorail Station.
+ */
+export const DLR_MONORAIL_LOOP = Object.freeze([
+  {
+    name: 'Tomorrowland Monorail Station',
+    lat: 33.8125,
+    lon: -117.9165,
+    elev: 48,
+  },
+  {
+    name: 'Submarine Lagoon & Matterhorn Curve',
+    lat: 33.8138,
+    lon: -117.9169,
+    elev: 48,
+  },
+  {
+    name: 'Autopia North Beamway',
+    lat: 33.8139,
+    lon: -117.9154,
+    elev: 48,
+  },
+  {
+    name: 'Tomorrowland East / Space Mountain Beam',
+    lat: 33.8115,
+    lon: -117.9153,
+    elev: 48,
+  },
+  {
+    name: 'Harbor Blvd & Esplanade Crossing',
+    lat: 33.8091,
+    lon: -117.9156,
+    elev: 48,
+  },
+  {
+    name: 'DCA Buena Vista / Golden Gate Flyover',
+    lat: 33.8084,
+    lon: -117.9182,
+    elev: 48,
+  },
+  {
+    name: "Grizzly Peak & Disney's Grand Californian Edge",
+    lat: 33.8077,
+    lon: -117.9212,
+    elev: 48,
+  },
+  {
+    name: 'Disneyland Drive Overpass',
+    lat: 33.8085,
+    lon: -117.9242,
+    elev: 48,
+  },
+  {
+    name: 'Downtown Disney Monorail Station',
+    lat: 33.8092,
+    lon: -117.9258,
+    elev: 48,
+  },
+  {
+    name: 'Disneyland Hotel West Turnaround',
+    lat: 33.8099,
+    lon: -117.9267,
+    elev: 48,
+  },
+  {
+    name: 'Downtown Disney North Promenade Beam',
+    lat: 33.8097,
+    lon: -117.9234,
+    elev: 48,
+  },
+  {
+    name: 'Grand Californian North Approach',
+    lat: 33.8094,
+    lon: -117.9203,
+    elev: 48,
+  },
+  {
+    name: 'Esplanade West Return Beam',
+    lat: 33.8094,
+    lon: -117.9174,
+    elev: 48,
+  },
+  {
+    name: 'Tomorrowland Entry Curve',
+    lat: 33.8109,
+    lon: -117.9162,
+    elev: 48,
+  },
+  {
+    name: 'Tomorrowland Monorail Station',
+    lat: 33.8125,
+    lon: -117.9165,
+    elev: 48,
+  },
+]);
+
+/**
+ * Walt Disney World Railroad — Magic Kingdom (1.5-mile 3-ft Narrow-Gauge Steam Loop, +1.8m)
+ * Main Street, U.S.A. Station → Adventureland/Splash berm → Frontierland Station →
+ * Big Thunder/Rivers of America curve → Fantasyland / Storybook Circus Station →
+ * Tomorrowland Speedway berm → Main Street, U.S.A. Station.
+ */
+export const WDW_MK_RAILROAD_LOOP = Object.freeze([
+  {
+    name: 'Main Street, U.S.A. Station',
+    lat: 28.4165,
+    lon: -81.5812,
+    elev: 32,
+  },
+  {
+    name: 'Adventureland West Berm',
+    lat: 28.4169,
+    lon: -81.5835,
+    elev: 32,
+  },
+  {
+    name: 'Jungle Cruise & Pirates Perimeter Berm',
+    lat: 28.4181,
+    lon: -81.5852,
+    elev: 32,
+  },
+  {
+    name: 'Bayou / Splash Tunnel Berm',
+    lat: 28.4192,
+    lon: -81.5856,
+    elev: 32,
+  },
+  {
+    name: 'Frontierland Station',
+    lat: 28.4202,
+    lon: -81.5855,
+    elev: 32,
+  },
+  {
+    name: 'Big Thunder Mountain West Curve',
+    lat: 28.4216,
+    lon: -81.5849,
+    elev: 32,
+  },
+  {
+    name: 'Rivers of America North Curve',
+    lat: 28.4227,
+    lon: -81.5831,
+    elev: 32,
+  },
+  {
+    name: 'New Fantasyland North Berm',
+    lat: 28.4228,
+    lon: -81.5805,
+    elev: 32,
+  },
+  {
+    name: 'Fantasyland / Storybook Circus Station',
+    lat: 28.4218,
+    lon: -81.5784,
+    elev: 32,
+  },
+  {
+    name: 'TRON & Space Mountain Outer Berm',
+    lat: 28.42,
+    lon: -81.5772,
+    elev: 32,
+  },
+  {
+    name: 'Tomorrowland Speedway Berm',
+    lat: 28.4182,
+    lon: -81.5777,
+    elev: 32,
+  },
+  {
+    name: 'Main Street East Approach',
+    lat: 28.4168,
+    lon: -81.5792,
+    elev: 32,
+  },
+  {
+    name: 'Main Street, U.S.A. Station',
+    lat: 28.4165,
+    lon: -81.5812,
+    elev: 32,
+  },
+]);
+
+/**
+ * Disneyland Railroad — Anaheim (1.2-mile 3-ft Narrow-Gauge Steam Loop, +1.8m)
+ * Main Street, U.S.A. Station → New Orleans Square Station → Bayou/Critter perimeter →
+ * Mickey's Toontown Depot → Tomorrowland Station → Grand Canyon / Primeval World diorama berm →
+ * Main Street, U.S.A. Station.
+ */
+export const DLR_RAILROAD_LOOP = Object.freeze([
+  {
+    name: 'Main Street, U.S.A. Station',
+    lat: 33.8096,
+    lon: -117.919,
+    elev: 48,
+  },
+  {
+    name: 'Adventureland South Berm',
+    lat: 33.8101,
+    lon: -117.9212,
+    elev: 48,
+  },
+  {
+    name: 'New Orleans Square Station',
+    lat: 33.8115,
+    lon: -117.9226,
+    elev: 48,
+  },
+  {
+    name: 'Bayou / Critter Country Perimeter',
+    lat: 33.8132,
+    lon: -117.9229,
+    elev: 48,
+  },
+  {
+    name: 'Rivers of America North Trestle',
+    lat: 33.8147,
+    lon: -117.9216,
+    elev: 48,
+  },
+  {
+    name: "Mickey's Toontown Depot",
+    lat: 33.8153,
+    lon: -117.9191,
+    elev: 48,
+  },
+  {
+    name: '"it\'s a small world" Promenade Berm',
+    lat: 33.8148,
+    lon: -117.9172,
+    elev: 48,
+  },
+  {
+    name: 'Autopia & Submarine Lagoon East Berm',
+    lat: 33.8133,
+    lon: -117.916,
+    elev: 48,
+  },
+  {
+    name: 'Tomorrowland Station',
+    lat: 33.8117,
+    lon: -117.9158,
+    elev: 48,
+  },
+  {
+    name: 'Grand Canyon / Primeval World Diorama Berm',
+    lat: 33.8102,
+    lon: -117.9167,
+    elev: 48,
+  },
+  {
+    name: 'Main Street, U.S.A. Station',
+    lat: 33.8096,
+    lon: -117.919,
+    elev: 48,
+  },
+]);
+
 export const RAIL_CORRIDORS = Object.freeze({
   atlanta_marta_east: {
     id: 'atlanta_marta_east',
@@ -611,6 +871,111 @@ export const RAIL_CORRIDORS = Object.freeze({
         carColor: '#f8fafc',
         trackColor: '#34d399',
         waypoints: WDW_MONORAIL_EPCOT_BEAM,
+      },
+    },
+  },
+  dlr_monorail: {
+    id: 'dlr_monorail',
+    name: 'Disneyland Monorail (Tomorrowland ↔ Downtown Disney Loop)',
+    city: 'Anaheim, CA',
+    from: {
+      name: 'Tomorrowland Monorail Station',
+      lat: 33.8125,
+      lon: -117.9165,
+      elev: 48,
+    },
+    to: {
+      name: 'Tomorrowland Monorail Station',
+      lat: 33.8125,
+      lon: -117.9165,
+      elev: 48,
+    },
+    defaultCorridor: 'dlr_monorail_loop',
+    defaultSpeedMph: 30,
+    bbox: [33.806, -117.928, 33.816, -117.914],
+    trackProfiles: {
+      dlr_monorail_loop: {
+        name: 'Disneyland Monorail Mark VII Loop (Tomorrowland · Esplanade · Downtown Disney · Grand Californian)',
+        description:
+          'Elevated 2.5-mile Mark VII straddle-beam loop (+7.5m) gliding over Submarine Lagoon, Matterhorn, Harbor/Esplanade, DCA, Grand Californian, and Downtown Disney.',
+        subterranean: false,
+        vehicleMode: 'monorail',
+        trainName: 'Disneyland Monorail Mark VII',
+        railOffsetMeters: 7.5,
+        locoColor: '#0284c7',
+        carColor: '#f8fafc',
+        trackColor: '#38bdf8',
+        waypoints: DLR_MONORAIL_LOOP,
+      },
+    },
+  },
+  wdw_mk_railroad: {
+    id: 'wdw_mk_railroad',
+    name: 'Walt Disney World Railroad (Magic Kingdom Steam Loop)',
+    city: 'Lake Buena Vista, Orlando, FL',
+    from: {
+      name: 'Main Street, U.S.A. Station',
+      lat: 28.4165,
+      lon: -81.5812,
+      elev: 32,
+    },
+    to: {
+      name: 'Main Street, U.S.A. Station',
+      lat: 28.4165,
+      lon: -81.5812,
+      elev: 32,
+    },
+    defaultCorridor: 'mk_perimeter_steam_loop',
+    defaultSpeedMph: 15,
+    bbox: [28.415, -81.587, 28.424, -81.576],
+    trackProfiles: {
+      mk_perimeter_steam_loop: {
+        name: 'Magic Kingdom 3-ft Narrow-Gauge Steam Loop (Main St · Frontierland · Fantasyland)',
+        description:
+          '1.5-mile surface/berm (+1.8m) perimeter steam excursion circling Main Street, Adventureland, Frontierland, Rivers of America, Storybook Circus, and Tomorrowland.',
+        subterranean: false,
+        vehicleMode: 'steam_rail',
+        trainName: 'WDW Railroad Steam #1 Walter E. Disney',
+        railOffsetMeters: 1.8,
+        locoColor: '#b91c1c',
+        carColor: '#92400e',
+        trackColor: '#f59e0b',
+        waypoints: WDW_MK_RAILROAD_LOOP,
+      },
+    },
+  },
+  dlr_railroad: {
+    id: 'dlr_railroad',
+    name: 'Disneyland Railroad (Anaheim Steam Loop)',
+    city: 'Anaheim, CA',
+    from: {
+      name: 'Main Street, U.S.A. Station',
+      lat: 33.8096,
+      lon: -117.919,
+      elev: 48,
+    },
+    to: {
+      name: 'Main Street, U.S.A. Station',
+      lat: 33.8096,
+      lon: -117.919,
+      elev: 48,
+    },
+    defaultCorridor: 'dlr_perimeter_steam_loop',
+    defaultSpeedMph: 15,
+    bbox: [33.808, -117.924, 33.817, -117.914],
+    trackProfiles: {
+      dlr_perimeter_steam_loop: {
+        name: 'Disneyland 3-ft Narrow-Gauge Steam Loop (Main St · New Orleans Sq · Toontown · Tomorrowland)',
+        description:
+          '1.2-mile surface/berm (+1.8m) 1955 original narrow-gauge steam loop circling Main Street, New Orleans Square, Bayou Country, Toontown, Tomorrowland, and the Grand Canyon Diorama.',
+        subterranean: false,
+        vehicleMode: 'steam_rail',
+        trainName: 'Disneyland Railroad Steam #1 C.K. Holliday',
+        railOffsetMeters: 1.8,
+        locoColor: '#15803d',
+        carColor: '#92400e',
+        trackColor: '#f59e0b',
+        waypoints: DLR_RAILROAD_LOOP,
       },
     },
   },

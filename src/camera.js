@@ -1,67 +1,94 @@
-import * as Cesium from 'cesium';
+import { toRadians } from './geo/index.js';
+import { cameraOf } from './render/rendererOf.js';
+
+/**
+ * The view the renderer starts from: the whole planet, looking straight
+ * down, centred where Cesium's default view rectangle is.
+ */
+export const START_VIEW = Object.freeze({
+  lon: -82.5,
+  lat: 35,
+  height: 23000000,
+});
 
 /**
  * Camera presets for notable locations.
- * Phase 1 default: fly to Austin, TX on load.
  */
 export const CAMERA_PRESETS = {
   austin: {
-    destination: Cesium.Cartesian3.fromDegrees(-97.7431, 30.2672, 800),
+    destination: { lon: -97.7431, lat: 30.2672, height: 800 },
     orientation: {
-      heading: Cesium.Math.toRadians(0),
-      pitch: Cesium.Math.toRadians(-35),
+      heading: toRadians(0),
+      pitch: toRadians(-35),
       roll: 0.0,
     },
   },
   atlanta: {
-    destination: Cesium.Cartesian3.fromDegrees(-84.3835972, 33.7767611, 750),
+    destination: { lon: -84.3835972, lat: 33.7767611, height: 750 },
     orientation: {
-      heading: Cesium.Math.toRadians(190),
-      pitch: Cesium.Math.toRadians(-25),
+      heading: toRadians(190),
+      pitch: toRadians(-25),
       roll: 0.0,
     },
   },
   sf: {
-    destination: Cesium.Cartesian3.fromDegrees(-122.4194, 37.7749, 1000),
+    destination: { lon: -122.4194, lat: 37.7749, height: 1000 },
     orientation: {
-      heading: Cesium.Math.toRadians(30),
-      pitch: Cesium.Math.toRadians(-30),
+      heading: toRadians(30),
+      pitch: toRadians(-30),
       roll: 0.0,
     },
   },
   nyc: {
-    destination: Cesium.Cartesian3.fromDegrees(-73.9857, 40.7484, 1200),
+    destination: { lon: -73.9857, lat: 40.7484, height: 1200 },
     orientation: {
-      heading: Cesium.Math.toRadians(-20),
-      pitch: Cesium.Math.toRadians(-30),
+      heading: toRadians(-20),
+      pitch: toRadians(-30),
       roll: 0.0,
     },
   },
   miami: {
-    destination: Cesium.Cartesian3.fromDegrees(-80.1884, 25.7743, 850),
+    destination: { lon: -80.1884, lat: 25.7743, height: 850 },
     orientation: {
-      heading: Cesium.Math.toRadians(0),
-      pitch: Cesium.Math.toRadians(-25),
+      heading: toRadians(0),
+      pitch: toRadians(-25),
       roll: 0.0,
     },
   },
   orlando: {
-    destination: Cesium.Cartesian3.fromDegrees(-81.3732, 28.5434, 850),
+    destination: { lon: -81.3732, lat: 28.5434, height: 850 },
     orientation: {
-      heading: Cesium.Math.toRadians(0),
-      pitch: Cesium.Math.toRadians(-25),
+      heading: toRadians(0),
+      pitch: toRadians(-25),
       roll: 0.0,
     },
   },
   charlotte: {
-    destination: Cesium.Cartesian3.fromDegrees(-80.8431, 35.2271, 850),
+    destination: { lon: -80.8431, lat: 35.2271, height: 850 },
     orientation: {
-      heading: Cesium.Math.toRadians(45),
-      pitch: Cesium.Math.toRadians(-25),
+      heading: toRadians(45),
+      pitch: toRadians(-25),
       roll: 0.0,
     },
   },
 };
+
+/**
+ * Put the camera at a start view without a flight. A host may pass a city
+ * (`{ lon, lat, height, heading?, pitch? }`, angles in degrees) instead of
+ * the planet.
+ */
+export function applyStartView(viewer, view = START_VIEW) {
+  const { lon, lat, height, heading = 0, pitch = -90 } = view;
+  cameraOf(viewer).setView({
+    destination: { lon, lat, height },
+    orientation: {
+      heading: toRadians(heading),
+      pitch: toRadians(pitch),
+      roll: 0,
+    },
+  });
+}
 
 /**
  * Fly the camera to a preset location with a smooth animation.
@@ -70,12 +97,46 @@ export function flyToPreset(viewer, presetName, duration = 3.0) {
   const preset = CAMERA_PRESETS[presetName];
   if (!preset) return;
 
-  viewer.camera.flyTo({
-    destination: preset.destination,
+  cameraOf(viewer).flyTo(preset.destination, {
     orientation: preset.orientation,
-    duration,
-    easingFunction: Cesium.EasingFunction.CUBIC_IN_OUT,
+    durationS: duration,
+    easing: 'cubicInOut',
   });
+}
+
+function cinematicFlyIn(
+  viewer,
+  { lon, lat, startHeight = 25000, endHeight = 800, heading = 0, pitch = -25 },
+) {
+  const cam = cameraOf(viewer);
+  cam.setView({
+    destination: { lon, lat, height: startHeight },
+    orientation: {
+      heading: toRadians(0),
+      pitch: toRadians(-90),
+      roll: 0.0,
+    },
+  });
+
+  const timer = setTimeout(() => {
+    if (viewer.isDestroyed?.()) return;
+    cam.flyTo(
+      { lon, lat, height: endHeight },
+      {
+        orientation: {
+          heading: toRadians(heading),
+          pitch: toRadians(pitch),
+          roll: 0.0,
+        },
+        durationS: 4.0,
+        easing: 'cubicInOut',
+      },
+    );
+  }, 500);
+  return () => {
+    clearTimeout(timer);
+    if (!viewer.isDestroyed?.()) cam.cancelFlight();
+  };
 }
 
 /**
@@ -83,34 +144,13 @@ export function flyToPreset(viewer, presetName, duration = 3.0) {
  * @returns {Function} Cancels the pending or active startup flight.
  */
 export function flyToAustin(viewer) {
-  // Start from a high altitude, then fly down
-  viewer.camera.setView({
-    destination: Cesium.Cartesian3.fromDegrees(-97.7431, 30.2672, 25000),
-    orientation: {
-      heading: Cesium.Math.toRadians(0),
-      pitch: Cesium.Math.toRadians(-90),
-      roll: 0.0,
-    },
+  return cinematicFlyIn(viewer, {
+    lon: -97.7431,
+    lat: 30.2672,
+    endHeight: 800,
+    heading: 0,
+    pitch: -35,
   });
-
-  // Cinematic fly-in after a brief pause
-  const timer = setTimeout(() => {
-    if (viewer.isDestroyed()) return;
-    viewer.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(-97.7431, 30.2672, 600),
-      orientation: {
-        heading: Cesium.Math.toRadians(15),
-        pitch: Cesium.Math.toRadians(-30),
-        roll: 0.0,
-      },
-      duration: 4.0,
-      easingFunction: Cesium.EasingFunction.CUBIC_IN_OUT,
-    });
-  }, 500);
-  return () => {
-    clearTimeout(timer);
-    if (!viewer.isDestroyed()) viewer.camera.cancelFlight();
-  };
 }
 
 /**
@@ -118,32 +158,13 @@ export function flyToAustin(viewer) {
  * @returns {Function} Cancels the pending or active startup flight.
  */
 export function flyToAtlanta(viewer) {
-  viewer.camera.setView({
-    destination: Cesium.Cartesian3.fromDegrees(-84.3835972, 33.7767611, 25000),
-    orientation: {
-      heading: Cesium.Math.toRadians(0),
-      pitch: Cesium.Math.toRadians(-90),
-      roll: 0.0,
-    },
+  return cinematicFlyIn(viewer, {
+    lon: -84.3835972,
+    lat: 33.7767611,
+    endHeight: 850,
+    heading: 190,
+    pitch: -25,
   });
-
-  const timer = setTimeout(() => {
-    if (viewer.isDestroyed()) return;
-    viewer.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(-84.3835972, 33.7767611, 850),
-      orientation: {
-        heading: Cesium.Math.toRadians(190),
-        pitch: Cesium.Math.toRadians(-25),
-        roll: 0.0,
-      },
-      duration: 4.0,
-      easingFunction: Cesium.EasingFunction.CUBIC_IN_OUT,
-    });
-  }, 500);
-  return () => {
-    clearTimeout(timer);
-    if (!viewer.isDestroyed()) viewer.camera.cancelFlight();
-  };
 }
 
 /**
@@ -151,32 +172,13 @@ export function flyToAtlanta(viewer) {
  * @returns {Function} Cancels the pending or active startup flight.
  */
 export function flyToMiami(viewer) {
-  viewer.camera.setView({
-    destination: Cesium.Cartesian3.fromDegrees(-80.1884, 25.7743, 25000),
-    orientation: {
-      heading: Cesium.Math.toRadians(0),
-      pitch: Cesium.Math.toRadians(-90),
-      roll: 0.0,
-    },
+  return cinematicFlyIn(viewer, {
+    lon: -80.1884,
+    lat: 25.7743,
+    endHeight: 650,
+    heading: 0,
+    pitch: -25,
   });
-
-  const timer = setTimeout(() => {
-    if (viewer.isDestroyed()) return;
-    viewer.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(-80.1884, 25.7743, 650),
-      orientation: {
-        heading: Cesium.Math.toRadians(0),
-        pitch: Cesium.Math.toRadians(-25),
-        roll: 0.0,
-      },
-      duration: 4.0,
-      easingFunction: Cesium.EasingFunction.CUBIC_IN_OUT,
-    });
-  }, 500);
-  return () => {
-    clearTimeout(timer);
-    if (!viewer.isDestroyed()) viewer.camera.cancelFlight();
-  };
 }
 
 /**
@@ -184,32 +186,13 @@ export function flyToMiami(viewer) {
  * @returns {Function} Cancels the pending or active startup flight.
  */
 export function flyToOrlando(viewer) {
-  viewer.camera.setView({
-    destination: Cesium.Cartesian3.fromDegrees(-81.3732, 28.5434, 25000),
-    orientation: {
-      heading: Cesium.Math.toRadians(0),
-      pitch: Cesium.Math.toRadians(-90),
-      roll: 0.0,
-    },
+  return cinematicFlyIn(viewer, {
+    lon: -81.3732,
+    lat: 28.5434,
+    endHeight: 650,
+    heading: 0,
+    pitch: -25,
   });
-
-  const timer = setTimeout(() => {
-    if (viewer.isDestroyed()) return;
-    viewer.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(-81.3732, 28.5434, 650),
-      orientation: {
-        heading: Cesium.Math.toRadians(0),
-        pitch: Cesium.Math.toRadians(-25),
-        roll: 0.0,
-      },
-      duration: 4.0,
-      easingFunction: Cesium.EasingFunction.CUBIC_IN_OUT,
-    });
-  }, 500);
-  return () => {
-    clearTimeout(timer);
-    if (!viewer.isDestroyed()) viewer.camera.cancelFlight();
-  };
 }
 
 /**
@@ -217,30 +200,11 @@ export function flyToOrlando(viewer) {
  * @returns {Function} Cancels the pending or active startup flight.
  */
 export function flyToCharlotte(viewer) {
-  viewer.camera.setView({
-    destination: Cesium.Cartesian3.fromDegrees(-80.8431, 35.2271, 25000),
-    orientation: {
-      heading: Cesium.Math.toRadians(0),
-      pitch: Cesium.Math.toRadians(-90),
-      roll: 0.0,
-    },
+  return cinematicFlyIn(viewer, {
+    lon: -80.8431,
+    lat: 35.2271,
+    endHeight: 650,
+    heading: 45,
+    pitch: -25,
   });
-
-  const timer = setTimeout(() => {
-    if (viewer.isDestroyed()) return;
-    viewer.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(-80.8431, 35.2271, 650),
-      orientation: {
-        heading: Cesium.Math.toRadians(45),
-        pitch: Cesium.Math.toRadians(-25),
-        roll: 0.0,
-      },
-      duration: 4.0,
-      easingFunction: Cesium.EasingFunction.CUBIC_IN_OUT,
-    });
-  }, 500);
-  return () => {
-    clearTimeout(timer);
-    if (!viewer.isDestroyed()) viewer.camera.cancelFlight();
-  };
 }

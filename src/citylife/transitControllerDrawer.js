@@ -105,6 +105,9 @@ export function createTransitControllerDrawer({
           <option value="washington_dc">🏛️ Washington, D.C. (WMATA — 6 Lines)</option>
           <option value="northeast_corridor">🚄 Northeast Corridor (Amtrak NEC: Boston ↔ DC)</option>
           <option value="wdw_monorail">🚝 Walt Disney World Monorail (Seven Seas Lagoon &amp; EPCOT Beams)</option>
+          <option value="dlr_monorail">🚝 Disneyland Monorail (Anaheim — Tomorrowland ↔ Downtown Disney)</option>
+          <option value="wdw_mk_railroad">🚂 Walt Disney World Railroad (Magic Kingdom Steam Loop)</option>
+          <option value="dlr_railroad">🚂 Disneyland Railroad (Anaheim Steam Loop)</option>
           <option value="chicago">🏙️ Chicago (CTA The Loop & Red/Blue)</option>
           <option value="new_york">🗽 New York (MTA Subways — Multi-Line)</option>
           <option value="tokyo">🗾 Tokyo (JR Yamanote & Metro Lines)</option>
@@ -543,7 +546,11 @@ export function createTransitControllerDrawer({
       citySelect.value = activeCityId;
     }
     const isRailOnlyNetwork =
-      activeCityId === 'wdw_monorail' || activeCityId === 'northeast_corridor';
+      activeCityId === 'wdw_monorail' ||
+      activeCityId === 'dlr_monorail' ||
+      activeCityId === 'wdw_mk_railroad' ||
+      activeCityId === 'dlr_railroad' ||
+      activeCityId === 'northeast_corridor';
     if (
       preferredMode === 'metro' ||
       (isRailOnlyNetwork && activeMode === 'bus')

@@ -313,8 +313,10 @@
   bottom: 12vh;
 }
 
+/* Minimal keeps its coordinates in the corner block, where the other layouts
+   have them; the full-width strip would only repeat the same position. */
 #intel-hud[data-variant='minimal'] .hud-bottom-bar {
-  display: flex;
+  display: none;
   bottom: calc(12vh + 4rem);
 }
 
@@ -330,7 +332,7 @@
 :root[data-scope-mask='off']
   #intel-hud:is([data-variant='minimal'], [data-variant='tactical'])
   .hud-readout,
-:root[data-scope-mask='off']:not([data-ui-theme='cyber']) .scene-text-holdout {
+:root[data-scope-mask='off'] .scene-text-holdout {
   background: rgba(0, 0, 0, 0.7);
   box-shadow: none;
   border-radius: 2px;
@@ -358,9 +360,7 @@
   #intel-hud:is([data-variant='minimal'], [data-variant='tactical'])
   :is(.hud-top-right, .hud-bottom-right)
   .hud-readout,
-:root[data-scope-mask='off']:not([data-ui-theme='cyber'])
-  #style-indicator
-  .scene-text-holdout {
+:root[data-scope-mask='off'] #style-indicator .scene-text-holdout {
   margin-inline-start: auto;
 }
 
@@ -400,9 +400,7 @@
   text-overflow: ellipsis;
 }
 
-:root[data-scope-mask='off']:not([data-ui-theme='cyber'])
-  #title-bar
-  h1::before {
+:root[data-scope-mask='off'] #title-bar h1::before {
   content: '';
   position: absolute;
   inset: -0.12em -6px;
@@ -411,18 +409,16 @@
   background: rgba(0, 0, 0, 0.7);
 }
 
-:root[data-scope-mask='off']:not([data-ui-theme='cyber'])
+:root[data-scope-mask='off']
   :is(#title-bar .subtitle, #style-indicator .indicator-label) {
   color: var(--text-secondary);
 }
 
-:root[data-scope-mask='off']:not([data-ui-theme='cyber']) #title-bar .subtitle {
+:root[data-scope-mask='off'] #title-bar .subtitle {
   margin-top: 8px;
 }
 
-:root[data-scope-mask='off']:not([data-ui-theme='cyber'])
-  #style-indicator
-  .indicator-value {
+:root[data-scope-mask='off'] #style-indicator .indicator-value {
   margin-top: 4px;
 }
 
@@ -432,9 +428,7 @@
   display: none;
 }
 
-:root[data-scope-mask='off']:not([data-ui-theme='cyber'])
-  #title-bar
-  .frame-rate-readout {
+:root[data-scope-mask='off'] #title-bar .frame-rate-readout {
   margin-top: 6px;
 }
 
@@ -712,6 +706,68 @@ body:has(#command-dock.dock-has-pinned-tray) .gev-tour-build-overlay,
   .gev-city-ambient-container.dock-active {
     opacity: 0.15;
     pointer-events: none;
+  }
+}
+
+/* ── Unified Omnibar De-Occlusion: Keep Sovereign launchers, custom pills & travel HUDs clear of #command-dock & credits ── */
+body:not(.mobile-shell):has(#gev-omnibar) .gev-city-ambient-container,
+body:not(.mobile-shell):has(#gev-omnibar) .gev-tour-build-overlay {
+  --ambient-pills-base-bottom: max(
+    144px,
+    calc(var(--omnibar-dock-raised, 74px) + 68px)
+  );
+}
+
+body:not(.mobile-shell):has(#gev-omnibar) .gev-tour-resume-pill,
+body:not(.mobile-shell):has(#gev-omnibar) .gev-drive-hud-strip,
+body:not(.mobile-shell):has(#gev-omnibar) .gev-flight-hud-strip,
+body:not(.mobile-shell):has(#gev-omnibar) .gev-boat-hud-strip {
+  bottom: max(144px, calc(var(--omnibar-dock-raised, 74px) + 68px)) !important;
+}
+
+body:not(.mobile-shell):has(#gev-omnibar.has-results)
+  :is(
+    .gev-city-ambient-container,
+    .gev-tour-build-overlay,
+    .gev-tour-resume-pill
+  ) {
+  --ambient-pills-shift-y: -360px;
+}
+
+body:not(.mobile-shell):has(#gev-omnibar) .gev-custom-ux-dock-bar {
+  bottom: max(56px, var(--omnibar-credits-clear, 50px));
+}
+
+body:not(.mobile-shell):has(#gev-omnibar) .gev-agent-forge-launcher {
+  bottom: max(55px, calc(var(--omnibar-credits-clear, 50px) - 1px));
+}
+
+body:not(.mobile-shell):has(#gev-omnibar) .gev-agent-forge-panel {
+  bottom: max(108px, calc(var(--omnibar-credits-clear, 50px) + 52px));
+}
+
+/* On standard desktop viewports (<= 1760px), wrap the 5 leftmost bottom-right launchers
+   onto a clean second corner row so none overlap the centered Omnibar (#command-dock). */
+@media (max-width: 1760px) {
+  body:not(.mobile-shell):has(#gev-omnibar) .gev-freight-launcher-button {
+    bottom: 126px !important;
+    right: 24px !important;
+  }
+  body:not(.mobile-shell):has(#gev-omnibar) .gev-estate-launcher-btn {
+    bottom: 126px !important;
+    right: 76px !important;
+  }
+  body:not(.mobile-shell):has(#gev-omnibar) .gev-wilderness-launcher-btn {
+    bottom: 126px !important;
+    right: 128px !important;
+  }
+  body:not(.mobile-shell):has(#gev-omnibar) .gev-sandbox-launcher-btn {
+    bottom: 126px !important;
+    right: 180px !important;
+  }
+  body:not(.mobile-shell):has(#gev-omnibar) .gev-corridor-launcher-btn {
+    bottom: 126px !important;
+    right: 232px !important;
   }
 }
 

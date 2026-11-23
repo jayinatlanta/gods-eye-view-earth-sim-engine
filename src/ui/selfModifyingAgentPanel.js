@@ -16,6 +16,7 @@
  *     edits the local GEV repository via an allowlisted CLI, runs tests, and commits.
  */
 
+import { findCamera } from '../render/rendererOf.js';
 import { getGlobalDrawerCoordinator } from './worldSimDock.js';
 
 export const DEFAULT_AGENT_CLI_BINARY = 'agy';
@@ -613,12 +614,11 @@ export function createSelfModifyingAgentPanel(options = {}) {
   function getActiveRuntimeContext() {
     const context = {};
     try {
-      const carto = viewer?.camera?.positionCartographic;
-      if (carto) {
-        const toDeg = (r) => (r * 180) / Math.PI;
-        context.lat = Number(toDeg(carto.latitude).toFixed(5));
-        context.lon = Number(toDeg(carto.longitude).toFixed(5));
-        context.altMeters = Math.round(carto.height || 0);
+      const pose = findCamera(viewer)?.pose?.();
+      if (pose && Number.isFinite(pose.lat) && Number.isFinite(pose.lon)) {
+        context.lat = Number(pose.lat.toFixed(5));
+        context.lon = Number(pose.lon.toFixed(5));
+        context.altMeters = Math.round(pose.height || 0);
       }
     } catch {
       /* ignore */

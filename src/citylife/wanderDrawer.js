@@ -525,7 +525,7 @@ export function createWanderDrawer({
       }
       .gev-tour-resume-pill {
         position: fixed;
-        bottom: 88px;
+        bottom: 144px;
         left: 50%;
         transform: translateX(-50%);
         background: rgba(15, 23, 42, 0.94);
@@ -1686,10 +1686,15 @@ export function createWanderDrawer({
         if (listEl) {
           listEl.innerHTML = bridges
             .map((b) => {
+              const rideLabel =
+                b.rideButtonLabel || `${b.icon || '🚝'} Ride 3D`;
               const rideBtn =
                 b.rideableTransit && b.railCorridorId
-                  ? `<button class="gev-tour-hopper-ride-btn" data-target-city-id="${escapeHtml(b.toCityId)}" data-bridge-id="${escapeHtml(b.id)}" data-corridor-id="${escapeHtml(b.railCorridorId)}" data-profile-id="${escapeHtml(b.railProfileId || '')}" data-arrival-stop-id="${escapeHtml(b.arrivalStopId || '')}" data-speed-mph="${escapeHtml(String(b.railSpeedMph || 45))}" type="button" title="Ride the real 3D elevated ${escapeHtml(b.transitLabel)} beamway (Cab/Chase/Heli cameras) and arrive at ${escapeHtml(b.toParkName)}">🚝 Ride 3D</button>`
+                  ? `<button class="gev-tour-hopper-ride-btn" data-target-city-id="${escapeHtml(b.toCityId)}" data-bridge-id="${escapeHtml(b.id)}" data-corridor-id="${escapeHtml(b.railCorridorId)}" data-profile-id="${escapeHtml(b.railProfileId || '')}" data-arrival-stop-id="${escapeHtml(b.arrivalStopId || '')}" data-speed-mph="${escapeHtml(String(b.railSpeedMph || 45))}" type="button" title="${escapeHtml(b.durationNote || `Ride the 3D ${b.transitLabel}`)}">${escapeHtml(rideLabel)}</button>`
                   : '';
+              if (b.isInParkLoop && rideBtn) {
+                return `<div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap;"><span style="font-size:10px; color:#cbd5e1; font-weight:600; padding:0 4px;" title="${escapeHtml(b.durationNote || '')}">${escapeHtml(b.icon)} ${escapeHtml(b.transitLabel)}</span>${rideBtn}</div>`;
+              }
               return `<div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap;"><button class="gev-tour-hopper-btn" data-target-city-id="${escapeHtml(b.toCityId)}" data-bridge-id="${escapeHtml(b.id)}" type="button" title="${escapeHtml(b.durationNote)}">${escapeHtml(b.icon)} ${escapeHtml(b.transitLabel)} → ${escapeHtml(b.toParkName)}</button>${rideBtn}</div>`;
             })
             .join('');

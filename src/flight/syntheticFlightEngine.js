@@ -16,7 +16,7 @@
 import * as Cesium from 'cesium';
 import { resolveHelipad } from './helipadCatalog.js';
 import { aircraftIcon } from '../data/aircraftIcons.js';
-import { screenProjectedRotation } from '../data/iconOrientation.js';
+import { courseScreenRotation } from '../data/screenRotation.js';
 import {
   holdContinuousRender,
   releaseContinuousRender,
@@ -882,12 +882,18 @@ export function createSyntheticFlightEngine(optionsOrViewer = {}) {
           Cesium.Math.toDegrees(carto2.latitude),
           Cesium.Math.toDegrees(carto2.longitude),
         );
-        const rot = screenProjectedRotation(
-          viewer.scene,
-          pos,
-          bearingDeg,
-          activeFlightEntity.billboard.rotation?.getValue?.(currentTime) ?? 0,
-        );
+        const cam = viewer.scene.camera;
+        const rot =
+          cam?.rightWC && cam?.upWC
+            ? courseScreenRotation(
+                { right: cam.rightWC, up: cam.upWC },
+                pos,
+                bearingDeg,
+                activeFlightEntity.billboard.rotation?.getValue?.(
+                  currentTime,
+                ) ?? 0,
+              )
+            : null;
         if (rot !== null && Number.isFinite(rot)) {
           activeFlightEntity.billboard.rotation = rot;
         }

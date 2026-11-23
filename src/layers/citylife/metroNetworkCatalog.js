@@ -18,6 +18,9 @@ import {
   NORTHEAST_CORRIDOR_FULL_ALIGNMENT,
   WDW_MONORAIL_RESORT_LOOP,
   WDW_MONORAIL_EPCOT_BEAM,
+  DLR_MONORAIL_LOOP,
+  WDW_MK_RAILROAD_LOOP,
+  DLR_RAILROAD_LOOP,
 } from '../../transit/railWaypoints.js';
 
 export const METRO_ELEVATED_HEIGHT_M = 5.5;
@@ -3458,6 +3461,126 @@ export const RAPID_TRANSIT_ROUTES = {
       { lat: 28.4054, lon: -81.5792, elev: 32 },
     ],
   },
+  // ---------------------------------------------------------
+  // 12. DISNEYLAND MONORAIL — ANAHEIM (MARK VII STRADDLE BEAM)
+  // ---------------------------------------------------------
+  dlr_monorail_loop: {
+    id: 'dlr_monorail_loop',
+    cityId: 'dlr_monorail',
+    lineName: 'Disneyland Monorail Loop (Mark VII Blue / Red)',
+    operator: 'Disneyland Monorail',
+    vehicleMode: 'monorail',
+    liveryColor: '#0284c7',
+    accentColor: '#bae6fd',
+    carsPerTrain: 5,
+    capacityPerCar: 50,
+    isElevated: true,
+    elevOffsetMeters: 7.5,
+    stations: [
+      {
+        id: 'dlr_mono_tomorrowland',
+        name: 'Tomorrowland Monorail Station',
+        lat: 33.8125,
+        lon: -117.9165,
+        elev: 48,
+      },
+      {
+        id: 'dlr_mono_dtd',
+        name: 'Downtown Disney Monorail Station',
+        lat: 33.8092,
+        lon: -117.9258,
+        elev: 48,
+      },
+    ],
+    waypoints: DLR_MONORAIL_LOOP,
+  },
+  // ---------------------------------------------------------
+  // 13. WALT DISNEY WORLD RAILROAD — MAGIC KINGDOM STEAM LOOP
+  // ---------------------------------------------------------
+  wdw_mk_railroad_loop: {
+    id: 'wdw_mk_railroad_loop',
+    cityId: 'wdw_mk_railroad',
+    lineName: 'WDW Railroad Steam Loop (Magic Kingdom Perimeter)',
+    operator: 'WDW Railroad',
+    vehicleMode: 'steam_rail',
+    liveryColor: '#b91c1c',
+    accentColor: '#fde68a',
+    carsPerTrain: 5,
+    capacityPerCar: 60,
+    isElevated: false,
+    elevOffsetMeters: 1.8,
+    stations: [
+      {
+        id: 'wdw_rr_main_street',
+        name: 'Main Street, U.S.A. Station',
+        lat: 28.4165,
+        lon: -81.5812,
+        elev: 32,
+      },
+      {
+        id: 'wdw_rr_frontierland',
+        name: 'Frontierland Station',
+        lat: 28.4202,
+        lon: -81.5855,
+        elev: 32,
+      },
+      {
+        id: 'wdw_rr_fantasyland',
+        name: 'Fantasyland / Storybook Circus Station',
+        lat: 28.4218,
+        lon: -81.5784,
+        elev: 32,
+      },
+    ],
+    waypoints: WDW_MK_RAILROAD_LOOP,
+  },
+  // ---------------------------------------------------------
+  // 14. DISNEYLAND RAILROAD — ANAHEIM STEAM LOOP
+  // ---------------------------------------------------------
+  dlr_railroad_loop: {
+    id: 'dlr_railroad_loop',
+    cityId: 'dlr_railroad',
+    lineName: 'Disneyland Railroad Steam Loop (Anaheim Perimeter)',
+    operator: 'Disneyland Railroad',
+    vehicleMode: 'steam_rail',
+    liveryColor: '#15803d',
+    accentColor: '#fde68a',
+    carsPerTrain: 5,
+    capacityPerCar: 55,
+    isElevated: false,
+    elevOffsetMeters: 1.8,
+    stations: [
+      {
+        id: 'dlr_rr_main_street',
+        name: 'Main Street, U.S.A. Station',
+        lat: 33.8096,
+        lon: -117.919,
+        elev: 48,
+      },
+      {
+        id: 'dlr_rr_new_orleans',
+        name: 'New Orleans Square Station',
+        lat: 33.8115,
+        lon: -117.9226,
+        elev: 48,
+      },
+      {
+        id: 'dlr_rr_toontown',
+        name: "Mickey's Toontown Depot",
+        lat: 33.8153,
+        lon: -117.9191,
+        elev: 48,
+      },
+      {
+        id: 'dlr_rr_tomorrowland',
+        name: 'Tomorrowland Station',
+        lat: 33.8117,
+        lon: -117.9158,
+        elev: 48,
+      },
+    ],
+    waypoints: DLR_RAILROAD_LOOP,
+  },
 };
 
 // Normalize routes so both .name and .lineName are always populated
@@ -3508,6 +3631,9 @@ export const METRO_NETWORKS_BY_CITY = Object.freeze({
   ],
   northeast_corridor: ['nec_acela_express', 'nec_regional_rail'],
   wdw_monorail: ['wdw_monorail_resort_loop', 'wdw_monorail_epcot_beam'],
+  dlr_monorail: ['dlr_monorail_loop'],
+  wdw_mk_railroad: ['wdw_mk_railroad_loop'],
+  dlr_railroad: ['dlr_railroad_loop'],
   phoenix: ['phoenix_valley_metro'],
   chicago: [
     'chicago_cta_loop',

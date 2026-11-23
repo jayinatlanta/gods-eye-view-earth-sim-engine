@@ -313,10 +313,13 @@ export function createRailDrawer({
 
       if (route && statusEl) {
         const km = (route.corridor.totalDistanceMeters / 1000).toFixed(1);
+        const vehicleMode = route.corridor?.activeProfile?.vehicleMode;
         const carsTotal =
-          route.corridor?.activeProfile?.vehicleMode === 'monorail'
+          vehicleMode === 'monorail'
             ? 6
-            : (route.carsCount || 4) + 1;
+            : vehicleMode === 'steam_rail'
+              ? 5
+              : (route.carsCount || 4) + 1;
         statusEl.textContent = `En route: ${km} km @ ${speedMph} mph | ${carsTotal}-car consist (ETA: ${route.durationSec}s)`;
         startTelemetryPolling();
       }

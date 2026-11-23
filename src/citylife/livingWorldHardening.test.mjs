@@ -20,6 +20,7 @@ import {
   getRenderGovernorDiagnostics,
   _resetRenderGovernorForTest,
 } from '../renderGovernor.js';
+import { framePortFor } from '../testSupport/fakeFramePort.mjs';
 
 function createTestDocument() {
   const listeners = new Map();
@@ -787,7 +788,7 @@ test('Living World Smoothness, Global Custom UX Collapse & 3D Tiles Hardening', 
 
       // 3. FreightSimEngine renderGovernor hold + cancelFlight
       _resetRenderGovernorForTest();
-      installRenderGovernor(mockViewer);
+      installRenderGovernor(framePortFor(mockViewer.scene));
 
       const freight = createFreightSimEngine({ viewer: mockViewer });
       freight.start();

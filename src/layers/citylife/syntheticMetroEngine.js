@@ -62,7 +62,33 @@ export const METRO_CAR_DIMENSIONS = {
 
 export const MONORAIL_MODEL_URI = '/models/fleet/transit/monorail.glb';
 export const MONORAIL_MODEL_LENGTH_M = 55.5;
+export const STEAM_TRAIN_MODEL_URI = '/models/fleet/transit/regional_dmu.glb';
+export const STEAM_TRAIN_MODEL_LENGTH_M = 49.5;
 export const MONORAIL_MODEL_HEADING_OFFSET_DEG = 180;
+
+export function isFleetGlbVehicleMode(vehicleMode) {
+  return vehicleMode === 'monorail' || vehicleMode === 'steam_rail';
+}
+
+export function resolveFleetTransitModelSpec(vehicleMode) {
+  if (vehicleMode === 'monorail') {
+    return {
+      uri: MONORAIL_MODEL_URI,
+      lengthMeters: MONORAIL_MODEL_LENGTH_M,
+      colorBlendAmount: 0.28,
+      label: 'Monorail',
+    };
+  }
+  if (vehicleMode === 'steam_rail') {
+    return {
+      uri: STEAM_TRAIN_MODEL_URI,
+      lengthMeters: STEAM_TRAIN_MODEL_LENGTH_M,
+      colorBlendAmount: 0.35,
+      label: 'Steam Train',
+    };
+  }
+  return null;
+}
 
 /**
  * Computes the ENU compass course in degrees [0, 360) (0 = North, 90 = East)
@@ -356,34 +382,37 @@ export function createSyntheticMetroEngine({
         const dirTag = isReverse ? 'IN' : 'OUT';
         const lineCode = route.id
           .replace(
-            /^(atlanta_|la_metro_|bart_|wmata_|nec_|chicago_|new_york_|london_|tokyo_|wdw_monorail_)/,
+            /^(atlanta_|la_metro_|bart_|wmata_|nec_|chicago_|new_york_|london_|tokyo_|wdw_monorail_|dlr_monorail_|wdw_mk_railroad_|dlr_railroad_)/,
             '',
           )
           .toUpperCase();
         const trainId = `${route.operator}-${lineCode}-${dirTag}-${t + 1}`;
         const leadDist = (t * spacingMeters) % trajectory.totalDistance;
         const isMonorail = route.vehicleMode === 'monorail';
+        const isSteamRail = route.vehicleMode === 'steam_rail';
+        const fleetModelSpec = resolveFleetTransitModelSpec(route.vehicleMode);
+        const usesFleetGlb = Boolean(fleetModelSpec);
 
         // Spawn ONE unified consist entity per train:
-        // - Monorail routes use the procedural fleet `monorail.glb` (55.5m Mark VI-style
-        //   straddle-beam trainset) oriented via `computeFleetGlbOrientationQuat` so its
-        //   glTF -X nose tracks the beamway tangent (dot = +1.0) with zero sideways yaw.
+        // - Monorail and park steam-rail routes use procedural fleet glTF models
+        //   (`monorail.glb` / `regional_dmu.glb`) oriented via `computeFleetGlbOrientationQuat`
+        //   so their glTF -X nose tracks the track tangent (dot = +1.0) with zero sideways yaw.
         // - Standard urban metros use the batched multi-car box consist + juncture ribs.
         const carCount = Math.max(1, route.carsPerTrain || 6);
         const carPitch =
           METRO_CAR_DIMENSIONS.length + METRO_CAR_DIMENSIONS.couplerGap;
-        const consistLength = isMonorail
-          ? MONORAIL_MODEL_LENGTH_M
+        const consistLength = usesFleetGlb
+          ? fleetModelSpec.lengthMeters
           : carCount * METRO_CAR_DIMENSIONS.length +
             Math.max(0, carCount - 1) * METRO_CAR_DIMENSIONS.couplerGap;
-        const midOffset = isMonorail
-          ? MONORAIL_MODEL_LENGTH_M * 0.5
+        const midOffset = usesFleetGlb
+          ? fleetModelSpec.lengthMeters * 0.5
           : (consistLength - METRO_CAR_DIMENSIONS.length) * 0.5;
         const midDist =
           (leadDist - midOffset + trajectory.totalDistance * 10) %
           trajectory.totalDistance;
         const midSample = sampleMetroTrajectory(trajectory, midDist);
-        const initQuat = isMonorail
+        const initQuat = usesFleetGlb
           ? computeFleetGlbOrientationQuat(midSample.pos, midSample.forward)
           : computeFlatRotationQuat(midSample.pos, midSample.forward);
         const pose = createLivePose(midSample.pos, initQuat);
@@ -391,22 +420,22 @@ export function createSyntheticMetroEngine({
         let entity = null;
         if (viewer?.entities?.add) {
           entity = viewer.entities.add({
-            name: isMonorail
-              ? `${trainId} Monorail`
+            name: usesFleetGlb
+              ? `${trainId} ${fleetModelSpec.label}`
               : `${trainId} Consist (${carCount} cars)`,
             position: pose.position,
             orientation: pose.orientation,
-            ...(isMonorail
+            ...(usesFleetGlb
               ? {
                   model: {
-                    uri: MONORAIL_MODEL_URI,
+                    uri: fleetModelSpec.uri,
                     scale: 1.0,
                     minimumPixelSize: 48,
                     color: Cesium.Color.fromCssColorString(
                       route.liveryColor || '#f59e0b',
                     ),
                     colorBlendMode: Cesium.ColorBlendMode.MIX,
-                    colorBlendAmount: 0.28,
+                    colorBlendAmount: fleetModelSpec.colorBlendAmount,
                     show: true,
                   },
                 }
@@ -440,6 +469,8 @@ export function createSyntheticMetroEngine({
             properties: {
               isSyntheticMetro: true,
               isMonorail,
+              isSteamRail,
+              vehicleMode: route.vehicleMode || 'metro',
               trainId,
               carIndex: 0,
               isLeadCar: true,
@@ -449,7 +480,7 @@ export function createSyntheticMetroEngine({
         }
 
         const junctureLines = [];
-        const junctureCount = isMonorail ? 0 : Math.max(0, carCount - 1);
+        const junctureCount = usesFleetGlb ? 0 : Math.max(0, carCount - 1);
         if (
           junctureCount > 0 &&
           viewer?.scene?.primitives?.add &&
@@ -521,8 +552,8 @@ export function createSyntheticMetroEngine({
           junctureCount,
           junctureLines,
           leadDistMeters: leadDist,
-          speedMs: METRO_CRUISE_SPEED_MIN_MS + 2.0,
-          targetSpeedMs: METRO_CRUISE_SPEED_MIN_MS + 4.0,
+          speedMs: isSteamRail ? 6.8 : METRO_CRUISE_SPEED_MIN_MS + 2.0,
+          targetSpeedMs: isSteamRail ? 7.6 : METRO_CRUISE_SPEED_MIN_MS + 4.0,
           state: 'CRUISING', // 'CRUISING', 'APPROACHING_STATION', 'DWELL', 'DEPARTING'
           dwellTimerSec: 0,
           departTimerSec: 0,
@@ -649,7 +680,8 @@ export function createSyntheticMetroEngine({
 
   function updateTrainPhysics(train, dt) {
     const route = train.route;
-    const isMonorail = route?.vehicleMode === 'monorail';
+    const fleetModelSpec = resolveFleetTransitModelSpec(route?.vehicleMode);
+    const usesFleetGlb = Boolean(fleetModelSpec);
     const consistCar = train.cars[0];
     if (!consistCar) return;
 
@@ -659,12 +691,12 @@ export function createSyntheticMetroEngine({
       train.trajectory.totalDistance;
     const consistLength =
       train.consistLength ||
-      (isMonorail
-        ? MONORAIL_MODEL_LENGTH_M
+      (usesFleetGlb
+        ? fleetModelSpec.lengthMeters
         : Math.max(1, train.carsCount || route.carsPerTrain || 6) *
           METRO_CAR_DIMENSIONS.length);
-    const midOffset = isMonorail
-      ? MONORAIL_MODEL_LENGTH_M * 0.5
+    const midOffset = usesFleetGlb
+      ? fleetModelSpec.lengthMeters * 0.5
       : Math.max(0, (consistLength - METRO_CAR_DIMENSIONS.length) * 0.5);
     const midDist =
       (train.leadDistMeters - midOffset + train.trajectory.totalDistance * 10) %
@@ -672,9 +704,9 @@ export function createSyntheticMetroEngine({
     const sampled = sampleMetroTrajectory(train.trajectory, midDist);
 
     // Keep the train flat on corridor track grade (no 3D building rooftop climbing).
-    // Note: `monorail.glb` has origin at rail top (z = 0, height 3.59m up), whereas
-    // standard metro boxes are centered at mid-height (+height * 0.5).
-    const verticalCenterOffset = isMonorail
+    // Note: procedural fleet GLBs (`monorail.glb`, `regional_dmu.glb`) have origin at rail top
+    // (z = 0), whereas standard metro boxes are centered at mid-height (+height * 0.5).
+    const verticalCenterOffset = usesFleetGlb
       ? 0.0
       : METRO_CAR_DIMENSIONS.height * 0.5 + 0.35;
     const midPos = Cesium.Cartesian3.clone(
@@ -747,7 +779,7 @@ export function createSyntheticMetroEngine({
         cameraMode === 'door');
 
     if (consistCar.entity) {
-      const liveQuat = isMonorail
+      const liveQuat = usesFleetGlb
         ? computeFleetGlbOrientationQuat(midPos, sampled.forward)
         : computeFlatRotationQuat(midPos, sampled.forward);
       consistCar.pose?.set(midPos, liveQuat);
@@ -907,18 +939,18 @@ export function createSyntheticMetroEngine({
     let eye = new Cesium.Cartesian3();
     let target = midPos;
     const resolvedMode = normalizeMetroCameraMode(mode);
-    const isMonorailTrain = train.route?.vehicleMode === 'monorail';
+    const isFleetGlbTrain = isFleetGlbVehicleMode(train.route?.vehicleMode);
 
     if (resolvedMode === 'lead_cab') {
       // First person Motorman cab window at the front nose of the consist
       const fwdOffset = Cesium.Cartesian3.multiplyByScalar(
         forward,
-        isMonorailTrain ? 2.5 : METRO_CAR_DIMENSIONS.length * 0.46,
+        isFleetGlbTrain ? 2.5 : METRO_CAR_DIMENSIONS.length * 0.46,
         new Cesium.Cartesian3(),
       );
       const upOffset = Cesium.Cartesian3.multiplyByScalar(
         normal,
-        isMonorailTrain ? 2.2 : 2.6,
+        isFleetGlbTrain ? 2.4 : 2.6,
         new Cesium.Cartesian3(),
       );
       eye = Cesium.Cartesian3.add(leadPos, fwdOffset, eye);
@@ -997,10 +1029,10 @@ export function createSyntheticMetroEngine({
       );
     } else {
       // 'chase' view (default): raised urban chase clearing low/mid buildings without jumps
-      const distBack = isMonorailTrain
+      const distBack = isFleetGlbTrain
         ? -(consistLength * 0.5 + 34.0)
         : -(consistLength * 0.65 + 48.0);
-      const heightUp = isMonorailTrain ? 26.0 : 42.0;
+      const heightUp = isFleetGlbTrain ? 26.0 : 42.0;
       const backOffset = Cesium.Cartesian3.multiplyByScalar(
         forward,
         distBack,
