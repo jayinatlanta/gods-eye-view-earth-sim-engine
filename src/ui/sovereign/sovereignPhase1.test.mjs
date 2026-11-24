@@ -48,7 +48,7 @@ test('tilesetButter holds continuous render until tilesLoaded settles and never 
     tilesLoaded: false,
     foveatedTimeDelay: 0.25,
     maximumScreenSpaceError: 8,
-    _statistics: { numberOfPendingRequests: 4, numberOfTilesProcessing: 1 },
+    statistics: { numberOfPendingRequests: 4, numberOfTilesProcessing: 1 },
     tileLoadProgressEvent: {
       listeners: [],
       addEventListener(fn) {
@@ -89,8 +89,8 @@ test('tilesetButter holds continuous render until tilesLoaded settles and never 
 
   // Mark tileset loaded and wait for 2 consecutive settle checks (~100ms)
   fakeTileset.tilesLoaded = true;
-  fakeTileset._statistics.numberOfPendingRequests = 0;
-  fakeTileset._statistics.numberOfTilesProcessing = 0;
+  fakeTileset.statistics.numberOfPendingRequests = 0;
+  fakeTileset.statistics.numberOfTilesProcessing = 0;
 
   await new Promise((r) => setTimeout(r, 140));
   assert.equal(

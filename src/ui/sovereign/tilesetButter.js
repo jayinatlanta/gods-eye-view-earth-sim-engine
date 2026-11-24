@@ -115,7 +115,7 @@ export function areActiveTilesetsSettled(viewer, progressState = null) {
 
   for (const ts of tilesets) {
     if (ts.tilesLoaded === false) return false;
-    const stats = ts._statistics || ts.statistics || null;
+    const stats = ts.statistics || null;
     if (stats) {
       const pending =
         Number(stats.numberOfPendingRequests || 0) +
