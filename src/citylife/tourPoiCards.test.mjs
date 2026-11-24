@@ -308,3 +308,80 @@ test('tourPoiCards also lights up classic city tours (e.g. paris) and falls back
     engine.destroy();
   });
 });
+
+test('tourPoiCards serves distinct proxied curated official photos per stop on orlando_star_island without Wikipedia fallback', async () => {
+  await withHappyDom(async (win) => {
+    const wanderEngine = createFakeWanderEngine();
+    const engine = createTourAndPlayEngine({
+      wanderEngine,
+      rng: () => 0.2,
+    });
+    const drawer = createSightseeingDrawer({
+      container: win.document.body,
+    });
+
+    const fetchedUrls = [];
+    const cards = createTourPoiCards({
+      viewer: { camera: { positionCartographic: { height: 180 } } },
+      tourAndPlayEngine: engine,
+      sightseeingDrawer: drawer,
+      fetchImpl: async (url) => {
+        fetchedUrls.push(String(url));
+        return { ok: true, async json() { return { ok: true, billboards: [] }; } };
+      },
+      overlayApi: {
+        setOverlayEntries() {},
+        clearOverlaySource() {},
+        hitTestWorldOverlay() {
+          return null;
+        },
+      },
+    });
+
+    engine.startCityTour({
+      cityId: 'orlando_star_island',
+      startStopId: 'si_arrival_clubhouse',
+    });
+
+    assert.equal(
+      fetchedUrls.length,
+      0,
+      'Curated resort stops with official imageUrl must bypass Wikipedia sightseeing fetches',
+    );
+
+    await cards.openExperienceCard('si_arrival_clubhouse');
+    const drawerEl = win.document.getElementById('gev-sightseeing-drawer');
+    const imgEl = drawerEl.querySelector('.gev-sightseeing-img');
+    const gateSrc = imgEl.getAttribute('src');
+    assert.match(drawerEl.textContent, /RESORT DAY EXPERIENCE/);
+    assert.match(
+      gateSrc,
+      /\/api\/discovery\/sightseeing\/image\?url=.*7934065_ImageLargeWidth\.jpg/,
+    );
+
+    await cards.openExperienceCard('si_lake_cecile_beach');
+    const lakeSrc = imgEl.getAttribute('src');
+    assert.match(
+      lakeSrc,
+      /\/api\/discovery\/sightseeing\/image\?url=.*27793845_ImageLargeWidth\.jpg/,
+    );
+    assert.notEqual(
+      lakeSrc,
+      gateSrc,
+      'Lake Cecile stop must display a distinct photo from the arrival gate',
+    );
+
+    await cards.openExperienceCard('si_lakeside_nature_trail');
+    const trailSrc = imgEl.getAttribute('src');
+    assert.match(
+      trailSrc,
+      /\/api\/discovery\/sightseeing\/image\?url=.*10416405_ImageLargeWidth\.jpg/,
+    );
+    assert.notEqual(trailSrc, lakeSrc);
+
+    drawer.hide();
+    cards.destroy();
+    drawer.destroy();
+    engine.destroy();
+  });
+});

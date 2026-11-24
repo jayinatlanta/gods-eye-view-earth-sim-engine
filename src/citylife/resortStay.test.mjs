@@ -440,3 +440,27 @@ test('1-click Temporary Resort Basecamp Check-In is strictly non-destructive to 
   clearClaimedDomicilesForTest({ includeStarter: true });
   clearTempBasecampForTest();
 });
+
+test('orlando_star_island stops expose unique official gallery imageUrls and zero lighthouse city fallbacks', () => {
+  const stops = RESORT_STAY_LANDMARKS.orlando_star_island;
+  assert.equal(stops.length, 9);
+  const seenUrls = new Set();
+  for (const stop of stops) {
+    assert.ok(stop.imageUrl, `Expected curated official imageUrl on ${stop.id}`);
+    assert.match(
+      stop.imageUrl,
+      /^https:\/\/www\.star-island\.com\/files\/4607\/.+\.(?:jpg|jpeg|png|webp)$/i,
+    );
+    assert.equal(
+      seenUrls.has(stop.imageUrl),
+      false,
+      `Duplicate imageUrl ${stop.imageUrl} on ${stop.id}`,
+    );
+    seenUrls.add(stop.imageUrl);
+    assert.notEqual(
+      stop.wikiTitle,
+      'Kissimmee,_Florida',
+      `Must not use Kissimmee city lighthouse fallback on ${stop.id}`,
+    );
+  }
+});

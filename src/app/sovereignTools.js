@@ -56,10 +56,13 @@ export function attachSovereignTools({
   defer,
   debug,
 }) {
+  let tourAndPlayEngine = null;
   const sightseeingEngine = createSightseeingEngine({
     viewer: cesiumViewer,
     dataManager,
     operations,
+    isAmbientDwellSuppressed: () =>
+      Boolean(tourAndPlayEngine?.getStatus?.()?.isTour),
   });
   defer(() => sightseeingEngine.destroy());
   debug.sightseeingEngine = sightseeingEngine;
@@ -160,7 +163,7 @@ export function attachSovereignTools({
   debug.wanderEngine = wanderEngine;
   window.__gevWanderEngine = wanderEngine;
 
-  const tourAndPlayEngine = createTourAndPlayEngine({
+  tourAndPlayEngine = createTourAndPlayEngine({
     wanderEngine,
     cityEngine,
     viewer: cesiumViewer,
@@ -168,6 +171,18 @@ export function attachSovereignTools({
   defer(() => tourAndPlayEngine.destroy());
   debug.tourAndPlayEngine = tourAndPlayEngine;
   window.__gevTourAndPlayEngine = tourAndPlayEngine;
+
+  let wasTourActive = false;
+  const unsubTourSightseeingGuard = tourAndPlayEngine.onStatusChange?.(
+    (nextStatus) => {
+      const activeTour = Boolean(nextStatus?.isTour);
+      if (activeTour && !wasTourActive) {
+        sightseeingEngine.clearBillboards?.();
+      }
+      wasTourActive = activeTour;
+    },
+  );
+  defer(() => unsubTourSightseeingGuard?.());
 
   const tourPoiCards = createTourPoiCards({
     viewer: cesiumViewer,

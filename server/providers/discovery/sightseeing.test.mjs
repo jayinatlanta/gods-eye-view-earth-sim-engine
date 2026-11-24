@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {
   filterScenicImage,
   fetchSightseeingFromWikipedia,
+  fetchSightseeingImage,
+  isAllowedSightseeingImageUrl,
   sightseeingDiscoveryProxy,
 } from './sightseeing.js';
 
@@ -249,4 +251,151 @@ test('sightseeingDiscoveryProxy forwards ?title= parameter and falls back to ?qu
   const parsed = JSON.parse(body);
   assert.equal(parsed.count, 1);
   assert.equal(parsed.billboards[0].title, 'Cinderella Castle');
+});
+
+test('fetchSightseeingFromWikipedia skips distant homonym pages when lat/lon anchor is provided on free-text query', async () => {
+  const res = await fetchSightseeingFromWikipedia({
+    query: 'Star Island',
+    lat: 28.3286,
+    lon: -81.4849,
+    limit: 2,
+    fetchImpl: async () => ({
+      ok: true,
+      status: 200,
+      async json() {
+        return {
+          query: {
+            pages: {
+              1: {
+                index: 1,
+                title: 'Star Island (New Hampshire)',
+                extract: 'Island in the Isles of Shoals, New Hampshire.',
+                thumbnail: {
+                  source:
+                    'https://upload.wikimedia.org/wikipedia/commons/1/17/Star_Island_Chapel.jpg',
+                },
+                coordinates: [{ lat: 42.9767, lon: -70.6139 }],
+              },
+            },
+          },
+        };
+      },
+    }),
+  });
+
+  assert.equal(res.ok, true);
+  assert.equal(
+    res.billboards.length,
+    0,
+    'Must not return a 1,900 km away New Hampshire homonym for a Florida coordinate query',
+  );
+});
+
+test('sightseeingDiscoveryProxy /api/discovery/sightseeing/image enforces strict HTTPS host allowlist and raster content-type', async () => {
+  assert.equal(
+    isAllowedSightseeingImageUrl(
+      'https://www.star-island.com/files/4607/7934065_ImageLargeWidth.jpg',
+    ),
+    true,
+  );
+  assert.equal(
+    isAllowedSightseeingImageUrl('http://www.star-island.com/files/4607/a.jpg'),
+    false,
+  );
+  assert.equal(
+    isAllowedSightseeingImageUrl('https://evil.example.com/photo.jpg'),
+    false,
+  );
+  assert.equal(
+    isAllowedSightseeingImageUrl('https://127.0.0.1/secret.jpg'),
+    false,
+  );
+
+  const middlewares = [];
+  const server = {
+    middlewares: {
+      use(path, handler) {
+        middlewares.push({ path, handler });
+      },
+    },
+  };
+  const fakeBytes = new Uint8Array([0xff, 0xd8, 0xff, 0xe0]);
+  const plugin = sightseeingDiscoveryProxy({
+    fetchImpl: async (url) => {
+      if (String(url).includes('not-image')) {
+        return {
+          ok: true,
+          status: 200,
+          headers: new Headers({ 'content-type': 'text/html' }),
+          arrayBuffer: async () => fakeBytes.buffer,
+        };
+      }
+      return {
+        ok: true,
+        status: 200,
+        headers: new Headers({
+          'content-type': 'image/jpeg',
+          'content-length': String(fakeBytes.byteLength),
+        }),
+        arrayBuffer: async () => fakeBytes.buffer,
+      };
+    },
+  });
+  plugin.configureServer(server);
+
+  const imgRoute = middlewares.find(
+    (m) => m.path === '/api/discovery/sightseeing/image',
+  );
+  assert.ok(imgRoute, '/api/discovery/sightseeing/image route must be mounted');
+
+  async function callImg(urlPath) {
+    let statusCode = 0;
+    let body = null;
+    const headers = {};
+    await imgRoute.handler(
+      { method: 'GET', url: urlPath },
+      {
+        setHeader(k, v) {
+          headers[k.toLowerCase()] = v;
+        },
+        set statusCode(c) {
+          statusCode = c;
+        },
+        get statusCode() {
+          return statusCode;
+        },
+        end(data) {
+          body = data;
+        },
+      },
+    );
+    return { statusCode, headers, body };
+  }
+
+  const blocked = await callImg(
+    '/?url=' + encodeURIComponent('https://evil.example.com/x.jpg'),
+  );
+  assert.equal(blocked.statusCode, 403);
+
+  const nonImage = await callImg(
+    '/?url=' +
+      encodeURIComponent('https://www.star-island.com/files/not-image.jpg'),
+  );
+  assert.equal(nonImage.statusCode, 502);
+
+  const allowed = await callImg(
+    '/?url=' +
+      encodeURIComponent(
+        'https://www.star-island.com/files/4607/7934065_ImageLargeWidth.jpg',
+      ),
+  );
+  assert.equal(allowed.statusCode, 200);
+  assert.equal(allowed.headers['content-type'], 'image/jpeg');
+  assert.equal(allowed.headers['cross-origin-resource-policy'], 'same-origin');
+  assert.equal(Buffer.isBuffer(allowed.body), true);
+  assert.equal(allowed.body.byteLength, 4);
+
+  const directErr = await fetchSightseeingImage('https://169.254.169.254/a.jpg');
+  assert.equal(directErr.ok, false);
+  assert.equal(directErr.status, 403);
 });

@@ -108,6 +108,7 @@ export function createSightseeingEngine({
   operations = null,
   fetchImpl = globalThis.fetch,
   container = typeof document !== 'undefined' ? document.body : null,
+  isAmbientDwellSuppressed = null,
 } = {}) {
   if (!viewer)
     throw new TypeError('Cesium viewer is required for SightseeingEngine');
@@ -182,6 +183,12 @@ export function createSightseeingEngine({
 
   async function evaluateDwellSettle() {
     if (isDestroyed) return;
+    if (
+      typeof isAmbientDwellSuppressed === 'function' &&
+      isAmbientDwellSuppressed()
+    ) {
+      return;
+    }
 
     // Pick camera center target on globe
     const canvas = viewer.canvas;

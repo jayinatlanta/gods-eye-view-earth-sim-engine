@@ -344,6 +344,7 @@ export function createSightseeingDrawer({
   let active = false;
   let activeOnClose = null;
   let activeMediaSignature = null;
+  let activeDirectFallbackUrl = '';
 
   function teardownYouTubeIframes() {
     if (!ytEmbedWrapEl) return;
@@ -365,14 +366,20 @@ export function createSightseeingDrawer({
   }
 
   imgEl.addEventListener?.('error', () => {
-    if (active) {
-      showImageFallback();
+    if (!active) return;
+    if (activeDirectFallbackUrl) {
+      const nextUrl = activeDirectFallbackUrl;
+      activeDirectFallbackUrl = '';
+      imgEl.src = nextUrl;
+      return;
     }
+    showImageFallback();
   });
 
   function hide() {
     const wasActive = active;
     active = false;
+    activeDirectFallbackUrl = '';
     teardownYouTubeIframes();
     overlay.classList.add('hidden');
     overlay.setAttribute('aria-hidden', 'true');
@@ -406,7 +413,9 @@ export function createSightseeingDrawer({
     const displayTitle =
       billboard.title || billboard.name || 'Discovered Landmark';
     if (badgeTextEl) {
-      if (billboard.tourScope === 'venue') {
+      if (billboard.venueCategory === 'resort_stay') {
+        badgeTextEl.textContent = '🏨 RESORT DAY EXPERIENCE';
+      } else if (billboard.tourScope === 'venue') {
         badgeTextEl.textContent = '🎢 PARK DAY EXPERIENCE';
       } else if (billboard.isTourStop) {
         badgeTextEl.textContent = '🛴 TOUR STOP EXPERIENCE';
@@ -481,6 +490,11 @@ export function createSightseeingDrawer({
       billboard.original_url ||
       billboard.image_url ||
       '';
+    const directOriginal = String(
+      billboard.originalUrl || billboard.original_url || '',
+    ).trim();
+    activeDirectFallbackUrl =
+      directOriginal && directOriginal !== imgSrc ? directOriginal : '';
     if (imgSrc) {
       fallbackEl?.classList.add('hidden');
       imgEl.classList.remove('hidden');
@@ -541,13 +555,19 @@ export function createSightseeingDrawer({
       billboard.image_url ||
       '#';
     linkEl.href = wikiHref;
-    linkEl.textContent = billboard.url
+    const isWikiLink = /wikipedia\.org/i.test(String(wikiHref));
+    linkEl.textContent = isWikiLink
       ? 'Read on Wikipedia ↗'
-      : 'View Full Image ↗';
+      : billboard.sourceLabel
+        ? 'Official Gallery ↗'
+        : 'View Full Image ↗';
     if (sourceEl) {
+      const credit =
+        String(billboard.sourceLabel || '').trim() ||
+        'Wikimedia Commons / Wikipedia';
       sourceEl.textContent = billboard.cityName
-        ? `${billboard.cityName} · Wikimedia Commons / Wikipedia`
-        : 'Source: Wikimedia Commons / Wikipedia';
+        ? `${billboard.cityName} · ${credit}`
+        : `Source: ${credit}`;
     }
 
     overlay.classList.remove('hidden');

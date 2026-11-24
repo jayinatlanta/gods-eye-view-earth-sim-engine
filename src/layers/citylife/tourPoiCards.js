@@ -37,6 +37,27 @@ export const TOUR_POI_OVERLAY_SOURCE_OPTIONS = Object.freeze({
   solveIntervalMs: 125,
 });
 
+const DIRECT_CORS_IMAGE_HOSTS = new Set([
+  'upload.wikimedia.org',
+  'thumb.wikimedia.org',
+]);
+
+export function buildCuratedStopImageUrl(rawUrl) {
+  const clean = String(rawUrl || '').trim();
+  if (!clean) return '';
+  if (clean.startsWith('/')) return clean;
+  try {
+    const parsed = new URL(clean);
+    if (parsed.protocol !== 'https:') return '';
+    if (DIRECT_CORS_IMAGE_HOSTS.has(parsed.hostname.toLowerCase())) {
+      return parsed.toString();
+    }
+    return `/api/discovery/sightseeing/image?url=${encodeURIComponent(parsed.toString())}`;
+  } catch {
+    return '';
+  }
+}
+
 export function paintStopPlaceholderCanvas(stop, cityName = '') {
   if (typeof document === 'undefined') return null;
   const canvas = document.createElement('canvas');
@@ -199,6 +220,24 @@ export function createTourPoiCards({
     if (!stop?.id || isDestroyed) return null;
     if (mediaById.has(stop.id)) return mediaById.get(stop.id);
     if (inFlightIds.has(stop.id)) return null;
+
+    const curatedOriginalUrl = String(stop.imageUrl || '').trim();
+    if (curatedOriginalUrl) {
+      const proxiedThumb = buildCuratedStopImageUrl(curatedOriginalUrl);
+      const curatedRecord = {
+        thumbnailUrl: proxiedThumb || curatedOriginalUrl,
+        originalUrl: curatedOriginalUrl,
+        extract: stop.lore || '',
+        title: stop.name || '',
+        url: String(stop.photoPageUrl || curatedOriginalUrl),
+        sourceLabel: String(stop.photoSource || ''),
+      };
+      mediaById.set(stop.id, curatedRecord);
+      if (curatedRecord.thumbnailUrl) {
+        decodeAndApplyThumbnail(stop, curatedRecord.thumbnailUrl);
+      }
+      return curatedRecord;
+    }
 
     const effectiveFetch = fetchImpl || globalThis.fetch;
     if (typeof effectiveFetch !== 'function') {
@@ -366,6 +405,7 @@ export function createTourPoiCards({
       cityId: status?.cityId || '',
       cityName: status?.cityName || '',
       tourScope: status?.tourScope || 'city',
+      venueCategory: status?.venueCategory || null,
       stopId: stop.id,
       name: stop.name,
       title: stop.name,
@@ -386,11 +426,15 @@ export function createTourPoiCards({
       wikiTitle: stop.wikiTitle || stop.name,
       youtubeVideoId: stop.youtubeVideoId || null,
       youtubeSearchQuery: stop.youtubeSearchQuery || `${stop.name} 4K tour`,
-      thumbnailUrl: media?.thumbnailUrl || '',
-      originalUrl: media?.originalUrl || '',
+      thumbnailUrl:
+        media?.thumbnailUrl || buildCuratedStopImageUrl(stop.imageUrl) || '',
+      originalUrl: media?.originalUrl || stop.imageUrl || '',
+      sourceLabel: media?.sourceLabel || stop.photoSource || '',
       extract: media?.extract || stop.lore || '',
       url:
         media?.url ||
+        stop.photoPageUrl ||
+        stop.imageUrl ||
         (stop.wikiTitle
           ? `https://en.wikipedia.org/wiki/${encodeURIComponent(stop.wikiTitle)}`
           : ''),
