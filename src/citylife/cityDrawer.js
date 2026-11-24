@@ -794,11 +794,15 @@ export function createCityDrawer({
 
     if (ctx.hasCuratedOrCustomTour) {
       if (ctx.tourScope === 'venue') {
-        const isResortStay =
-          ctx.venueCategory === 'resort_stay' ||
-          ctx.metadata?.venueCategory === 'resort_stay';
+        const venueCat =
+          ctx.venueCategory || ctx.metadata?.venueCategory || null;
+        const isResortStay = venueCat === 'resort_stay';
+        const isWaterPark = venueCat === 'water_park';
+        const isStatePark = venueCat === 'state_park';
+        const isMountainAdv = venueCat === 'mountain_adventure';
+        const isBoardwalkStrip = venueCat === 'boardwalk_strip';
         const shortName =
-          (isResortStay && ctx.metadata?.shortName) ||
+          ctx.metadata?.shortName ||
           String(
             ctx.cityName ||
               entityOrCity?.name ||
@@ -806,16 +810,45 @@ export function createCityDrawer({
           )
             .replace(/\s*\((?:WDW|DLR|UOR|USH|TDR|DLP)\)$/i, '')
             .trim();
+        const icon = isResortStay
+          ? '🏨'
+          : isWaterPark
+            ? '🌊'
+            : isStatePark
+              ? '🏞️'
+              : isMountainAdv
+                ? '🏔️'
+                : isBoardwalkStrip
+                  ? '🎡'
+                  : '🎢';
+        const label = isResortStay
+          ? `Resort Day: ${shortName}`
+          : isWaterPark
+            ? `Water Park: ${shortName}`
+            : isStatePark
+              ? `State Park: ${shortName}`
+              : isMountainAdv
+                ? `Adventure: ${shortName}`
+                : isBoardwalkStrip
+                  ? `Explore: ${shortName}`
+                  : `Park Day: ${shortName}`;
+        const tooltip = isResortStay
+          ? `Start ${shortName} Resort Day Off [T]`
+          : isWaterPark
+            ? `Start ${shortName} Water Park Day [T]`
+            : isStatePark
+              ? `Start ${shortName} State Park Adventure [T]`
+              : isMountainAdv
+                ? `Start ${shortName} Mountain Adventure [T]`
+                : isBoardwalkStrip
+                  ? `Start ${shortName} Boardwalk & Strip Tour [T]`
+                  : `Start ${shortName} Theme Park Day Tour [T]`;
         return {
           state: 'tour',
-          icon: isResortStay ? '🏨' : '🎢',
-          label: isResortStay
-            ? `Resort Day: ${shortName}`
-            : `Park Day: ${shortName}`,
+          icon,
+          label,
           livingWorldName: shortName,
-          tooltip: isResortStay
-            ? `Start ${shortName} Resort Day Off [T]`
-            : `Start ${shortName} Theme Park Day Tour [T]`,
+          tooltip,
           ctx,
           catalogPlace: null,
         };

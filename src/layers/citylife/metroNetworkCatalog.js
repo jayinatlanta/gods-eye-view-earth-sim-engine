@@ -21,6 +21,9 @@ import {
   DLR_MONORAIL_LOOP,
   WDW_MK_RAILROAD_LOOP,
   DLR_RAILROAD_LOOP,
+  LAS_VEGAS_MONORAIL_LINE,
+  WDW_SKYLINER_EPCOT_TO_DHS,
+  OBER_AERIAL_TRAM_ASCENT,
 } from '../../transit/railWaypoints.js';
 
 export const METRO_ELEVATED_HEIGHT_M = 5.5;
@@ -3581,6 +3584,126 @@ export const RAPID_TRANSIT_ROUTES = {
     ],
     waypoints: DLR_RAILROAD_LOOP,
   },
+  // ---------------------------------------------------------
+  // 15. LAS VEGAS MONORAIL (ELEVATED STRIP STRADDLE BEAM)
+  // ---------------------------------------------------------
+  las_vegas_monorail_line: {
+    id: 'las_vegas_monorail_line',
+    cityId: 'las_vegas_monorail',
+    lineName: 'Las Vegas Monorail (MGM Grand ↔ Sahara Beam)',
+    operator: 'Las Vegas Monorail',
+    vehicleMode: 'monorail',
+    liveryColor: '#0284c7',
+    accentColor: '#38bdf8',
+    carsPerTrain: 4,
+    capacityPerCar: 55,
+    isElevated: true,
+    elevOffsetMeters: 7.5,
+    stations: [
+      {
+        id: 'lv_mono_mgm',
+        name: 'MGM Grand Station',
+        lat: 36.1024,
+        lon: -115.1678,
+        elev: 646,
+      },
+      {
+        id: 'lv_mono_linq',
+        name: "Harrah's / The LINQ Station",
+        lat: 36.1187,
+        lon: -115.1684,
+        elev: 643,
+      },
+      {
+        id: 'lv_mono_conv',
+        name: 'Convention Center Station',
+        lat: 36.1292,
+        lon: -115.1544,
+        elev: 638,
+      },
+      {
+        id: 'lv_mono_sahara',
+        name: 'Sahara Las Vegas Station',
+        lat: 36.1422,
+        lon: -115.1558,
+        elev: 633,
+      },
+    ],
+    waypoints: LAS_VEGAS_MONORAIL_LINE,
+  },
+  // ---------------------------------------------------------
+  // 16. DISNEY SKYLINER AERIAL GONDOLA (EPCOT ↔ DHS)
+  // ---------------------------------------------------------
+  wdw_skyliner_line: {
+    id: 'wdw_skyliner_line',
+    cityId: 'wdw_skyliner',
+    lineName: 'Disney Skyliner (EPCOT ↔ Caribbean Beach ↔ DHS)',
+    operator: 'Disney Skyliner',
+    vehicleMode: 'aerial_tram',
+    liveryColor: '#0ea5e9',
+    accentColor: '#fde047',
+    carsPerTrain: 1,
+    capacityPerCar: 10,
+    isElevated: true,
+    elevOffsetMeters: 16.0,
+    stations: [
+      {
+        id: 'sky_epcot',
+        name: 'EPCOT International Gateway',
+        lat: 28.3688,
+        lon: -81.5535,
+        elev: 32,
+      },
+      {
+        id: 'sky_cbr',
+        name: 'Caribbean Beach Hub',
+        lat: 28.3636,
+        lon: -81.5453,
+        elev: 32,
+      },
+      {
+        id: 'sky_dhs',
+        name: "Disney's Hollywood Studios",
+        lat: 28.3568,
+        lon: -81.5594,
+        elev: 32,
+      },
+    ],
+    waypoints: WDW_SKYLINER_EPCOT_TO_DHS,
+  },
+  // ---------------------------------------------------------
+  // 17. OBER MOUNTAIN AERIAL TRAMWAY (GATLINBURG ↔ SUMMIT)
+  // ---------------------------------------------------------
+  ober_aerial_tram_line: {
+    id: 'ober_aerial_tram_line',
+    cityId: 'ober_aerial_tram',
+    lineName: 'Ober Mountain Aerial Tramway (Gatlinburg ↔ Summit)',
+    operator: 'Ober Mountain',
+    vehicleMode: 'aerial_tram',
+    liveryColor: '#ef4444',
+    accentColor: '#f8fafc',
+    carsPerTrain: 1,
+    capacityPerCar: 120,
+    isElevated: true,
+    elevOffsetMeters: 22.0,
+    stations: [
+      {
+        id: 'ober_lower',
+        name: 'Gatlinburg Parkway Lower Terminal',
+        lat: 35.7118,
+        lon: -83.5168,
+        elev: 394,
+      },
+      {
+        id: 'ober_upper',
+        name: 'Ober Mountain Upper Terminal',
+        lat: 35.7031,
+        lon: -83.5578,
+        elev: 845,
+      },
+    ],
+    waypoints: OBER_AERIAL_TRAM_ASCENT,
+  },
 };
 
 // Normalize routes so both .name and .lineName are always populated
@@ -3634,6 +3757,9 @@ export const METRO_NETWORKS_BY_CITY = Object.freeze({
   dlr_monorail: ['dlr_monorail_loop'],
   wdw_mk_railroad: ['wdw_mk_railroad_loop'],
   dlr_railroad: ['dlr_railroad_loop'],
+  las_vegas_monorail: ['las_vegas_monorail_line'],
+  wdw_skyliner: ['wdw_skyliner_line'],
+  ober_aerial_tram: ['ober_aerial_tram_line'],
   phoenix: ['phoenix_valley_metro'],
   chicago: [
     'chicago_cta_loop',

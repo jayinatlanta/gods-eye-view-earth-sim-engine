@@ -88,12 +88,11 @@ export async function fetchSightseeingFromWikipedia({
   }
 
   const hasAnchorCoords = Number.isFinite(lat) && Number.isFinite(lon);
-  const coordBucket =
-    !cleanTitle && hasAnchorCoords
-      ? `@${Math.round(lat * 2) / 2},${Math.round(lon * 2) / 2}`
-      : '';
+  const coordBucket = hasAnchorCoords
+    ? `@${Math.round(lat * 2) / 2},${Math.round(lon * 2) / 2}`
+    : '';
   const cacheKey = cleanTitle
-    ? `title:${cleanTitle.toLowerCase()}`
+    ? `title:${cleanTitle.toLowerCase()}${coordBucket}`
     : `${cleanQuery.toLowerCase()}${coordBucket}`;
   const cached = cache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
@@ -139,7 +138,7 @@ export async function fetchSightseeingFromWikipedia({
       const coords = page.coordinates?.[0] || {};
       const pageHasCoords =
         Number.isFinite(coords.lat) && Number.isFinite(coords.lon);
-      if (!cleanTitle && hasAnchorCoords && pageHasCoords) {
+      if (hasAnchorCoords && pageHasCoords) {
         const distKm = haversineDistanceKm(lat, lon, coords.lat, coords.lon);
         if (distKm > GEO_QUERY_MAX_DISTANCE_KM) continue;
       }

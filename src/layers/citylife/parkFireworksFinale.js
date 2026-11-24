@@ -14,6 +14,10 @@ import {
   getEveningAnchorForResort,
   isResortStayId,
 } from './resortStayCatalog.js';
+import {
+  getEveningAnchorForNextExperience,
+  isNextExperienceId,
+} from './nextExperiencesCatalog.js';
 import { createMulberry32, hashStringToSeed } from './parkSecretsAndNpcs.js';
 
 export const FIREWORKS_PARTICLE_POOL_SIZE = 96;
@@ -483,13 +487,23 @@ export function createParkFireworksFinale({
     const stopTarget = landmark || status?.currentLandmark || null;
     const isResort =
       status?.venueCategory === 'resort_stay' || isResortStayId(targetCity);
+    const isNextExp = !isResort && isNextExperienceId(targetCity);
+    const nextExpAnchor = isNextExp
+      ? getEveningAnchorForNextExperience(targetCity, stopTarget)
+      : null;
+    const defaultNextExpMode =
+      nextExpAnchor?.defaultMode === EVENING_AMBIANCE_MODES.FIRE_PIT_LOUNGE
+        ? EVENING_AMBIANCE_MODES.FIRE_PIT_LOUNGE
+        : EVENING_AMBIANCE_MODES.FIREWORKS;
     const resolvedMode =
       mode === EVENING_AMBIANCE_MODES.FIRE_PIT_LOUNGE ||
       mode === EVENING_AMBIANCE_MODES.FIREWORKS
         ? mode
         : isResort
           ? EVENING_AMBIANCE_MODES.FIRE_PIT_LOUNGE
-          : EVENING_AMBIANCE_MODES.FIREWORKS;
+          : isNextExp
+            ? defaultNextExpMode
+            : EVENING_AMBIANCE_MODES.FIREWORKS;
 
     activeCityId = targetCity;
     activeMode = resolvedMode;
@@ -505,6 +519,8 @@ export function createParkFireworksFinale({
                 resortAnchor.nearbyFireworks.label || resortAnchor.iconName,
             }
           : resortAnchor;
+    } else if (nextExpAnchor) {
+      activeAnchor = nextExpAnchor;
     } else {
       activeAnchor = getFireworksAnchorForPark(targetCity, stopTarget);
     }
@@ -585,8 +601,15 @@ export function createParkFireworksFinale({
       if (autoKey !== lastAutoTriggerKey) {
         lastAutoTriggerKey = autoKey;
         if (!active) {
+          const nextExpDefault = isNextExperienceId(status.cityId)
+            ? getEveningAnchorForNextExperience(
+                status.cityId,
+                status.currentLandmark,
+              )?.defaultMode
+            : null;
           const defaultMode =
-            status.venueCategory === 'resort_stay'
+            status.venueCategory === 'resort_stay' ||
+            nextExpDefault === EVENING_AMBIANCE_MODES.FIRE_PIT_LOUNGE
               ? EVENING_AMBIANCE_MODES.FIRE_PIT_LOUNGE
               : EVENING_AMBIANCE_MODES.FIREWORKS;
           start({

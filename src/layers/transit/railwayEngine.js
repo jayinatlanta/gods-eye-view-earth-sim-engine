@@ -56,6 +56,9 @@ export const DEFAULT_CARS_PER_CORRIDOR = {
   dlr_monorail: 0,
   wdw_mk_railroad: 0,
   dlr_railroad: 0,
+  las_vegas_monorail: 0,
+  wdw_skyliner: 0,
+  ober_aerial_tram: 0,
 };
 
 /**
@@ -495,6 +498,7 @@ export function createRailwayEngine({
     const fleetModelSpec = resolveFleetTransitModelSpec(vehicleMode);
     const isMonorail = vehicleMode === 'monorail';
     const isSteamRail = vehicleMode === 'steam_rail';
+    const isAerialTram = vehicleMode === 'aerial_tram';
     const usesFleetGlb = Boolean(fleetModelSpec);
     activeRailOffsetM = Number.isFinite(
       corridor.activeProfile?.railOffsetMeters,
@@ -507,9 +511,14 @@ export function createRailwayEngine({
 
     let orderedWaypoints = corridor.waypoints;
 
-    // Optional dynamic Overpass vector ingestion (skipped for dedicated Disney monorail beamways
-    // and narrow-gauge park steam loops so curated resort coordinates are preserved verbatim).
-    if (options.useOverpass && corridor.bbox && !usesFleetGlb) {
+    // Optional dynamic Overpass vector ingestion (skipped for dedicated monorail beamways,
+    // aerial cableways, and narrow-gauge park steam loops so curated coordinates are preserved).
+    if (
+      options.useOverpass &&
+      corridor.bbox &&
+      !usesFleetGlb &&
+      !isAerialTram
+    ) {
       try {
         const elements = await fetchOverpassRailways(corridor.bbox, fetchImpl);
         if (elements) {
@@ -699,10 +708,12 @@ export function createRailwayEngine({
       options.trainName ||
       corridor.activeProfile?.trainName ||
       (isMonorail
-        ? 'WDW Monorail Mark VI'
+        ? 'Elevated Straddle-Beam Monorail'
         : isSteamRail
           ? 'Disney Park Steam Railroad'
-          : `Locomotive ${corridor.activeProfileKey || 'CSX-4500'}`);
+          : isAerialTram
+            ? 'Aerial Tramway / Gondola Cabin'
+            : `Locomotive ${corridor.activeProfileKey || 'CSX-4500'}`);
     const locoColor = corridor.activeProfile?.locoColor || '#0284c7';
     const carColor = corridor.activeProfile?.carColor || '#0369a1';
 
@@ -754,16 +765,19 @@ export function createRailwayEngine({
           }
         : {
             box: {
-              dimensions: new Cesium.Cartesian3(
-                LOCOMOTIVE_DIMENSIONS.width,
-                LOCOMOTIVE_DIMENSIONS.length,
-                LOCOMOTIVE_DIMENSIONS.height,
-              ),
+              dimensions: isAerialTram
+                ? new Cesium.Cartesian3(3.0, 5.2, 2.8)
+                : new Cesium.Cartesian3(
+                    LOCOMOTIVE_DIMENSIONS.width,
+                    LOCOMOTIVE_DIMENSIONS.length,
+                    LOCOMOTIVE_DIMENSIONS.height,
+                  ),
               material:
                 Cesium.Color.fromCssColorString(locoColor).withAlpha(0.85),
               outline: true,
               outlineColor: Cesium.Color.WHITE,
               outlineWidth: 3.5,
+              show: isAerialTram ? !isCabRide : true,
             },
           }),
       point: {

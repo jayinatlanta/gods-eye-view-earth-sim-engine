@@ -1490,23 +1490,40 @@ export function createWanderDrawer({
         status.isTour && status.cityId
           ? status.tourScope === 'venue'
           : targetMeta?.tourScope === 'venue' || ctx.tourScope === 'venue';
-      titleEl.textContent = isPlayMode
+      const activeVenueCat =
+        status.isTour && status.cityId
+          ? status.venueCategory
+          : targetMeta?.venueCategory || ctx.venueCategory || null;
+      const cardTitleText = isPlayMode
         ? `🏖️ LIVING WORLD PLAY (${ctx.label || 'Local Biome'})`
         : isResortStay
           ? `🏨 RESORT DAY OFF · WALK / E-SCOOTER / GOLF CART`
-          : isVenueDay
-            ? `🎢 THEME PARK DAY · WALK MIDWAY`
-            : `🛴 CITY SCOOTER TOUR (15 MPH · RANDOMIZED)`;
+          : activeVenueCat === 'water_park'
+            ? `🌊 WATER PARK DAY · LAZY RIVER / CHAIRLIFT / WALK`
+            : activeVenueCat === 'state_park'
+              ? `🏞️ STATE PARK DAY · TRAILS, LAKE & OVERLOOKS`
+              : activeVenueCat === 'mountain_adventure'
+                ? `🏔️ MOUNTAIN ADVENTURE · TRAM, VILLAGE & TRAILS`
+                : activeVenueCat === 'boardwalk_strip'
+                  ? `🎡 BOARDWALK & STRIP TOUR · PROMENADE & NEON`
+                  : isVenueDay
+                    ? `🎢 THEME PARK DAY · WALK MIDWAY`
+                    : `🛴 CITY SCOOTER TOUR (15 MPH · RANDOMIZED)`;
+      titleEl.textContent = cardTitleText;
     }
 
     if (badgeEl) {
       if (status.state === TOUR_OR_PLAY_STATES.TOUR_TRANSIT) {
         const modeTag =
-          status.transitMode === 'resort_cart'
-            ? 'GOLF CART'
-            : status.transitMode === 'walk_midway'
-              ? 'WALK'
-              : 'SCOOTER';
+          status.transitMode === 'aerial_tram'
+            ? 'AERIAL'
+            : status.transitMode === 'lazy_river_tube'
+              ? 'FLOAT'
+              : status.transitMode === 'resort_cart'
+                ? 'GOLF CART'
+                : status.transitMode === 'walk_midway'
+                  ? 'WALK'
+                  : 'SCOOTER';
         badgeEl.textContent = `${modeTag} ${status.landmarkIndex + 1}/${status.totalLandmarks}`;
       } else if (status.state === TOUR_OR_PLAY_STATES.TOUR_DWELL) {
         badgeEl.textContent = `DWELL ${Math.ceil(status.dwellRemainingSec || 0)}s`;
@@ -1526,16 +1543,22 @@ export function createWanderDrawer({
     if (statusEl) {
       const isWalkMidway = status.transitMode === 'walk_midway';
       const isResortCart = status.transitMode === 'resort_cart';
+      const isAerialTram = status.transitMode === 'aerial_tram';
+      const isLazyRiver = status.transitMode === 'lazy_river_tube';
       if (
         status.state === TOUR_OR_PLAY_STATES.TOUR_TRANSIT &&
         status.currentLandmark
       ) {
         const walkPathLabel = isResortStay ? 'resort paths' : 'midway';
-        statusEl.textContent = isResortCart
-          ? `⛳ Cruising by Golf Cart to Stop #${status.landmarkIndex + 1}: ${status.currentLandmark.icon || '📍'} ${status.currentLandmark.name}`
-          : isWalkMidway
-            ? `🚶 Walking ${walkPathLabel} to Stop #${status.landmarkIndex + 1}: ${status.currentLandmark.icon || '📍'} ${status.currentLandmark.name}`
-            : `🛴 E-Scootering (15 mph) to Stop #${status.landmarkIndex + 1}: ${status.currentLandmark.icon || '📍'} ${status.currentLandmark.name}`;
+        statusEl.textContent = isAerialTram
+          ? `🚡 Gliding by aerial cable/lift to Stop #${status.landmarkIndex + 1}: ${status.currentLandmark.icon || '📍'} ${status.currentLandmark.name}`
+          : isLazyRiver
+            ? `🛟 Floating along water route to Stop #${status.landmarkIndex + 1}: ${status.currentLandmark.icon || '📍'} ${status.currentLandmark.name}`
+            : isResortCart
+              ? `⛳ Cruising by Golf Cart to Stop #${status.landmarkIndex + 1}: ${status.currentLandmark.icon || '📍'} ${status.currentLandmark.name}`
+              : isWalkMidway
+                ? `🚶 Walking ${walkPathLabel} to Stop #${status.landmarkIndex + 1}: ${status.currentLandmark.icon || '📍'} ${status.currentLandmark.name}`
+                : `🛴 E-Scootering (15 mph) to Stop #${status.landmarkIndex + 1}: ${status.currentLandmark.icon || '📍'} ${status.currentLandmark.name}`;
       } else if (
         status.state === TOUR_OR_PLAY_STATES.TOUR_DWELL &&
         status.currentLandmark
@@ -2056,14 +2079,28 @@ export function createWanderDrawer({
       const icon =
         meta?.venueCategory === 'resort_stay' || isResortStayId(cityKey)
           ? '🏨'
-          : meta?.tourScope === 'venue'
-            ? '🎢'
-            : '🛴';
+          : meta?.venueCategory === 'water_park'
+            ? '🌊'
+            : meta?.venueCategory === 'state_park'
+              ? '🏞️'
+              : meta?.venueCategory === 'mountain_adventure'
+                ? '🏔️'
+                : meta?.venueCategory === 'boardwalk_strip'
+                  ? '🎡'
+                  : meta?.tourScope === 'venue'
+                    ? '🎢'
+                    : '🛴';
       return `<option value="${escapeHtml(cityKey)}">${icon} ${escapeHtml(label)}${escapeHtml(continentTag)} (${total} stops${escapeHtml(customTag)})</option>`;
     };
 
     const isResortEntry = (cityKey, meta) =>
       meta?.venueCategory === 'resort_stay' || isResortStayId(cityKey);
+    const isOutdoorParkEntry = (meta) =>
+      meta?.venueCategory === 'state_park' ||
+      meta?.venueCategory === 'mountain_adventure';
+    const isWaterOrBoardwalkEntry = (meta) =>
+      meta?.venueCategory === 'water_park' ||
+      meta?.venueCategory === 'boardwalk_strip';
 
     const resortStayEntries = [
       ...builtInKeys
@@ -2075,19 +2112,41 @@ export function createWanderDrawer({
         .filter(([cityKey, entry]) => isResortEntry(cityKey, entry?.metadata))
         .map((entry) => formatCatalogOption(entry, true)),
     ].join('');
+    const outdoorParkEntries = [
+      ...builtInKeys
+        .filter(([cityKey]) => isOutdoorParkEntry(METRO_TOUR_METADATA[cityKey]))
+        .map((entry) => formatCatalogOption(entry, false)),
+      ...runtimeKeys
+        .filter(([, entry]) => isOutdoorParkEntry(entry?.metadata))
+        .map((entry) => formatCatalogOption(entry, true)),
+    ].join('');
+    const waterBoardwalkEntries = [
+      ...builtInKeys
+        .filter(([cityKey]) =>
+          isWaterOrBoardwalkEntry(METRO_TOUR_METADATA[cityKey]),
+        )
+        .map((entry) => formatCatalogOption(entry, false)),
+      ...runtimeKeys
+        .filter(([, entry]) => isWaterOrBoardwalkEntry(entry?.metadata))
+        .map((entry) => formatCatalogOption(entry, true)),
+    ].join('');
     const parkDayEntries = [
       ...builtInKeys
         .filter(
           ([cityKey]) =>
             METRO_TOUR_METADATA[cityKey]?.tourScope === 'venue' &&
-            !isResortEntry(cityKey, METRO_TOUR_METADATA[cityKey]),
+            !isResortEntry(cityKey, METRO_TOUR_METADATA[cityKey]) &&
+            !isOutdoorParkEntry(METRO_TOUR_METADATA[cityKey]) &&
+            !isWaterOrBoardwalkEntry(METRO_TOUR_METADATA[cityKey]),
         )
         .map((entry) => formatCatalogOption(entry, false)),
       ...runtimeKeys
         .filter(
           ([cityKey, entry]) =>
             entry?.metadata?.tourScope === 'venue' &&
-            !isResortEntry(cityKey, entry?.metadata),
+            !isResortEntry(cityKey, entry?.metadata) &&
+            !isOutdoorParkEntry(entry?.metadata) &&
+            !isWaterOrBoardwalkEntry(entry?.metadata),
         )
         .map((entry) => formatCatalogOption(entry, true)),
     ].join('');
@@ -2108,6 +2167,12 @@ export function createWanderDrawer({
     const resortGroupHtml = resortStayEntries
       ? `<optgroup label="🏨 Resort Stays">${resortStayEntries}</optgroup>`
       : '';
+    const outdoorParkGroupHtml = outdoorParkEntries
+      ? `<optgroup label="🏞️ State Parks & Mountain Adventures">${outdoorParkEntries}</optgroup>`
+      : '';
+    const waterBoardwalkGroupHtml = waterBoardwalkEntries
+      ? `<optgroup label="🎡 Water Parks, Boardwalks & Strips">${waterBoardwalkEntries}</optgroup>`
+      : '';
     const parkGroupHtml = parkDayEntries
       ? `<optgroup label="🎢 Theme Park Days">${parkDayEntries}</optgroup>`
       : '';
@@ -2118,7 +2183,7 @@ export function createWanderDrawer({
     const autoOpt = includeAuto
       ? '<option value="auto">📍 Nearest Metro / Current View</option>'
       : '';
-    return `${autoOpt}${resortGroupHtml}${parkGroupHtml}${customGroupHtml}${dynamicEntries}${cityGroupHtml}`;
+    return `${autoOpt}${resortGroupHtml}${outdoorParkGroupHtml}${waterBoardwalkGroupHtml}${parkGroupHtml}${customGroupHtml}${dynamicEntries}${cityGroupHtml}`;
   }
 
   function syncTourCitySelectOptions(
@@ -2682,9 +2747,37 @@ export function createWanderDrawer({
           `<option value="resort:${escapeHtml(r.id)}">🏨 ${escapeHtml(r.name)} (${escapeHtml(r.cityLabel || r.country || '')})</option>`,
       )
       .join('');
+    const outdoorOpts = Object.values(METRO_TOUR_METADATA || {})
+      .filter(
+        (m) =>
+          m?.venueCategory === 'state_park' ||
+          m?.venueCategory === 'mountain_adventure',
+      )
+      .map(
+        (p) =>
+          `<option value="park:${escapeHtml(p.id)}">${p.venueCategory === 'state_park' ? '🏞️' : '🏔️'} ${escapeHtml(p.name)}</option>`,
+      )
+      .join('');
+    const waterBoardwalkOpts = Object.values(METRO_TOUR_METADATA || {})
+      .filter(
+        (m) =>
+          m?.venueCategory === 'water_park' ||
+          m?.venueCategory === 'boardwalk_strip',
+      )
+      .map(
+        (p) =>
+          `<option value="park:${escapeHtml(p.id)}">${p.venueCategory === 'water_park' ? '🌊' : '🎡'} ${escapeHtml(p.name)}</option>`,
+      )
+      .join('');
     const parkOpts = Object.values(METRO_TOUR_METADATA || {})
       .filter(
-        (m) => m?.tourScope === 'venue' && m?.venueCategory !== 'resort_stay',
+        (m) =>
+          m?.tourScope === 'venue' &&
+          m?.venueCategory !== 'resort_stay' &&
+          m?.venueCategory !== 'state_park' &&
+          m?.venueCategory !== 'mountain_adventure' &&
+          m?.venueCategory !== 'water_park' &&
+          m?.venueCategory !== 'boardwalk_strip',
       )
       .map(
         (p) =>
@@ -2706,6 +2799,8 @@ export function createWanderDrawer({
     return `
       <option value="">Select a destination to jump...</option>
       ${resortOpts ? `<optgroup label="🏨 Resort Stays (Day Off)">${resortOpts}</optgroup>` : ''}
+      ${outdoorOpts ? `<optgroup label="🏞️ State Parks & Mountain Adventures">${outdoorOpts}</optgroup>` : ''}
+      ${waterBoardwalkOpts ? `<optgroup label="🎡 Water Parks, Boardwalks & Strips">${waterBoardwalkOpts}</optgroup>` : ''}
       ${parkOpts ? `<optgroup label="🎢 Theme Park Days">${parkOpts}</optgroup>` : ''}
       <optgroup label="World Exemplar Locales">
         ${localeOpts}

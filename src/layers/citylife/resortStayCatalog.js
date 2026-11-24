@@ -1618,6 +1618,18 @@ export const RESORT_EXCURSION_BRIDGES = Object.freeze([
     durationNote: '8-min quick hop down Universal Blvd to Celestial Park',
     arrivalStopId: 'epic_chronos_celestial',
   },
+  {
+    id: 'mgv_shuttle_blizzard_beach',
+    fromResortId: 'orlando_marriott_grande_vista',
+    kind: 'tour_hop',
+    toCityId: 'wdw_blizzard_beach',
+    toParkName: "Disney's Blizzard Beach",
+    transitLabel: 'Water Park Shuttle',
+    icon: '🎿',
+    durationNote:
+      '16-min resort shuttle to Mount Gushmore & Cross Country Creek',
+    arrivalStopId: 'bb_beach_haus_entry',
+  },
   // Star Island Resort (Orlando / Kissimmee)
   {
     id: 'si_shuttle_wdw_mk',
@@ -1652,6 +1664,17 @@ export const RESORT_EXCURSION_BRIDGES = Object.freeze([
     durationNote: '14-min resort shuttle to EPCOT World Celebration',
     arrivalStopId: 'epcot_spaceship_earth',
   },
+  {
+    id: 'si_shuttle_blizzard_beach',
+    fromResortId: 'orlando_star_island',
+    kind: 'tour_hop',
+    toCityId: 'wdw_blizzard_beach',
+    toParkName: "Disney's Blizzard Beach",
+    transitLabel: 'Water Park Shuttle',
+    icon: '🎿',
+    durationNote: '13-min hop via US-192 & Buena Vista Dr to Blizzard Beach',
+    arrivalStopId: 'bb_beach_haus_entry',
+  },
   // Atlanta Evergreen Lakeside Resort (Stone Mountain)
   {
     id: 'evg_drive_atlanta',
@@ -1663,6 +1686,30 @@ export const RESORT_EXCURSION_BRIDGES = Object.freeze([
     icon: '🚗',
     durationNote: '25-min scenic drive west into Midtown & Piedmont Park',
     arrivalStopId: 'atl_piedmont_park',
+  },
+  {
+    id: 'evg_drive_fort_yargo',
+    fromResortId: 'atl_evergreen_stone_mountain',
+    kind: 'tour_hop',
+    toCityId: 'fort_yargo_state_park',
+    toParkName: 'Fort Yargo State Park',
+    transitLabel: 'US-78 East Park Drive',
+    icon: '🪵',
+    durationNote:
+      '45-min drive east to the 1792 Fort, Lake Beach & 18-Mi MTB Trails',
+    arrivalStopId: 'fy_1792_log_fort',
+  },
+  {
+    id: 'evg_drive_alpine_helen',
+    fromResortId: 'atl_evergreen_stone_mountain',
+    kind: 'tour_hop',
+    toCityId: 'alpine_helen',
+    toParkName: 'Alpine Helen & Uhuburg Castle',
+    transitLabel: 'Blue Ridge Mountain Day Trip',
+    icon: '🏔️',
+    durationNote:
+      '90-min scenic mountain drive north to Bavarian Helen & Hardman Trail',
+    arrivalStopId: 'helen_bavarian_promenade',
   },
   {
     id: 'evg_excursion_summit',

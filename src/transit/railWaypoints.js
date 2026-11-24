@@ -623,6 +623,155 @@ export const DLR_RAILROAD_LOOP = Object.freeze([
   },
 ]);
 
+/**
+ * Las Vegas Monorail — 3.9-Mile Elevated Straddle-Beam Corridor (+7.5m)
+ * MGM Grand → Horseshoe/Paris → Flamingo/Caesars → Harrah's/LINQ → Convention Center → Westgate → Sahara.
+ */
+export const LAS_VEGAS_MONORAIL_LINE = Object.freeze([
+  { name: 'MGM Grand Station', lat: 36.1024, lon: -115.1678, elev: 646 },
+  {
+    name: 'Tropicana Ave Elevated Span',
+    lat: 36.1069,
+    lon: -115.1676,
+    elev: 645,
+  },
+  {
+    name: 'Horseshoe / Paris Station',
+    lat: 36.1128,
+    lon: -115.1675,
+    elev: 644,
+  },
+  {
+    name: 'Flamingo / Caesars Palace Station',
+    lat: 36.1162,
+    lon: -115.1682,
+    elev: 643,
+  },
+  {
+    name: "Harrah's / The LINQ Station",
+    lat: 36.1187,
+    lon: -115.1684,
+    elev: 643,
+  },
+  {
+    name: 'Sands Ave / Sphere Beam Curve',
+    lat: 36.1225,
+    lon: -115.1618,
+    elev: 641,
+  },
+  {
+    name: 'Convention Center Station',
+    lat: 36.1292,
+    lon: -115.1544,
+    elev: 638,
+  },
+  {
+    name: 'Westgate Las Vegas Station',
+    lat: 36.1361,
+    lon: -115.1546,
+    elev: 635,
+  },
+  { name: 'Sahara Las Vegas Station', lat: 36.1422, lon: -115.1558, elev: 633 },
+]);
+
+export const LAS_VEGAS_MONORAIL_SOUTHBOUND = Object.freeze(
+  LAS_VEGAS_MONORAIL_LINE.slice().reverse(),
+);
+
+/**
+ * Disney Skyliner — Elevated Aerial Gondola Network (+16.0m)
+ * EPCOT International Gateway ↔ Riviera Resort ↔ Caribbean Beach Hub ↔ Disney's Hollywood Studios.
+ */
+export const WDW_SKYLINER_EPCOT_TO_DHS = Object.freeze([
+  {
+    name: 'EPCOT International Gateway Station',
+    lat: 28.3688,
+    lon: -81.5535,
+    elev: 32,
+  },
+  {
+    name: 'BoardWalk / Buena Vista Turn Tower',
+    lat: 28.3679,
+    lon: -81.5471,
+    elev: 32,
+  },
+  {
+    name: "Disney's Riviera Resort Station",
+    lat: 28.3666,
+    lon: -81.5425,
+    elev: 32,
+  },
+  {
+    name: 'Caribbean Beach Resort Skyliner Hub',
+    lat: 28.3636,
+    lon: -81.5453,
+    elev: 32,
+  },
+  {
+    name: 'Buena Vista Drive Aerial Cable Span',
+    lat: 28.3596,
+    lon: -81.5531,
+    elev: 32,
+  },
+  {
+    name: "Disney's Hollywood Studios Station",
+    lat: 28.3568,
+    lon: -81.5594,
+    elev: 32,
+  },
+]);
+
+export const WDW_SKYLINER_DHS_TO_EPCOT = Object.freeze(
+  WDW_SKYLINER_EPCOT_TO_DHS.slice().reverse(),
+);
+
+/**
+ * Ober Mountain Aerial Tramway — 2.1-Mile Smoky Mountains Cableway (+22.0m)
+ * Downtown Gatlinburg Parkway Lower Terminal ↔ Ober Mountain Upper Summit Terminal.
+ */
+export const OBER_AERIAL_TRAM_ASCENT = Object.freeze([
+  {
+    name: 'Gatlinburg Parkway Lower Terminal',
+    lat: 35.7118,
+    lon: -83.5168,
+    elev: 394,
+  },
+  {
+    name: 'Little Pigeon River Aerial Crossing',
+    lat: 35.7107,
+    lon: -83.522,
+    elev: 448,
+  },
+  {
+    name: 'Tram Tower 1 — Foothill Ascent',
+    lat: 35.7094,
+    lon: -83.5282,
+    elev: 532,
+  },
+  {
+    name: 'Mount Harrison Mid-Span Vista',
+    lat: 35.7074,
+    lon: -83.5375,
+    elev: 645,
+  },
+  {
+    name: 'Tram Tower 2 — Ski Ridge Crest',
+    lat: 35.7052,
+    lon: -83.5476,
+    elev: 756,
+  },
+  {
+    name: 'Ober Mountain Upper Summit Terminal',
+    lat: 35.7031,
+    lon: -83.5578,
+    elev: 845,
+  },
+]);
+
+export const OBER_AERIAL_TRAM_DESCENT = Object.freeze(
+  OBER_AERIAL_TRAM_ASCENT.slice().reverse(),
+);
+
 export const RAIL_CORRIDORS = Object.freeze({
   atlanta_marta_east: {
     id: 'atlanta_marta_east',
@@ -976,6 +1125,150 @@ export const RAIL_CORRIDORS = Object.freeze({
         carColor: '#92400e',
         trackColor: '#f59e0b',
         waypoints: DLR_RAILROAD_LOOP,
+      },
+    },
+  },
+  las_vegas_monorail: {
+    id: 'las_vegas_monorail',
+    name: 'Las Vegas Monorail (MGM Grand ↔ Sahara Elevated Strip Beam)',
+    city: 'Las Vegas, NV',
+    from: {
+      name: 'MGM Grand Station',
+      lat: 36.1024,
+      lon: -115.1678,
+      elev: 646,
+    },
+    to: {
+      name: 'Sahara Las Vegas Station',
+      lat: 36.1422,
+      lon: -115.1558,
+      elev: 633,
+    },
+    defaultCorridor: 'lv_monorail_mgm_to_sahara',
+    defaultSpeedMph: 45,
+    bbox: [36.098, -115.172, 36.146, -115.15],
+    trackProfiles: {
+      lv_monorail_mgm_to_sahara: {
+        name: 'Las Vegas Monorail Northbound (MGM Grand → LINQ/Sphere → Convention Ctr → Sahara)',
+        description:
+          '3.9-mile elevated (+7.5m) straddle-beam monorail gliding behind the east Strip past Paris, Caesars, High Roller, Sphere, and Convention Center.',
+        subterranean: false,
+        vehicleMode: 'monorail',
+        trainName: 'Las Vegas Monorail Mark VI',
+        railOffsetMeters: 7.5,
+        locoColor: '#0284c7',
+        carColor: '#f8fafc',
+        trackColor: '#38bdf8',
+        waypoints: LAS_VEGAS_MONORAIL_LINE,
+      },
+      lv_monorail_sahara_to_mgm: {
+        name: 'Las Vegas Monorail Southbound (Sahara → Convention Ctr → LINQ → MGM Grand)',
+        description:
+          'Return elevated (+7.5m) straddle-beam run south from Sahara past Westgate, Sphere, and High Roller down to MGM Grand.',
+        subterranean: false,
+        vehicleMode: 'monorail',
+        trainName: 'Las Vegas Monorail Mark VI',
+        railOffsetMeters: 7.5,
+        locoColor: '#ec4899',
+        carColor: '#f8fafc',
+        trackColor: '#f472b6',
+        waypoints: LAS_VEGAS_MONORAIL_SOUTHBOUND,
+      },
+    },
+  },
+  wdw_skyliner: {
+    id: 'wdw_skyliner',
+    name: 'Disney Skyliner (EPCOT ↔ Caribbean Beach ↔ Hollywood Studios)',
+    city: 'Lake Buena Vista, Orlando, FL',
+    from: {
+      name: 'EPCOT International Gateway Station',
+      lat: 28.3688,
+      lon: -81.5535,
+      elev: 32,
+    },
+    to: {
+      name: "Disney's Hollywood Studios Station",
+      lat: 28.3568,
+      lon: -81.5594,
+      elev: 32,
+    },
+    defaultCorridor: 'epcot_to_dhs_gondola',
+    defaultSpeedMph: 14,
+    bbox: [28.354, -81.563, 28.372, -81.539],
+    trackProfiles: {
+      epcot_to_dhs_gondola: {
+        name: 'Disney Skyliner: EPCOT Gateway → Riviera → Caribbean Beach Hub → Hollywood Studios',
+        description:
+          'Elevated (+16.0m) aerial gondola glide soaring above World Showcase Lagoon, Disney’s Riviera Resort, and Caribbean Beach into Hollywood Studios.',
+        subterranean: false,
+        vehicleMode: 'aerial_tram',
+        trainName: 'Disney Skyliner Gondola Cabin',
+        railOffsetMeters: 16.0,
+        locoColor: '#0ea5e9',
+        carColor: '#fde047',
+        trackColor: '#38bdf8',
+        waypoints: WDW_SKYLINER_EPCOT_TO_DHS,
+      },
+      dhs_to_epcot_gondola: {
+        name: 'Disney Skyliner: Hollywood Studios → Caribbean Beach Hub → Riviera → EPCOT Gateway',
+        description:
+          'Return elevated (+16.0m) aerial gondola flight from Hollywood Studios through Caribbean Beach Hub into EPCOT’s France/UK International Gateway.',
+        subterranean: false,
+        vehicleMode: 'aerial_tram',
+        trainName: 'Disney Skyliner Gondola Cabin',
+        railOffsetMeters: 16.0,
+        locoColor: '#f59e0b',
+        carColor: '#38bdf8',
+        trackColor: '#fbbf24',
+        waypoints: WDW_SKYLINER_DHS_TO_EPCOT,
+      },
+    },
+  },
+  ober_aerial_tram: {
+    id: 'ober_aerial_tram',
+    name: 'Ober Mountain Aerial Tramway (Gatlinburg Parkway ↔ Summit)',
+    city: 'Gatlinburg, TN',
+    from: {
+      name: 'Gatlinburg Parkway Lower Terminal',
+      lat: 35.7118,
+      lon: -83.5168,
+      elev: 394,
+    },
+    to: {
+      name: 'Ober Mountain Upper Summit Terminal',
+      lat: 35.7031,
+      lon: -83.5578,
+      elev: 845,
+    },
+    defaultCorridor: 'ober_parkway_to_summit',
+    defaultSpeedMph: 20,
+    bbox: [35.699, -83.562, 35.716, -83.512],
+    trackProfiles: {
+      ober_parkway_to_summit: {
+        name: 'Ober Mountain Aerial Tramway Ascent (Downtown Gatlinburg → Summit)',
+        description:
+          '2.1-mile suspended cable car ascent (+22.0m AGL) climbing nearly 1,500 vertical feet above the Great Smoky Mountains into Ober Mountain.',
+        subterranean: false,
+        vehicleMode: 'aerial_tram',
+        trainName: 'Ober Mountain Tram Car #1',
+        railOffsetMeters: 22.0,
+        locoColor: '#ef4444',
+        carColor: '#f8fafc',
+        trackColor: '#f87171',
+        waypoints: OBER_AERIAL_TRAM_ASCENT,
+      },
+      ober_summit_to_parkway: {
+        name: 'Ober Mountain Aerial Tramway Descent (Summit → Downtown Gatlinburg)',
+        description:
+          'Panoramic 2.1-mile cable car descent overlooking Mount LeConte and downtown Gatlinburg Parkway.',
+        subterranean: false,
+        vehicleMode: 'aerial_tram',
+        trainName: 'Ober Mountain Tram Car #2',
+        railOffsetMeters: 22.0,
+        locoColor: '#2563eb',
+        carColor: '#f8fafc',
+        trackColor: '#60a5fa',
+        waypoints: OBER_AERIAL_TRAM_DESCENT,
       },
     },
   },

@@ -15,6 +15,12 @@ import {
   RESORT_HIDDEN_SECRETS_CATALOG,
   isResortStayId,
 } from './resortStayCatalog.js';
+import {
+  NEXT_EXPERIENCE_HIDDEN_SECRETS_CATALOG,
+  NEXT_EXPERIENCE_METADATA,
+  NEXT_EXPERIENCE_ALIASES,
+  isNextExperienceId,
+} from './nextExperiencesCatalog.js';
 
 export const PASSPORT_STORAGE_KEY = 'gev_tour_passport_v1';
 export const SECRET_COLLECT_RADIUS_METERS = 24;
@@ -1108,6 +1114,7 @@ export const HIDDEN_SECRETS_CATALOG = Object.freeze({
     ],
   ),
   ...RESORT_HIDDEN_SECRETS_CATALOG,
+  ...NEXT_EXPERIENCE_HIDDEN_SECRETS_CATALOG,
 });
 
 /**
@@ -1386,6 +1393,166 @@ export const RESORT_NPC_ROLES = Object.freeze([
   },
 ]);
 
+export const WATER_PARK_NPC_ROLES = Object.freeze([
+  {
+    id: 'lifeguard',
+    roleLabel: 'Alpine Lifeguard',
+    icon: '🛟',
+    colorHex: '#0284c7',
+    names: ['Kendra', 'Toby', 'Marisol', 'Owen', 'Nadia', 'Caleb'],
+    greetings: [
+      'Cross Country Creek water temp is dialed to perfection today—hop in a tube!',
+      'Heads up: Summit Plummet hits nearly 60 mph down the ski jump!',
+      'Check the sandy edge of Melt-Away Bay if you are hunting hidden park markers.',
+    ],
+  },
+  {
+    id: 'lift_attendant',
+    roleLabel: 'Chairlift Operator',
+    icon: '🚡',
+    colorHex: '#38bdf8',
+    names: ['Gavin', 'Rory', 'Tessa', 'Miles', 'Hana', 'Devon'],
+    greetings: [
+      'Mount Gushmore Chairlift is running smooth—best aerial views in Orlando!',
+      'Step right onto the loading carpet; umbrellas overhead keep the Florida sun off.',
+      'From the top of Green Slope you can spot EPCOT and Animal Kingdom on the horizon!',
+    ],
+  },
+  {
+    id: 'chalet_server',
+    roleLabel: 'Chalet Snack Host',
+    icon: '🍨',
+    colorHex: '#f59e0b',
+    names: ['Bree', 'Mateo', 'Clara', 'Jules', 'Sienna', 'Theo'],
+    greetings: [
+      'Fresh cinnamon mini donuts just came out warm by the Beach Haus!',
+      'Save room for a Sand Pail Sundae on the Lottawatta Lodge deck at golden hour.',
+      'Ice-cold tropical smoothies are ready right beside the lazy river exit!',
+    ],
+  },
+  {
+    id: 'fellow_tuber',
+    roleLabel: 'Lazy River Regular',
+    icon: '🏖️',
+    colorHex: '#a78bfa',
+    names: ['Sam', 'Ari', 'Noah', 'Maya', 'Leo', 'Zoe'],
+    greetings: [
+      'Pro tip: do one full lazy river float first to scope out every slope from below!',
+      'Watch out for the melting icicle drip inside the Mount Gushmore cave—brrr!',
+      'Have you found Ice Gator’s hidden footprint marker behind the Beach Haus yet?',
+    ],
+  },
+]);
+
+export const OUTDOOR_PARK_NPC_ROLES = Object.freeze([
+  {
+    id: 'park_ranger',
+    roleLabel: 'State Park Ranger',
+    icon: '🌲',
+    colorHex: '#15803d',
+    names: [
+      'Ranger Clay',
+      'Ranger Hannah',
+      'Ranger Cole',
+      'Ranger Mae',
+      'Ranger Boone',
+      'Ranger Avery',
+    ],
+    greetings: [
+      'Welcome out on the trails! Keep an eye out for historic stonework and lakeside vistas.',
+      'Golden hour hits the water and mountain ridges right around 6 PM—stick around for campfire dusk!',
+      'We tucked five local heritage markers just off the main trail for curious walkers.',
+    ],
+  },
+  {
+    id: 'adventure_guide',
+    roleLabel: 'Trail & River Guide',
+    icon: '🛶',
+    colorHex: '#0ea5e9',
+    names: ['Sierra', 'Garrett', 'Lydia', 'Wyatt', 'Kira', 'Ben'],
+    greetings: [
+      'Water clarity is awesome today—ideal conditions for tubing, paddling, or mountain biking!',
+      'Check out the canopy ziplines and ridge views before heading down toward the lakefront.',
+      'Ask around near the trailheads—locals love pointing out the best valley sightlines!',
+    ],
+  },
+  {
+    id: 'local_historian',
+    roleLabel: 'Valley Historian',
+    icon: '🏛️',
+    colorHex: '#d97706',
+    names: ['Evelyn', 'Arthur', 'Nora', 'Walter', 'June', 'Calvin'],
+    greetings: [
+      'Every trail grade and timber blockhouse out here carries centuries of Appalachian & Piedmont stories.',
+      'Step just 40 meters off the main walk and you’ll spot historic plaques most day-trippers miss!',
+      'Take a slow pause at the overlook—this valley has welcomed travelers for generations.',
+    ],
+  },
+  {
+    id: 'fellow_hiker',
+    roleLabel: 'Fellow Explorer',
+    icon: '🥾',
+    colorHex: '#a855f7',
+    names: ['Parker', 'Riley', 'Morgan', 'Drew', 'Quinn', 'Casey'],
+    greetings: [
+      'Hands down one of the most varied outdoor parks in the Southeast—so much packed into one loop!',
+      'Wait until you see the sunset reflections off the water—totally worth the detour.',
+      'Did you spot the hidden scenic bench off the side path? Best photo angle in the park!',
+    ],
+  },
+]);
+
+export const BOARDWALK_STRIP_NPC_ROLES = Object.freeze([
+  {
+    id: 'boardwalk_historian',
+    roleLabel: 'Neon & Landmark Guide',
+    icon: '🎩',
+    colorHex: '#f59e0b',
+    names: ['Sal', 'Lorraine', 'Vinnie', 'Gloria', 'Frankie', 'Margo'],
+    greetings: [
+      'Welcome to the bright lights! Every corner out here has a century of showbiz and boardwalk lore.',
+      'Look closely at the street signs and vintage marquees—there are hidden Easter eggs tucked off the boulevard!',
+      'Stick around past sunset when the neon reflections light up the whole promenade.',
+    ],
+  },
+  {
+    id: 'show_concierge',
+    roleLabel: 'Entertainment Concierge',
+    icon: '✨',
+    colorHex: '#ec4899',
+    names: ['Celeste', 'Dante', 'Valerie', 'Roman', 'Bianca', 'Gabe'],
+    greetings: [
+      'Tonight’s light and fountain show timing is spot-on—grab a rail spot right before dusk!',
+      'Want a fast skyline view? Hop the elevated 3D ride or observation wheel!',
+      'Between vintage downtown neon and the main promenade, you get two completely different worlds.',
+    ],
+  },
+  {
+    id: 'treat_vendor',
+    roleLabel: 'Promenade Treat Vendor',
+    icon: '🎡',
+    colorHex: '#38bdf8',
+    names: ['Lou', 'Rosa', 'Mikey', 'Nina', 'Eddie', 'Talia'],
+    greetings: [
+      'Salt water taffy, warm churros, or espresso gelato—you can’t stroll the strip empty-handed!',
+      'Classic snacks taste twice as good right beside the surf or dancing fountains.',
+      'Check behind the plaza arches—there’s a cool historic plaque hiding right off the walkway!',
+    ],
+  },
+  {
+    id: 'fellow_stroller',
+    roleLabel: 'Night-Walk Regular',
+    icon: '🎆',
+    colorHex: '#a78bfa',
+    names: ['Kieran', 'Sasha', 'Devon', 'Mina', 'Theo', 'Lola'],
+    greetings: [
+      'Best walking spectacle on Earth once twilight rolls in and every tower lights up!',
+      'Don’t skip the historic side streets—half the fun is spotting the classic landmarks off the main strip.',
+      'Have you collected all five passport secrets on this promenade yet?',
+    ],
+  },
+]);
+
 export function generateParkNpcsForTour(
   cityId,
   landmarks = [],
@@ -1396,8 +1563,25 @@ export function generateParkNpcsForTour(
   const key = String(cityId || '')
     .trim()
     .toLowerCase();
-  const isResort = venueCategory === 'resort_stay' || isResortStayId(key);
-  const rolePool = isResort ? RESORT_NPC_ROLES : PARK_NPC_ROLES;
+  const resolvedCategory =
+    venueCategory ||
+    (isResortStayId(key)
+      ? 'resort_stay'
+      : isNextExperienceId(key)
+        ? NEXT_EXPERIENCE_METADATA[NEXT_EXPERIENCE_ALIASES[key] || key]
+            ?.venueCategory || null
+        : null);
+  const rolePool =
+    resolvedCategory === 'resort_stay'
+      ? RESORT_NPC_ROLES
+      : resolvedCategory === 'water_park'
+        ? WATER_PARK_NPC_ROLES
+        : resolvedCategory === 'state_park' ||
+            resolvedCategory === 'mountain_adventure'
+          ? OUTDOOR_PARK_NPC_ROLES
+          : resolvedCategory === 'boardwalk_strip'
+            ? BOARDWALK_STRIP_NPC_ROLES
+            : PARK_NPC_ROLES;
   const rng = createMulberry32(hashStringToSeed(`npcs:${key}`));
   const step = Math.max(1, Math.floor(landmarks.length / rolePool.length));
 
@@ -1438,7 +1622,7 @@ export function generateParkNpcsForTour(
       lon: pos.lon,
       elev: stop.elev || 32,
       seed: hashStringToSeed(`${key}:${role.id}`),
-      isResortNpc: isResort,
+      isResortNpc: resolvedCategory === 'resort_stay',
     };
   });
 }
