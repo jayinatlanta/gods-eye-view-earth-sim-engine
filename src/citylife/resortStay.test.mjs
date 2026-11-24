@@ -178,7 +178,10 @@ test('All 7 curated Resort Stays register cleanly on Tour v2 without polluting T
     'singapore_marina_bay_sands',
   );
 
-  // Verify Orlando Lake Cecile resort includes the Lakeside Foliage Nature Trail experience
+  // Verify Orlando Lake Cecile resort includes the Lakeside Foliage Nature Trail & Helipad at real-world coords
+  const lakeCecileMeta = METRO_TOUR_METADATA.orlando_star_island;
+  assert.ok(Math.abs(lakeCecileMeta.centerLat - 28.328606) < 0.001);
+  assert.ok(Math.abs(lakeCecileMeta.centerLon - -81.484887) < 0.001);
   const lakeCecileStops = METRO_LANDMARK_CATALOG.orlando_star_island;
   const natureTrail = lakeCecileStops.find(
     (s) => s.id === 'si_lakeside_nature_trail',
@@ -186,6 +189,11 @@ test('All 7 curated Resort Stays register cleanly on Tour v2 without polluting T
   assert.ok(natureTrail, 'Lake Cecile resort must include lakeside foliage nature trail');
   assert.match(natureTrail.name, /Nature Trail/i);
   assert.match(natureTrail.lore, /foliage/i);
+  const resortHelipad = lakeCecileStops.find(
+    (s) => s.id === 'si_resort_helipad',
+  );
+  assert.ok(resortHelipad, 'Lake Cecile resort must include helipad amenity');
+  assert.match(resortHelipad.name, /Helipad/i);
 });
 
 test('resolveTourOrPlayContext prioritizes Resort Stays with Resort Day label ahead of metro/Play', () => {

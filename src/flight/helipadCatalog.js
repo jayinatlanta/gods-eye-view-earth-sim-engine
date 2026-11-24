@@ -95,6 +95,19 @@ export const HELIPAD_WAYPOINTS = Object.freeze({
     region: 'New York City, NY',
     description: 'Iconic East River heliport serving Manhattan skyline',
   },
+  STAR_ISLAND_PAD: {
+    id: 'helipad_star_island_orlando',
+    code: 'STAR_ISLAND_PAD',
+    name: 'Lake Cecile Resort Helipad (Kissimmee / Orlando)',
+    shortName: 'Lake Cecile Helipad',
+    lat: 28.3312,
+    lon: -81.4845,
+    elev: 27,
+    type: 'resort_helipad',
+    region: 'Kissimmee / Orlando, FL',
+    description:
+      'Lakeside resort helipad off Avenue of the Stars serving Orlando & Walt Disney World rotorcraft hops',
+  },
 });
 
 export function getAllHelipads() {
