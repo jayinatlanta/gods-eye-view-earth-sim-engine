@@ -47,11 +47,13 @@ function writeDismissedStorage(dismissed) {
 export function shouldAutoShowEarthSimIntro({
   search = typeof window !== 'undefined' ? window.location?.search || '' : '',
   dismissed = readDismissedStorage(),
+  isAutomatedBrowser = Boolean(globalThis?.navigator?.webdriver),
 } = {}) {
   const params = new URLSearchParams(String(search || ''));
   const introParam = params.get('intro');
   if (introParam === '0' || introParam === 'false') return false;
   if (introParam === '1' || introParam === 'true') return true;
+  if (isAutomatedBrowser) return false;
   if (params.has('s') || params.has('share')) return false;
   return !dismissed;
 }

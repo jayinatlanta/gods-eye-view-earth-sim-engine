@@ -64,6 +64,22 @@ test('shouldAutoShowEarthSimIntro respects URL query overrides, share links, and
     shouldAutoShowEarthSimIntro({ search: '?s=abc123', dismissed: false }),
     false,
   );
+  assert.equal(
+    shouldAutoShowEarthSimIntro({
+      search: '',
+      dismissed: false,
+      isAutomatedBrowser: true,
+    }),
+    false,
+  );
+  assert.equal(
+    shouldAutoShowEarthSimIntro({
+      search: '?intro=1',
+      dismissed: false,
+      isAutomatedBrowser: true,
+    }),
+    true,
+  );
 });
 
 test('createEarthSimTourOverlay renders dynamic catalog, filters categories, persists opt-out, launches drawers, and recalls via dock pill', () => {
