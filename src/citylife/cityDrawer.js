@@ -794,15 +794,28 @@ export function createCityDrawer({
 
     if (ctx.hasCuratedOrCustomTour) {
       if (ctx.tourScope === 'venue') {
-        const shortName = String(ctx.cityName || entityOrCity?.name || 'Park')
-          .replace(/\s*\((?:WDW|DLR|UOR|USH|TDR|DLP)\)$/i, '')
-          .trim();
+        const isResortStay =
+          ctx.venueCategory === 'resort_stay' ||
+          ctx.metadata?.venueCategory === 'resort_stay';
+        const shortName =
+          (isResortStay && ctx.metadata?.shortName) ||
+          String(
+            ctx.cityName ||
+              entityOrCity?.name ||
+              (isResortStay ? 'Resort' : 'Park'),
+          )
+            .replace(/\s*\((?:WDW|DLR|UOR|USH|TDR|DLP)\)$/i, '')
+            .trim();
         return {
           state: 'tour',
-          icon: '🎢',
-          label: `Park Day: ${shortName}`,
+          icon: isResortStay ? '🏨' : '🎢',
+          label: isResortStay
+            ? `Resort Day: ${shortName}`
+            : `Park Day: ${shortName}`,
           livingWorldName: shortName,
-          tooltip: `Start ${shortName} Theme Park Day Tour [T]`,
+          tooltip: isResortStay
+            ? `Start ${shortName} Resort Day Off [T]`
+            : `Start ${shortName} Theme Park Day Tour [T]`,
           ctx,
           catalogPlace: null,
         };

@@ -10,12 +10,22 @@
 
 import * as Cesium from 'cesium';
 import { getFireworksAnchorForPark } from './themeParkCatalog.js';
+import {
+  getEveningAnchorForResort,
+  isResortStayId,
+} from './resortStayCatalog.js';
 import { createMulberry32, hashStringToSeed } from './parkSecretsAndNpcs.js';
 
 export const FIREWORKS_PARTICLE_POOL_SIZE = 96;
+export const EVENING_AMBIANCE_MODES = Object.freeze({
+  FIREWORKS: 'fireworks',
+  FIRE_PIT_LOUNGE: 'fire_pit_lounge',
+});
 const GRAVITY_MPS2 = 16.5;
 const PARTICLES_PER_BURST = 24;
 const SHELL_INTERVAL_SEC = 1.15;
+const EMBER_SPAWN_INTERVAL_SEC = 0.28;
+const EMBERS_PER_PUFF = 6;
 
 export function createParkFireworksFinale({
   viewer = null,
@@ -23,6 +33,7 @@ export function createParkFireworksFinale({
   audioContext = null,
 } = {}) {
   let active = false;
+  let activeMode = EVENING_AMBIANCE_MODES.FIREWORKS;
   let isDestroyed = false;
   let activeCityId = null;
   let activeAnchor = null;
@@ -31,6 +42,7 @@ export function createParkFireworksFinale({
   let lastFrameMs = 0;
   let shellCooldownSec = 0;
   let shellCounter = 0;
+  let acousticChordCooldownSec = 0;
   let collection = null;
   let ownsAudioContext = false;
   let ctx = audioContext;
@@ -237,6 +249,105 @@ export function createParkFireworksFinale({
     viewer?.scene?.requestRender?.();
   }
 
+  function playProceduralFirePitAudio() {
+    const ac = ensureAudioContext();
+    if (!ac || isDestroyed || !active) return;
+    try {
+      if (ac.state === 'suspended') {
+        ac.resume?.().catch?.(() => {});
+      }
+      const now = ac.currentTime || 0;
+
+      // 1. Soft hearth ember crackle (gentle high-bandpass filtered micro-pops)
+      const sampleRate = ac.sampleRate || 22050;
+      const len = Math.max(1, Math.floor(sampleRate * 0.35));
+      const buffer = ac.createBuffer?.(1, len, sampleRate);
+      if (buffer?.getChannelData) {
+        const ch = buffer.getChannelData(0);
+        for (let i = 0; i < len; i += 1) {
+          const env = Math.exp(-i / (sampleRate * 0.18));
+          const pop = rng() > 0.992 ? 1.8 : 0.16;
+          ch[i] = (rng() * 2 - 1) * env * pop;
+        }
+      }
+      const crackleSrc = ac.createBufferSource?.();
+      const filter = ac.createBiquadFilter?.();
+      const gain = ac.createGain?.();
+      if (crackleSrc && filter && gain) {
+        crackleSrc.buffer = buffer;
+        filter.type = 'bandpass';
+        filter.frequency?.setValueAtTime?.(2400, now);
+        filter.Q?.setValueAtTime?.(1.6, now);
+        gain.gain?.setValueAtTime?.(0.045, now);
+        gain.gain?.exponentialRampToValueAtTime?.(0.001, now + 0.35);
+        crackleSrc.connect?.(filter);
+        filter.connect?.(gain);
+        gain.connect?.(ac.destination);
+        crackleSrc.start?.(now);
+        crackleSrc.stop?.(now + 0.36);
+        registerAudioNode(crackleSrc, 500);
+        registerAudioNode(filter, 500);
+        registerAudioNode(gain, 500);
+      }
+
+      // 2. Warm acoustic sunset pentatonic chord swell every ~2.6s
+      if (acousticChordCooldownSec <= 0) {
+        acousticChordCooldownSec = 2.6;
+        const pentatonic = [220.0, 261.63, 293.66, 329.63, 392.0];
+        const rootHz = pentatonic[shellCounter % pentatonic.length];
+        const fifthHz = rootHz * 1.5;
+        [rootHz, fifthHz].forEach((freq, idx) => {
+          const osc = ac.createOscillator?.();
+          const padGain = ac.createGain?.();
+          if (osc && padGain) {
+            osc.type = idx === 0 ? 'triangle' : 'sine';
+            osc.frequency?.setValueAtTime?.(freq, now + idx * 0.08);
+            padGain.gain?.setValueAtTime?.(0.001, now + idx * 0.08);
+            padGain.gain?.linearRampToValueAtTime?.(
+              0.032,
+              now + idx * 0.08 + 0.25,
+            );
+            padGain.gain?.exponentialRampToValueAtTime?.(
+              0.0008,
+              now + idx * 0.08 + 1.4,
+            );
+            osc.connect?.(padGain);
+            padGain.connect?.(ac.destination);
+            osc.start?.(now + idx * 0.08);
+            osc.stop?.(now + idx * 0.08 + 1.45);
+            registerAudioNode(osc, 1650);
+            registerAudioNode(padGain, 1650);
+          }
+        });
+      }
+    } catch {
+      // Safe no-op under browser autoplay restrictions
+    }
+  }
+
+  function spawnFirePitEmbers() {
+    if (!active || !activeAnchor) return;
+    ensurePrimitiveCollection();
+    shellCounter += 1;
+    for (let k = 0; k < EMBERS_PER_PUFF; k += 1) {
+      const slot = poolCursor;
+      poolCursor = (poolCursor + 1) % FIREWORKS_PARTICLE_POOL_SIZE;
+      const angle = rng() * Math.PI * 2;
+      const radius = rng() * 3.8;
+      posEastM[slot] = Math.cos(angle) * radius;
+      posNorthM[slot] = Math.sin(angle) * radius;
+      posUpM[slot] = 1.2 + rng() * 1.8;
+      velEastMps[slot] = (rng() - 0.5) * 1.6;
+      velNorthMps[slot] = (rng() - 0.5) * 1.6;
+      velUpMps[slot] = 1.6 + rng() * 2.8;
+      lifeSec[slot] = 0;
+      maxLifeSec[slot] = 2.2 + rng() * 1.4;
+      activeMask[slot] = 1;
+      colorIndices[slot] = (shellCounter + k) % paletteColors.length;
+    }
+    playProceduralFirePitAudio();
+  }
+
   function spawnShellBurst() {
     if (!active || !activeAnchor) return;
     ensurePrimitiveCollection();
@@ -272,10 +383,19 @@ export function createParkFireworksFinale({
   function stepFrame(dtSec) {
     if (!active || !activeAnchor) return;
     const clampedDt = Math.min(0.08, Math.max(0.001, dtSec));
+    const isFirePit = activeMode === EVENING_AMBIANCE_MODES.FIRE_PIT_LOUNGE;
     shellCooldownSec -= clampedDt;
+    if (acousticChordCooldownSec > 0) {
+      acousticChordCooldownSec -= clampedDt;
+    }
     if (shellCooldownSec <= 0) {
-      spawnShellBurst();
-      shellCooldownSec = SHELL_INTERVAL_SEC;
+      if (isFirePit) {
+        spawnFirePitEmbers();
+        shellCooldownSec = EMBER_SPAWN_INTERVAL_SEC;
+      } else {
+        spawnShellBurst();
+        shellCooldownSec = SHELL_INTERVAL_SEC;
+      }
     }
 
     const baseLat = activeAnchor.lat;
@@ -298,9 +418,15 @@ export function createParkFireworksFinale({
         continue;
       }
       anyVisible = true;
-      velEastMps[i] *= 0.985;
-      velNorthMps[i] *= 0.985;
-      velUpMps[i] -= GRAVITY_MPS2 * clampedDt;
+      if (isFirePit) {
+        velEastMps[i] *= 0.992;
+        velNorthMps[i] *= 0.992;
+        velUpMps[i] += 0.35 * clampedDt;
+      } else {
+        velEastMps[i] *= 0.985;
+        velNorthMps[i] *= 0.985;
+        velUpMps[i] -= GRAVITY_MPS2 * clampedDt;
+      }
 
       posEastM[i] += velEastMps[i] * clampedDt;
       posNorthM[i] += velNorthMps[i] * clampedDt;
@@ -309,7 +435,7 @@ export function createParkFireworksFinale({
       if (pt) {
         const lat = baseLat + posNorthM[i] / 111139.0;
         const lon = baseLon + posEastM[i] / (111139.0 * safeCos);
-        const alt = baseElev + Math.max(4, posUpM[i]);
+        const alt = baseElev + Math.max(isFirePit ? 1.2 : 4, posUpM[i]);
         Cesium.Cartesian3.fromDegrees(
           lon,
           lat,
@@ -319,7 +445,9 @@ export function createParkFireworksFinale({
         );
         pt.position = scratchCartesian;
         const progress = lifeSec[i] / maxLifeSec[i];
-        pt.pixelSize = Math.max(2.5, 7.5 * (1 - progress * 0.7));
+        pt.pixelSize = isFirePit
+          ? Math.max(2.0, 5.5 * (1 - progress * 0.65))
+          : Math.max(2.5, 7.5 * (1 - progress * 0.7));
         const baseColor = paletteColors[colorIndices[i]] || paletteColors[0];
         if (baseColor) {
           pt.color = baseColor;
@@ -348,19 +476,51 @@ export function createParkFireworksFinale({
     rafId = requestAnimationFrame(tick);
   }
 
-  function start({ cityId = null, landmark = null } = {}) {
+  function start({ cityId = null, landmark = null, mode = null } = {}) {
     if (isDestroyed) return getState();
     const status = tourAndPlayEngine?.getStatus?.();
     const targetCity = cityId || status?.cityId || null;
     const stopTarget = landmark || status?.currentLandmark || null;
+    const isResort =
+      status?.venueCategory === 'resort_stay' || isResortStayId(targetCity);
+    const resolvedMode =
+      mode === EVENING_AMBIANCE_MODES.FIRE_PIT_LOUNGE ||
+      mode === EVENING_AMBIANCE_MODES.FIREWORKS
+        ? mode
+        : isResort
+          ? EVENING_AMBIANCE_MODES.FIRE_PIT_LOUNGE
+          : EVENING_AMBIANCE_MODES.FIREWORKS;
+
     activeCityId = targetCity;
-    activeAnchor = getFireworksAnchorForPark(targetCity, stopTarget);
+    activeMode = resolvedMode;
+    activeMask.fill(0);
+    if (isResort) {
+      const resortAnchor = getEveningAnchorForResort(targetCity, stopTarget);
+      activeAnchor =
+        resolvedMode === EVENING_AMBIANCE_MODES.FIREWORKS &&
+        resortAnchor?.nearbyFireworks
+          ? {
+              ...resortAnchor.nearbyFireworks,
+              iconName:
+                resortAnchor.nearbyFireworks.label || resortAnchor.iconName,
+            }
+          : resortAnchor;
+    } else {
+      activeAnchor = getFireworksAnchorForPark(targetCity, stopTarget);
+    }
     refreshAnchorPalette(activeAnchor);
-    rng = createMulberry32(hashStringToSeed(`fw:${targetCity || 'park'}`));
+    rng = createMulberry32(
+      hashStringToSeed(`${resolvedMode}:${targetCity || 'park'}`),
+    );
     active = true;
     shellCooldownSec = 0;
+    acousticChordCooldownSec = 0;
     ensurePrimitiveCollection();
-    spawnShellBurst();
+    if (resolvedMode === EVENING_AMBIANCE_MODES.FIRE_PIT_LOUNGE) {
+      spawnFirePitEmbers();
+    } else {
+      spawnShellBurst();
+    }
     if (!rafId) {
       scheduleLoop();
     }
@@ -387,9 +547,22 @@ export function createParkFireworksFinale({
     return getState();
   }
 
-  function toggle() {
-    if (active) return stop();
-    return start();
+  function toggle(requestedMode = null) {
+    if (active && (!requestedMode || requestedMode === activeMode)) {
+      return stop();
+    }
+    if (active && requestedMode && requestedMode !== activeMode) {
+      stop();
+    }
+    return start({ mode: requestedMode });
+  }
+
+  function toggleFirePit() {
+    return toggle(EVENING_AMBIANCE_MODES.FIRE_PIT_LOUNGE);
+  }
+
+  function toggleFireworks() {
+    return toggle(EVENING_AMBIANCE_MODES.FIREWORKS);
   }
 
   const unsubTour = tourAndPlayEngine?.onStatusChange?.((status) => {
@@ -412,9 +585,14 @@ export function createParkFireworksFinale({
       if (autoKey !== lastAutoTriggerKey) {
         lastAutoTriggerKey = autoKey;
         if (!active) {
+          const defaultMode =
+            status.venueCategory === 'resort_stay'
+              ? EVENING_AMBIANCE_MODES.FIRE_PIT_LOUNGE
+              : EVENING_AMBIANCE_MODES.FIREWORKS;
           start({
             cityId: status.cityId,
             landmark: status.currentLandmark,
+            mode: defaultMode,
           });
         }
       }
@@ -424,6 +602,11 @@ export function createParkFireworksFinale({
   function getState() {
     return {
       active,
+      mode: activeMode,
+      isFirePitActive:
+        active && activeMode === EVENING_AMBIANCE_MODES.FIRE_PIT_LOUNGE,
+      isFireworksActive:
+        active && activeMode === EVENING_AMBIANCE_MODES.FIREWORKS,
       cityId: activeCityId,
       anchor: activeAnchor ? { ...activeAnchor } : null,
       shellCounter,
@@ -453,7 +636,14 @@ export function createParkFireworksFinale({
     start,
     stop,
     toggle,
+    toggleFirePit,
+    toggleFireworks,
     isActive: () => active,
+    getMode: () => activeMode,
+    isFirePitActive: () =>
+      active && activeMode === EVENING_AMBIANCE_MODES.FIRE_PIT_LOUNGE,
+    isFireworksActive: () =>
+      active && activeMode === EVENING_AMBIANCE_MODES.FIREWORKS,
     getState,
     onStateChange: (cb) => {
       if (typeof cb !== 'function') return () => {};

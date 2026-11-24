@@ -59,22 +59,39 @@ import {
   getParkHopperBridgesForPark,
   ALL_CURATED_THEME_PARK_IDS,
 } from './themeParkCatalog.js';
+import {
+  RESORT_STAY_LANDMARKS,
+  RESORT_STAY_METADATA,
+  RESORT_STAY_ALIASES,
+  RESORT_EXCURSION_BRIDGES,
+  ALL_CURATED_RESORT_STAY_IDS,
+  isResortStayId,
+  getExcursionBridgesForResort,
+} from './resortStayCatalog.js';
 
 export {
   RESORT_PARK_HOPPER_BRIDGES,
   getParkHopperBridgesForPark,
   ALL_CURATED_THEME_PARK_IDS,
+  RESORT_STAY_LANDMARKS,
+  RESORT_STAY_METADATA,
+  RESORT_EXCURSION_BRIDGES,
+  ALL_CURATED_RESORT_STAY_IDS,
+  isResortStayId,
+  getExcursionBridgesForResort,
 };
 
 export const TOUR_SCOOTER_SPEED_MPS = WANDER_SPEED_TIERS.SCOOTER || 6.7; // ~15 mph electric scooter
 export const TOUR_WALK_DWELL_SPEED_MPS = WANDER_SPEED_TIERS.STROLL || 1.2; // ~2.7 mph normal walking wander
 export const TOUR_WALK_MIDWAY_SPEED_MPS = 3.2; // Brisk park promenade walk (~3.2 m/s)
+export const TOUR_RESORT_CART_SPEED_MPS = 5.5; // ~12.3 mph resort golf cart cruiser
 export const TOUR_LANDMARK_DWELL_SECONDS = 20; // 20s autonomous walking wander at each landmark
 export const METRO_TOUR_RADIUS_METERS = 32000; // 32km metro detection radius
 export const VENUE_TOUR_DEFAULT_RADIUS_METERS = 2500; // Tight theme-park/campus venue detection
 export const TOUR_SIDEWALK_OFFSET_METERS = 3.5; // +3.5m right-hand pedestrian sidewalk offset from street centerline
 export const TOUR_APPROACH_CORRIDOR_MAX_METERS = 260; // Max direct scooter distance before staging on the landmark's street corridor
 export const TOUR_WALK_MIDWAY_CORRIDOR_MAX_METERS = 650; // Continuous mid-park walkway leg threshold before corridor staging
+export const TOUR_RESORT_CART_CORRIDOR_MAX_METERS = 900; // Continuous resort golf cart fairway/path leg threshold
 export const YOUTUBE_VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
 
 export const TOUR_PLAY_STATES = Object.freeze({
@@ -2165,6 +2182,7 @@ export const METRO_LANDMARK_CATALOG = Object.freeze({
     },
   ],
   ...STAGE3_THEME_PARK_LANDMARKS,
+  ...RESORT_STAY_LANDMARKS,
 });
 
 /**
@@ -2423,6 +2441,7 @@ export const METRO_TOUR_METADATA = Object.freeze({
     populationNote: 'Walt Disney World · 11-Country World Showcase · 18 Stops',
   },
   ...STAGE3_THEME_PARK_METADATA,
+  ...RESORT_STAY_METADATA,
 });
 
 const METRO_TOUR_CITY_ALIASES = Object.freeze({
@@ -2464,6 +2483,7 @@ const METRO_TOUR_CITY_ALIASES = Object.freeze({
   disney_epcot: 'wdw_epcot',
   world_showcase: 'wdw_epcot',
   ...STAGE3_THEME_PARK_ALIASES,
+  ...RESORT_STAY_ALIASES,
 });
 
 function stripTourDiacritics(raw) {
@@ -2754,7 +2774,9 @@ export function validateCustomTourDraft(draft = {}, { existingIds = [] } = {}) {
       : null;
   const rawTransitMode = String(draft?.transitMode || '').trim();
   const transitMode =
-    rawTransitMode === 'walk_midway' || rawTransitMode === 'scooter'
+    rawTransitMode === 'walk_midway' ||
+    rawTransitMode === 'scooter' ||
+    rawTransitMode === 'resort_cart'
       ? rawTransitMode
       : null;
   const itineraryPolicy = String(draft?.itineraryPolicy || '').trim() || null;
@@ -2846,19 +2868,28 @@ export function normalizeTourV2Metadata(
       : 'metro';
   const rawTransit = String(meta?.transitMode || '').trim();
   const transitMode =
-    rawTransit === 'walk_midway' || rawTransit === 'scooter'
+    rawTransit === 'walk_midway' ||
+    rawTransit === 'scooter' ||
+    rawTransit === 'resort_cart'
       ? rawTransit
       : tourScope === 'venue'
         ? 'walk_midway'
         : 'scooter';
+  const venueCategory =
+    meta?.venueCategory === 'resort_stay' || isResortStayId(id)
+      ? 'resort_stay'
+      : tourScope === 'venue'
+        ? 'theme_park'
+        : null;
   const defaultRadius =
     tourScope === 'venue'
       ? VENUE_TOUR_DEFAULT_RADIUS_METERS
       : meta?.isCustom
         ? CUSTOM_TOUR_RADIUS_METERS
         : METRO_TOUR_RADIUS_METERS;
+  const minRadiusMeters = tourScope === 'venue' ? 250 : 1000;
   const radiusMeters = Number.isFinite(Number(meta?.radiusMeters))
-    ? Math.max(1000, Number(meta.radiusMeters))
+    ? Math.max(minRadiusMeters, Number(meta.radiusMeters))
     : defaultRadius;
 
   const cityAnchor = LIVING_CITIES[id] || null;
@@ -2904,6 +2935,7 @@ export function normalizeTourV2Metadata(
     continent,
     country,
     tourScope,
+    ...(venueCategory ? { venueCategory } : {}),
     radiusMeters,
     transitMode,
     centerLat: Number(centerLat.toFixed(6)),
@@ -3854,6 +3886,34 @@ export function buildTourItinerary(
       }
       return [...shuffledFront, ...orderedShowcase];
     }
+
+    const eveningCapstones = filtered.filter((s) =>
+      Boolean(s?.isEveningCapstone),
+    );
+    if (
+      eveningCapstones.length > 0 &&
+      eveningCapstones.length < filtered.length
+    ) {
+      const morningStops = filtered.filter(
+        (s) =>
+          !s?.isEveningCapstone &&
+          String(s?.dayChapter || '')
+            .trim()
+            .toLowerCase() === 'morning_arrival',
+      );
+      const middayStops = filtered.filter(
+        (s) =>
+          !s?.isEveningCapstone &&
+          String(s?.dayChapter || '')
+            .trim()
+            .toLowerCase() !== 'morning_arrival',
+      );
+      return [
+        ...morningStops.map((lm) => ({ ...lm })),
+        ...shuffleLandmarks(middayStops, rng),
+        ...eveningCapstones.map((lm) => ({ ...lm })),
+      ];
+    }
   }
 
   return shuffleLandmarks(filtered, rng);
@@ -4575,9 +4635,14 @@ export function resolveTourOrPlayContext(lat, lon, elevationMeters = 0) {
   }
 
   if (nearestVenue) {
-    const shortVenueName = String(nearestVenue.name || '')
-      .replace(/\s*\((?:WDW|DLR|UOR|USH|TDR|DLP)\)$/i, '')
-      .trim();
+    const isResortStay =
+      nearestVenue.venueCategory === 'resort_stay' ||
+      isResortStayId(nearestVenue.id);
+    const shortVenueName =
+      (isResortStay && nearestVenue.shortName) ||
+      String(nearestVenue.name || '')
+        .replace(/\s*\((?:WDW|DLR|UOR|USH|TDR|DLP)\)$/i, '')
+        .trim();
     return {
       mode: 'tour',
       hasExistingTour: true,
@@ -4585,13 +4650,23 @@ export function resolveTourOrPlayContext(lat, lon, elevationMeters = 0) {
       isCustomTour: false,
       isDynamicPlaceholder: false,
       tourScope: 'venue',
+      venueCategory: isResortStay ? 'resort_stay' : 'theme_park',
       radiusMeters:
         nearestVenue.radiusMeters || VENUE_TOUR_DEFAULT_RADIUS_METERS,
       transitMode: nearestVenue.transitMode || 'walk_midway',
+      supportedTransitModes:
+        nearestVenue.supportedTransitModes ||
+        (isResortStay
+          ? ['walk_midway', 'scooter', 'resort_cart']
+          : ['walk_midway']),
       supportedModes: nearestVenue.supportedModes || ['all'],
-      title: `${nearestVenue.name} Park Day Tour`,
+      title: isResortStay
+        ? `${nearestVenue.name} Resort Day`
+        : `${nearestVenue.name} Park Day Tour`,
       label: nearestVenue.name,
-      actionButtonLabel: `🎢 Park Day: ${shortVenueName || nearestVenue.name}`,
+      actionButtonLabel: isResortStay
+        ? `🏨 Resort Day: ${shortVenueName || nearestVenue.name}`
+        : `🎢 Park Day: ${shortVenueName || nearestVenue.name}`,
       cityId: nearestVenue.id,
       cityName: nearestVenue.name,
       landmarks: nearestVenue.landmarks,
@@ -4913,12 +4988,14 @@ export function buildStreetAndSidewalkRoute(
 
   const effectiveCorridorMax = Number.isFinite(approachCorridorMaxMeters)
     ? approachCorridorMaxMeters
-    : transitMode === 'walk_midway'
-      ? TOUR_WALK_MIDWAY_CORRIDOR_MAX_METERS
-      : TOUR_APPROACH_CORRIDOR_MAX_METERS;
+    : transitMode === 'resort_cart'
+      ? TOUR_RESORT_CART_CORRIDOR_MAX_METERS
+      : transitMode === 'walk_midway'
+        ? TOUR_WALK_MIDWAY_CORRIDOR_MAX_METERS
+        : TOUR_APPROACH_CORRIDOR_MAX_METERS;
   const effectiveSidewalkOffset = Number.isFinite(sidewalkOffsetMeters)
     ? sidewalkOffsetMeters
-    : transitMode === 'walk_midway'
+    : transitMode === 'walk_midway' || transitMode === 'resort_cart'
       ? 0
       : TOUR_SIDEWALK_OFFSET_METERS;
 
@@ -5094,7 +5171,9 @@ export function createTourAndPlayEngine({
   let activeCityId = null;
   let activeCityName = '';
   let activeTourScope = 'city';
+  let activeVenueCategory = null;
   let activeTransitMode = 'scooter';
+  let transitModeOverride = null;
   let activeTourMode = 'all';
   let activeTourMetadata = null;
   let mediaPaused = false;
@@ -5117,30 +5196,70 @@ export function createTourAndPlayEngine({
   let activeTourCameraMode = WANDER_CAMERA_MODES.ISO_CHASE;
   const stateListeners = new Set();
 
-  function getActiveTransitSpeedMps() {
-    return activeTransitMode === 'walk_midway'
-      ? TOUR_WALK_MIDWAY_SPEED_MPS
-      : scooterSpeedMps;
+  function getEffectiveTransitMode(
+    targetStop = tourOrder[currentLandmarkIndex],
+  ) {
+    if (
+      transitModeOverride === 'walk_midway' ||
+      transitModeOverride === 'scooter' ||
+      transitModeOverride === 'resort_cart'
+    ) {
+      return transitModeOverride;
+    }
+    if (
+      activeVenueCategory === 'resort_stay' &&
+      targetStop?.isGolfZone === true
+    ) {
+      return 'resort_cart';
+    }
+    return activeTransitMode;
   }
 
-  function getActiveCorridorMaxMeters() {
-    return activeTransitMode === 'walk_midway'
-      ? TOUR_WALK_MIDWAY_CORRIDOR_MAX_METERS
-      : TOUR_APPROACH_CORRIDOR_MAX_METERS;
+  function getActiveTransitSpeedMps(
+    targetStop = tourOrder[currentLandmarkIndex],
+  ) {
+    const mode = getEffectiveTransitMode(targetStop);
+    if (mode === 'walk_midway') return TOUR_WALK_MIDWAY_SPEED_MPS;
+    if (mode === 'resort_cart') return TOUR_RESORT_CART_SPEED_MPS;
+    return scooterSpeedMps;
+  }
+
+  function getActiveCorridorMaxMeters(
+    targetStop = tourOrder[currentLandmarkIndex],
+  ) {
+    const mode = getEffectiveTransitMode(targetStop);
+    if (mode === 'resort_cart') return TOUR_RESORT_CART_CORRIDOR_MAX_METERS;
+    if (mode === 'walk_midway') return TOUR_WALK_MIDWAY_CORRIDOR_MAX_METERS;
+    return TOUR_APPROACH_CORRIDOR_MAX_METERS;
   }
 
   function buildTransitBubbleSpec(target, stopIndex = currentLandmarkIndex) {
     if (!target) return null;
-    const isWalk = activeTransitMode === 'walk_midway';
-    const prefix = isWalk ? '🚶 Walking to' : '🛴 Scootering to';
-    const pathDesc = isWalk ? 'along park midway' : 'via street & sidewalk';
+    const mode = getEffectiveTransitMode(target);
+    const isResort = activeVenueCategory === 'resort_stay';
+    const isWalk = mode === 'walk_midway';
+    const isCart = mode === 'resort_cart';
+    const prefix = isCart
+      ? '⛳ Golf Cart to'
+      : isWalk
+        ? '🚶 Walking to'
+        : '🛴 E-Scootering to';
+    const pathDesc = isCart
+      ? 'along resort golf cart path'
+      : isWalk
+        ? isResort
+          ? 'along resort promenade'
+          : 'along park midway'
+        : isResort
+          ? 'via resort loop path'
+          : 'via street & sidewalk';
     return {
       name: `${prefix} ${target.name}`,
-      vibeColor: '#22d3ee',
+      vibeColor: isCart ? '#34d399' : '#22d3ee',
       occupation: `Stop ${stopIndex + 1} of ${tourOrder.length} · ${pathDesc}`,
-      thought: `Next Landmark: ${target.name} (${target.category}). ${target.companionNote}`,
-      currentThought: `Next Landmark: ${target.name} (${target.category}). ${target.companionNote}`,
-      city: `${activeCityName} ${isWalk ? 'Park Day Walk' : 'Scooter Tour'}`,
+      thought: `Next ${isResort ? 'Resort Stop' : 'Landmark'}: ${target.name} (${target.category}). ${target.companionNote}`,
+      currentThought: `Next ${isResort ? 'Resort Stop' : 'Landmark'}: ${target.name} (${target.category}). ${target.companionNote}`,
+      city: `${activeCityName} ${isCart ? 'Resort Golf Cart' : isWalk ? (isResort ? 'Resort Day Walk' : 'Park Day Walk') : 'E-Scooter Tour'}`,
       isCompanion: true,
     };
   }
@@ -5308,18 +5427,22 @@ export function createTourAndPlayEngine({
           )
         : Infinity;
 
-    const corridorMaxMeters = getActiveCorridorMaxMeters();
+    const effectiveMode = getEffectiveTransitMode(targetLandmark);
+    const corridorMaxMeters = getActiveCorridorMaxMeters(targetLandmark);
     const needsCorridorStaging =
       isInitialSpawn || currentDist > corridorMaxMeters;
+    const isZeroOffsetMode =
+      effectiveMode === 'walk_midway' || effectiveMode === 'resort_cart';
 
     const route = buildStreetAndSidewalkRoute(
       needsCorridorStaging ? null : currentCoord,
       targetLandmark,
       {
-        transitMode: activeTransitMode,
+        transitMode: effectiveMode,
         approachCorridorMaxMeters: corridorMaxMeters,
-        sidewalkOffsetMeters:
-          activeTransitMode === 'walk_midway' ? 0 : TOUR_SIDEWALK_OFFSET_METERS,
+        sidewalkOffsetMeters: isZeroOffsetMode
+          ? 0
+          : TOUR_SIDEWALK_OFFSET_METERS,
       },
     );
 
@@ -5373,9 +5496,7 @@ export function createTourAndPlayEngine({
           }
           const sidewalkPts = projectRouteToSidewalk(
             snappedRoadPts,
-            activeTransitMode === 'walk_midway'
-              ? 0
-              : TOUR_SIDEWALK_OFFSET_METERS,
+            isZeroOffsetMode ? 0 : TOUR_SIDEWALK_OFFSET_METERS,
           );
           if (sidewalkPts.length >= 3 && transitElapsedSec < 0.35) {
             activeRouteWaypoints = sidewalkPts;
@@ -5768,6 +5889,7 @@ export function createTourAndPlayEngine({
     companion = true,
     startStopId = null,
     tourMode = 'all',
+    transitMode = null,
     viewer: overrideViewer = null,
   } = {}) {
     if (overrideViewer) activeViewer = overrideViewer;
@@ -5857,7 +5979,20 @@ export function createTourAndPlayEngine({
       nearestMetroInfo?.metadata ||
       null;
     activeTourScope = activeTourMetadata?.tourScope || 'city';
+    activeVenueCategory =
+      activeTourMetadata?.venueCategory ||
+      (isResortStayId(activeCityId)
+        ? 'resort_stay'
+        : activeTourScope === 'venue'
+          ? 'theme_park'
+          : null);
     activeTransitMode = activeTourMetadata?.transitMode || 'scooter';
+    transitModeOverride =
+      transitMode === 'walk_midway' ||
+      transitMode === 'scooter' ||
+      transitMode === 'resort_cart'
+        ? transitMode
+        : null;
     activeTourMode = effectiveTourMode;
     mediaPaused = false;
 
@@ -6158,7 +6293,9 @@ export function createTourAndPlayEngine({
     transitElapsedSec = 0;
     activePlayActivity = null;
     activeTourScope = 'city';
+    activeVenueCategory = null;
     activeTransitMode = 'scooter';
+    transitModeOverride = null;
     activeTourMode = 'all';
     activeTourMetadata = null;
     mediaPaused = false;
@@ -6179,12 +6316,39 @@ export function createTourAndPlayEngine({
     stateListeners.clear();
   }
 
+  function setTransitMode(mode = null) {
+    const clean = String(mode || '')
+      .trim()
+      .toLowerCase();
+    if (clean === 'auto' || clean === '') {
+      transitModeOverride = null;
+    } else if (
+      clean === 'walk_midway' ||
+      clean === 'scooter' ||
+      clean === 'resort_cart'
+    ) {
+      transitModeOverride = clean;
+    } else {
+      return getStatus();
+    }
+    const target = tourOrder[currentLandmarkIndex];
+    if (state === TOUR_PLAY_STATES.SCOOTER_TRANSIT && target) {
+      wanderEngine?.showDialogBubble?.(
+        buildTransitBubbleSpec(target, currentLandmarkIndex),
+      );
+    }
+    notifyListeners();
+    return getStatus();
+  }
+
   function getLinkedParkHops() {
-    return getParkHopperBridgesForPark(activeCityId);
+    const parkBridges = getParkHopperBridgesForPark(activeCityId);
+    const resortBridges = getExcursionBridgesForResort(activeCityId);
+    return [...parkBridges, ...resortBridges];
   }
 
   function hopToLinkedPark(targetCityId = null, { bridgeId = null } = {}) {
-    const bridges = getParkHopperBridgesForPark(activeCityId);
+    const bridges = getLinkedParkHops();
     const normalizedTarget = normalizeMetroTourCityKey(targetCityId);
     const bridge =
       bridges.find(
@@ -6195,6 +6359,39 @@ export function createTourAndPlayEngine({
       ) || (!targetCityId && !bridgeId ? bridges[0] : null);
     if (!bridge) {
       return { ok: false, reason: 'no_bridge', bridges };
+    }
+    if (
+      bridge.kind === 'drive_excursion' &&
+      Number.isFinite(bridge.targetLat) &&
+      Number.isFinite(bridge.targetLon)
+    ) {
+      const originName = activeCityName || 'Resort';
+      stop();
+      wanderEngine?.startWandering?.({
+        lat: bridge.targetLat,
+        lon: bridge.targetLon,
+        elev: bridge.targetElev || 15,
+        heading: 45,
+        companion: activeTourCompanion,
+        cameraMode: activeTourCameraMode || WANDER_CAMERA_MODES.ISO_CHASE,
+      });
+      wanderEngine?.relocateTo?.({
+        lat: bridge.targetLat,
+        lon: bridge.targetLon,
+        elev: bridge.targetElev || 15,
+        heading: 45,
+        preserveCameraMode: true,
+      });
+      wanderEngine?.showDialogBubble?.({
+        name: `${bridge.icon} ${bridge.transitLabel} ➔ ${bridge.toParkName}`,
+        vibeColor: '#34d399',
+        occupation: `${originName} Excursion · ${bridge.durationNote}`,
+        thought: `Arrived at ${bridge.toParkName} via ${bridge.transitLabel}! Explore freely or hop back to your Resort Basecamp anytime.`,
+        currentThought: `Arrived at ${bridge.toParkName} via ${bridge.transitLabel}! Explore freely or hop back to your Resort Basecamp anytime.`,
+        city: bridge.toParkName,
+        isCompanion: true,
+      });
+      return { ok: true, bridge, excursion: true, status: getStatus() };
     }
     wanderEngine?.showDialogBubble?.({
       name: `${bridge.icon} Boarding ${bridge.transitLabel}`,
@@ -6228,14 +6425,17 @@ export function createTourAndPlayEngine({
     const isPlay =
       state === TOUR_PLAY_STATES.PLAY_ACTIVE ||
       (state === TOUR_PLAY_STATES.USER_TAKEOVER && Boolean(activePlayActivity));
-    const parkHopperBridges = isTour
-      ? getParkHopperBridgesForPark(activeCityId)
+    const parkHopperBridges = isTour ? getLinkedParkHops() : [];
+    const resortExcursionBridges = isTour
+      ? getExcursionBridgesForResort(activeCityId)
       : [];
+    const effectiveTransitMode = getEffectiveTransitMode(currentStop);
     const isFinalEveningStop = Boolean(
       isTour &&
       activeTourScope === 'venue' &&
       tourOrder.length > 0 &&
       (currentLandmarkIndex >= tourOrder.length - 1 ||
+        Boolean(currentStop?.isEveningCapstone) ||
         (lastSolarState?.localHour ?? 0) >= 19.25),
     );
     return {
@@ -6248,12 +6448,28 @@ export function createTourAndPlayEngine({
       cityId: activeCityId,
       cityName: activeCityName,
       tourScope: activeTourScope,
-      transitMode: activeTransitMode,
+      venueCategory: activeVenueCategory,
+      transitMode: effectiveTransitMode,
+      baseTransitMode: activeTransitMode,
+      effectiveTransitMode,
+      transitModeOverride,
+      supportedTransitModes:
+        activeTourMetadata?.supportedTransitModes ||
+        (activeVenueCategory === 'resort_stay'
+          ? ['walk_midway', 'scooter', 'resort_cart']
+          : [activeTransitMode]),
       tourMode: activeTourMode,
       supportedModes: activeTourMetadata?.supportedModes || ['all'],
       dayCycle: lastSolarState,
       isFinalEveningStop,
+      eveningAmbianceMode:
+        activeTourMetadata?.eveningAmbianceMode ||
+        (activeVenueCategory === 'resort_stay'
+          ? 'fire_pit_lounge'
+          : 'fireworks'),
+      nearbyFireworksView: activeTourMetadata?.nearbyFireworksView || null,
       parkHopperBridges,
+      resortExcursionBridges,
       mediaPaused,
       canResume:
         state === TOUR_PLAY_STATES.USER_TAKEOVER && tourOrder.length > 0,
@@ -6270,7 +6486,7 @@ export function createTourAndPlayEngine({
       dwellRemainingSec: Math.ceil(dwellRemainingSec),
       dwellDurationSeconds,
       dwellAnchorHeadingDeg,
-      scooterSpeedMps: getActiveTransitSpeedMps(),
+      scooterSpeedMps: getActiveTransitSpeedMps(currentStop),
       walkSpeedMps,
       activePlayActivity,
       activity: activePlayActivity,
@@ -6282,6 +6498,7 @@ export function createTourAndPlayEngine({
   return {
     startCityTour,
     startPlayActivity,
+    setTransitMode,
     takeOverAtLandmark,
     continueTour,
     hopToLinkedPark,

@@ -29,6 +29,9 @@ import {
   DOMICILE_TYPOLOGIES,
   DOMICILE_TYPOLOGY_META,
   onDomicileRegistryChange,
+  getTempBasecamp,
+  checkOutTempBasecamp,
+  onTempBasecampChange,
 } from '../layers/estates/domicileCatalog.js';
 import {
   FLEET_MODES,
@@ -132,6 +135,7 @@ export function createEstateDrawer({
   let activeTab = 'estate'; // 'estate' | 'fleet' | 'claim'
   let refreshTimer = null;
   let registryUnsub = null;
+  let tempBasecampUnsub = null;
 
   // Root Drawer Container
   const drawer = document.createElement('div');
@@ -220,6 +224,23 @@ export function createEstateDrawer({
           <span style="color: #8b949e;">Highway:</span>
           <span class="gev-estate-highway-val" style="color: #cbd5e1; font-weight: 500;">Connected</span>
         </div>
+      </div>
+    </div>
+
+    <!-- Temporary Resort Basecamp Card (Non-Destructive Check-In) -->
+    <div class="gev-estate-temp-basecamp-card" style="display: none; flex-direction: column; gap: 6px; background: rgba(28, 25, 23, 0.94); border: 1px solid rgba(251, 191, 36, 0.55); border-radius: 8px; padding: 9px 10px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px;">
+        <div style="display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1;">
+          <span style="font-size: 14px;">🏨</span>
+          <span class="gev-temp-basecamp-title" style="font-size: 11.5px; font-weight: 700; color: #fde68a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Resort Basecamp</span>
+        </div>
+        <span style="font-size: 8px; font-weight: 700; background: rgba(245, 158, 11, 0.22); color: #fcd34d; padding: 2px 5px; border-radius: 3px; white-space: nowrap;">TEMP BASECAMP</span>
+      </div>
+      <div class="gev-temp-basecamp-address" style="font-size: 9.5px; color: #d6d3d1;">Checked in · Permanent estates untouched</div>
+      <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+        <button class="gev-temp-basecamp-drive-btn" type="button" style="flex: 1; padding: 4px 6px; font-size: 9.5px; font-weight: 600; background: rgba(34, 211, 238, 0.16); border: 1px solid rgba(34, 211, 238, 0.45); color: #67e8f9; border-radius: 4px; cursor: pointer;">🚗 Depart Drive</button>
+        <button class="gev-temp-basecamp-resort-btn" type="button" style="flex: 1; padding: 4px 6px; font-size: 9.5px; font-weight: 600; background: rgba(16, 185, 129, 0.16); border: 1px solid rgba(16, 185, 129, 0.45); color: #6ee7b7; border-radius: 4px; cursor: pointer;">🏨 Resort Day</button>
+        <button class="gev-temp-basecamp-checkout-btn" type="button" style="flex: 0 0 auto; padding: 4px 7px; font-size: 9.5px; font-weight: 600; background: rgba(239, 68, 68, 0.16); border: 1px solid rgba(239, 68, 68, 0.45); color: #fca5a5; border-radius: 4px; cursor: pointer;">🚪 Check Out</button>
       </div>
     </div>
 
@@ -1106,7 +1127,60 @@ export function createEstateDrawer({
     }
   }
 
+  function syncTempBasecampCard() {
+    const tempCard = drawer.querySelector('.gev-estate-temp-basecamp-card');
+    if (!tempCard) return;
+    const temp = getTempBasecamp();
+    if (!temp) {
+      tempCard.style.display = 'none';
+      return;
+    }
+    tempCard.style.display = 'flex';
+    const tempTitle = tempCard.querySelector('.gev-temp-basecamp-title');
+    const tempAddr = tempCard.querySelector('.gev-temp-basecamp-address');
+    if (tempTitle) tempTitle.textContent = temp.title || temp.resortId;
+    if (tempAddr) {
+      tempAddr.textContent = `${temp.address || 'Resort Basecamp'} · ${temp.highwayCorridor || 'Ready for departure'}`;
+    }
+  }
+
+  drawer
+    .querySelector('.gev-temp-basecamp-drive-btn')
+    ?.addEventListener('click', () => {
+      const temp = getTempBasecamp();
+      if (!temp) return;
+      if (fleetEngine?.spawnAtDomicile) {
+        fleetEngine.spawnAtDomicile(temp);
+      }
+      if (fleetEngine?.handoffToInfiniteDrive) {
+        fleetEngine.handoffToInfiniteDrive();
+        close();
+      }
+    });
+
+  drawer
+    .querySelector('.gev-temp-basecamp-resort-btn')
+    ?.addEventListener('click', () => {
+      const temp = getTempBasecamp();
+      if (!temp?.resortId) return;
+      close();
+      if (typeof window !== 'undefined') {
+        window.__gevWanderDrawer?.open?.();
+        window.__gevTourAndPlayEngine?.startCityTour?.({
+          cityId: temp.resortId,
+        });
+      }
+    });
+
+  drawer
+    .querySelector('.gev-temp-basecamp-checkout-btn')
+    ?.addEventListener('click', () => {
+      checkOutTempBasecamp();
+      updateUI();
+    });
+
   function updateUI() {
+    syncTempBasecampCard();
     const all = getAllDomiciles();
     const current =
       claimScout?.getActiveDomicile() ||
@@ -1300,6 +1374,10 @@ export function createEstateDrawer({
     updateUI();
   });
 
+  tempBasecampUnsub = onTempBasecampChange(() => {
+    updateUI();
+  });
+
   // Global Keyboard Hotkey: 'H' toggles the drawer (unless inside an input field)
   function handleKeyDown(e) {
     if (
@@ -1372,6 +1450,10 @@ export function createEstateDrawer({
     if (registryUnsub) {
       registryUnsub();
       registryUnsub = null;
+    }
+    if (tempBasecampUnsub) {
+      tempBasecampUnsub();
+      tempBasecampUnsub = null;
     }
     if (typeof window !== 'undefined') {
       window.removeEventListener('keydown', handleKeyDown);

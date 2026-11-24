@@ -5644,6 +5644,7 @@
       "src/layers/citylife/avatarWanderEngine.js",
       "src/layers/citylife/tourAndPlayEngine.js",
       "src/layers/citylife/themeParkCatalog.js",
+      "src/layers/citylife/resortStayCatalog.js",
       "src/layers/citylife/parkSecretsAndNpcs.js",
       "src/layers/citylife/parkFireworksFinale.js",
       "src/layers/citylife/tourPoiCards.js",

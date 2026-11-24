@@ -40,7 +40,14 @@ import {
   isConcreteCatalogPlaceName,
   getCachedCatalogPlaceAt,
   resolveCatalogPlaceAt,
+  isResortStayId,
 } from '../layers/citylife/tourAndPlayEngine.js';
+import {
+  getTempBasecamp,
+  checkInTempBasecamp,
+  checkOutTempBasecamp,
+  onTempBasecampChange,
+} from '../layers/estates/domicileCatalog.js';
 import { pickActiveGroundPosition } from '../layers/citylife/surfaceHeight.js';
 import { EXEMPLAR_LOCALES } from '../layers/citylife/localeClassifier.js';
 import { LIVING_CITIES } from './cityWaypoints.js';
@@ -72,6 +79,7 @@ export function createWanderDrawer({
   let pointerLockBannerEl = null;
   let tourResumePillEl = null;
   let selectedTourMode = 'all';
+  let selectedResortTransitMode = 'walk_midway';
   let unsubscribePointerLock = null;
   let unsubscribeLocality = null;
   let unsubscribeTourStatus = null;
@@ -79,6 +87,7 @@ export function createWanderDrawer({
   let unsubscribeAgentCaps = null;
   let unsubscribeParkAdventures = null;
   let unsubscribeParkFireworks = null;
+  let unsubscribeTempBasecamp = null;
   let wanderCatalogLookupGen = 0;
   let activeWanderCatalogPlace = null;
   let isWizardOpen = false;
@@ -767,6 +776,77 @@ export function createWanderDrawer({
         color: #fff;
         box-shadow: 0 0 12px rgba(244, 114, 182, 0.45);
       }
+      .gev-tour-firepit-btn {
+        border-color: rgba(245, 158, 11, 0.58);
+        background: rgba(180, 83, 9, 0.24);
+        color: #fef3c7;
+      }
+      .gev-tour-firepit-btn.active {
+        border-color: #fde047;
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.5), rgba(234, 88, 12, 0.42));
+        color: #ffffff;
+        box-shadow: 0 0 12px rgba(245, 158, 11, 0.5);
+      }
+      .gev-resort-transit-bar {
+        display: none;
+        gap: 4px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .gev-resort-transit-btn {
+        flex: 1 1 0;
+        padding: 4px 6px;
+        border-radius: 6px;
+        border: 1px solid rgba(52, 211, 153, 0.35);
+        background: rgba(15, 23, 42, 0.72);
+        color: #cbd5e1;
+        font-size: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .gev-resort-transit-btn.active {
+        border-color: #34d399;
+        background: rgba(16, 185, 129, 0.25);
+        color: #ecfdf5;
+      }
+      .gev-resort-checkin-bar {
+        display: none;
+        gap: 6px;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 8px;
+        border-radius: 8px;
+        background: rgba(15, 23, 42, 0.72);
+        border: 1px solid rgba(251, 191, 36, 0.38);
+      }
+      .gev-resort-checkin-btn {
+        flex: 1;
+        padding: 5px 8px;
+        border-radius: 6px;
+        border: 1px solid rgba(251, 191, 36, 0.55);
+        background: rgba(217, 119, 6, 0.22);
+        color: #fef3c7;
+        font-size: 10.5px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .gev-resort-checkin-btn.checked-in {
+        border-color: #34d399;
+        background: rgba(16, 185, 129, 0.25);
+        color: #d1fae5;
+      }
+      .gev-resort-open-basecamp-btn {
+        padding: 5px 8px;
+        border-radius: 6px;
+        border: 1px solid rgba(34, 211, 238, 0.5);
+        background: rgba(8, 145, 178, 0.25);
+        color: #a5f3fc;
+        font-size: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+      }
 
       .gev-tour-play-card {
         background: rgba(15, 23, 42, 0.88);
@@ -1388,21 +1468,46 @@ export function createWanderDrawer({
     );
     const continueBtn = cardEl.querySelector('.gev-tour-continue-btn');
 
+    const selCityVal = cardEl.querySelector('.gev-tour-city-select')?.value;
+    const allMetaMap = getAllTourCatalogEntries().metadataByCityId;
+    const targetMeta =
+      (selCityVal && selCityVal !== 'auto'
+        ? allMetaMap[selCityVal] || METRO_TOUR_METADATA[selCityVal]
+        : status.isTour && status.cityId
+          ? allMetaMap[status.cityId] || METRO_TOUR_METADATA[status.cityId]
+          : ctx?.metadata) ||
+      (status.cityId
+        ? allMetaMap[status.cityId] || METRO_TOUR_METADATA[status.cityId]
+        : null);
+    const isResortStay = Boolean(
+      (status.isTour && status.venueCategory === 'resort_stay') ||
+      (!status.isTour && targetMeta?.venueCategory === 'resort_stay') ||
+      (!status.isTour && ctx?.venueCategory === 'resort_stay'),
+    );
+
     if (titleEl) {
       const isVenueDay =
         status.isTour && status.cityId
           ? status.tourScope === 'venue'
-          : ctx.tourScope === 'venue';
+          : targetMeta?.tourScope === 'venue' || ctx.tourScope === 'venue';
       titleEl.textContent = isPlayMode
         ? `🏖️ LIVING WORLD PLAY (${ctx.label || 'Local Biome'})`
-        : isVenueDay
-          ? `🎢 THEME PARK DAY · WALK MIDWAY`
-          : `🛴 CITY SCOOTER TOUR (15 MPH · RANDOMIZED)`;
+        : isResortStay
+          ? `🏨 RESORT DAY OFF · WALK / E-SCOOTER / GOLF CART`
+          : isVenueDay
+            ? `🎢 THEME PARK DAY · WALK MIDWAY`
+            : `🛴 CITY SCOOTER TOUR (15 MPH · RANDOMIZED)`;
     }
 
     if (badgeEl) {
       if (status.state === TOUR_OR_PLAY_STATES.TOUR_TRANSIT) {
-        badgeEl.textContent = `SCOOTER ${status.landmarkIndex + 1}/${status.totalLandmarks}`;
+        const modeTag =
+          status.transitMode === 'resort_cart'
+            ? 'GOLF CART'
+            : status.transitMode === 'walk_midway'
+              ? 'WALK'
+              : 'SCOOTER';
+        badgeEl.textContent = `${modeTag} ${status.landmarkIndex + 1}/${status.totalLandmarks}`;
       } else if (status.state === TOUR_OR_PLAY_STATES.TOUR_DWELL) {
         badgeEl.textContent = `DWELL ${Math.ceil(status.dwellRemainingSec || 0)}s`;
       } else if (status.state === TOUR_OR_PLAY_STATES.USER_TAKEOVER) {
@@ -1410,24 +1515,32 @@ export function createWanderDrawer({
       } else if (status.state === TOUR_OR_PLAY_STATES.PLAY_ACTIVE) {
         badgeEl.textContent = 'PLAYING LIVE';
       } else {
-        badgeEl.textContent = isPlayMode ? 'PLAY MODE' : 'TOUR READY';
+        badgeEl.textContent = isPlayMode
+          ? 'PLAY MODE'
+          : isResortStay
+            ? 'RESORT READY'
+            : 'TOUR READY';
       }
     }
 
     if (statusEl) {
       const isWalkMidway = status.transitMode === 'walk_midway';
+      const isResortCart = status.transitMode === 'resort_cart';
       if (
         status.state === TOUR_OR_PLAY_STATES.TOUR_TRANSIT &&
         status.currentLandmark
       ) {
-        statusEl.textContent = isWalkMidway
-          ? `🚶 Walking midway to Stop #${status.landmarkIndex + 1}: ${status.currentLandmark.icon || '📍'} ${status.currentLandmark.name}`
-          : `🛴 Scootering (15 mph) to Stop #${status.landmarkIndex + 1}: ${status.currentLandmark.icon || '📍'} ${status.currentLandmark.name}`;
+        const walkPathLabel = isResortStay ? 'resort paths' : 'midway';
+        statusEl.textContent = isResortCart
+          ? `⛳ Cruising by Golf Cart to Stop #${status.landmarkIndex + 1}: ${status.currentLandmark.icon || '📍'} ${status.currentLandmark.name}`
+          : isWalkMidway
+            ? `🚶 Walking ${walkPathLabel} to Stop #${status.landmarkIndex + 1}: ${status.currentLandmark.icon || '📍'} ${status.currentLandmark.name}`
+            : `🛴 E-Scootering (15 mph) to Stop #${status.landmarkIndex + 1}: ${status.currentLandmark.icon || '📍'} ${status.currentLandmark.name}`;
       } else if (
         status.state === TOUR_OR_PLAY_STATES.TOUR_DWELL &&
         status.currentLandmark
       ) {
-        statusEl.textContent = `🏛️ ${status.currentLandmark.name} (${Math.ceil(status.dwellRemainingSec || 0)}s autonomous walk) — "${status.currentLandmark.lore}"`;
+        statusEl.textContent = `${isResortStay ? '🏨' : '🏛️'} ${status.currentLandmark.name} (${Math.ceil(status.dwellRemainingSec || 0)}s autonomous walk) — "${status.currentLandmark.lore}"`;
       } else if (status.state === TOUR_OR_PLAY_STATES.USER_TAKEOVER) {
         statusEl.textContent = `🚶 Normal Walking Take-Over (1.2 m/s). Explore freely with WASD, then Rejoin Stop or jump Next Stop!`;
       } else if (
@@ -1437,22 +1550,71 @@ export function createWanderDrawer({
         statusEl.textContent = `${status.activePlayActivity.icon} ${status.activePlayActivity.label}: "${status.activePlayActivity.lore}"`;
       } else if (isPlayMode) {
         statusEl.textContent = `Non-metro / tourist environment detected (${ctx.typologyName || ctx.label}). Pick an environment hike or leisure activity:`;
+      } else if (isResortStay) {
+        statusEl.textContent = `Unhurried Day Off on property · Walk, E-Scooter, or auto Golf Cart on fairways · 5 hidden secrets, resort staff NPCs, sunset fire pit & excursion shuttles.`;
       } else {
         statusEl.textContent = `Randomized landmark order every run · 15 mph electric scooter transit · 20s autonomous walking dwell + lore bubble at each stop.`;
       }
     }
 
+    const resortTransitBarEl = cardEl.querySelector('.gev-resort-transit-bar');
+    if (resortTransitBarEl) {
+      resortTransitBarEl.style.display =
+        !isPlayMode && isResortStay ? 'flex' : 'none';
+      const activeResortMode =
+        status.isTour && status.venueCategory === 'resort_stay'
+          ? status.transitModeOverride ||
+            status.effectiveTransitMode ||
+            'walk_midway'
+          : selectedResortTransitMode;
+      resortTransitBarEl
+        .querySelectorAll('.gev-resort-transit-btn')
+        .forEach((btn) => {
+          btn.classList.toggle(
+            'active',
+            btn.getAttribute('data-resort-transit') === activeResortMode,
+          );
+        });
+    }
+
+    const resortCheckInBarEl = cardEl.querySelector('.gev-resort-checkin-bar');
+    if (resortCheckInBarEl) {
+      const resortMetaForCheckIn = isResortStay
+        ? (status.isTour && status.venueCategory === 'resort_stay'
+            ? status.metadata
+            : targetMeta?.venueCategory === 'resort_stay'
+              ? targetMeta
+              : ctx?.metadata) || null
+        : null;
+      const showCheckIn = Boolean(!isPlayMode && resortMetaForCheckIn?.id);
+      resortCheckInBarEl.style.display = showCheckIn ? 'flex' : 'none';
+      if (showCheckIn) {
+        const currentTemp = getTempBasecamp();
+        const isCheckedInHere =
+          currentTemp?.resortId === resortMetaForCheckIn.id;
+        const checkInBtn = resortCheckInBarEl.querySelector(
+          '.gev-resort-checkin-btn',
+        );
+        const openBasecampBtn = resortCheckInBarEl.querySelector(
+          '.gev-resort-open-basecamp-btn',
+        );
+        if (checkInBtn) {
+          checkInBtn.setAttribute('data-resort-id', resortMetaForCheckIn.id);
+          checkInBtn.classList.toggle('checked-in', isCheckedInHere);
+          checkInBtn.textContent = isCheckedInHere
+            ? '✅ Checked In (Basecamp) · Check Out'
+            : '🏨 Check In (Temp Basecamp)';
+        }
+        if (openBasecampBtn) {
+          openBasecampBtn.style.display = isCheckedInHere
+            ? 'inline-block'
+            : 'none';
+        }
+      }
+    }
+
     const modeBarEl = cardEl.querySelector('.gev-tour-mode-bar');
     if (modeBarEl) {
-      const selCityVal = cardEl.querySelector('.gev-tour-city-select')?.value;
-      const allMetaMap = getAllTourCatalogEntries().metadataByCityId;
-      const targetMeta =
-        (selCityVal && selCityVal !== 'auto'
-          ? allMetaMap[selCityVal] || METRO_TOUR_METADATA[selCityVal]
-          : ctx?.metadata) ||
-        (status.cityId
-          ? allMetaMap[status.cityId] || METRO_TOUR_METADATA[status.cityId]
-          : null);
       const supportedModes = Array.isArray(targetMeta?.supportedModes)
         ? targetMeta.supportedModes
         : ['all'];
@@ -1571,13 +1733,40 @@ export function createWanderDrawer({
           : 'none';
     }
 
+    const firepitBtn = cardEl.querySelector('.gev-tour-firepit-btn');
+    if (firepitBtn) {
+      const showFirePit = Boolean(
+        status.isTour && status.venueCategory === 'resort_stay',
+      );
+      const fpActive = Boolean(parkFireworks?.isFirePitActive?.());
+      firepitBtn.style.display = showFirePit ? 'inline-block' : 'none';
+      firepitBtn.classList.toggle('active', fpActive);
+      firepitBtn.textContent = fpActive ? '🔥 Fire Pit ON' : '🔥 Fire Pit';
+    }
+
     const fireworksBtn = cardEl.querySelector('.gev-tour-fireworks-btn');
     if (fireworksBtn) {
-      const showFw = Boolean(status.isTour && status.tourScope === 'venue');
-      const fwActive = Boolean(parkFireworks?.isActive?.());
+      const isResortActive = status.venueCategory === 'resort_stay';
+      const hasNearbyFw = Boolean(status.nearbyFireworksView);
+      const showFw = Boolean(
+        status.isTour &&
+        status.tourScope === 'venue' &&
+        (!isResortActive || hasNearbyFw),
+      );
+      const fwActive = Boolean(
+        parkFireworks?.isFireworksActive?.() ??
+        (parkFireworks?.isActive?.() && !parkFireworks?.isFirePitActive?.()),
+      );
       fireworksBtn.style.display = showFw ? 'inline-block' : 'none';
       fireworksBtn.classList.toggle('active', fwActive);
-      fireworksBtn.textContent = fwActive ? '🎆 Fireworks ON' : '🎆 Fireworks';
+      fireworksBtn.textContent = fwActive
+        ? '🎆 Fireworks ON'
+        : isResortActive
+          ? '🎆 Nearby Fireworks'
+          : '🎆 Fireworks';
+      if (isResortActive && status.nearbyFireworksView?.label) {
+        fireworksBtn.title = `Toggle ${status.nearbyFireworksView.label}`;
+      }
     }
 
     const adventureState = parkAdventures?.getState?.() || null;
@@ -1599,10 +1788,13 @@ export function createWanderDrawer({
         );
         const pList = passportStripEl.querySelector('.gev-tour-secrets-list');
         if (pTitle) {
-          pTitle.textContent =
-            status.tourScope === 'venue'
-              ? '🛂 Day Passport'
-              : '💎 Hidden City Gems';
+          let passportHeading = '💎 Hidden City Gems';
+          if (status.venueCategory === 'resort_stay') {
+            passportHeading = '🏨 Resort Passport';
+          } else if (status.tourScope === 'venue') {
+            passportHeading = '🛂 Day Passport';
+          }
+          pTitle.textContent = passportHeading;
         }
         if (pCount) {
           pCount.textContent = `${p.collected}/${p.total} (${p.percent}%)`;
@@ -1647,6 +1839,15 @@ export function createWanderDrawer({
       );
       npcStripEl.style.display = showNpcs ? 'flex' : 'none';
       if (showNpcs) {
+        const npcHeaderLabel = npcStripEl.querySelector(
+          '.gev-tour-npc-header > span',
+        );
+        if (npcHeaderLabel) {
+          npcHeaderLabel.textContent =
+            status.venueCategory === 'resort_stay'
+              ? '🗣️ Resort Staff & Guest Clues'
+              : '🗣️ Park Cast & Insider Clues';
+        }
         const chipsEl = npcStripEl.querySelector('.gev-tour-npc-chips');
         const diagEl = npcStripEl.querySelector('.gev-tour-npc-dialogue');
         const activeNpcId = adventureState?.activeDialogue?.npcId || null;
@@ -1682,6 +1883,13 @@ export function createWanderDrawer({
       const showHopper = Boolean(status.isTour && bridges.length > 0);
       hopperBarEl.style.display = showHopper ? 'flex' : 'none';
       if (showHopper) {
+        const headerEl = hopperBarEl.querySelector('.gev-tour-hopper-header');
+        if (headerEl) {
+          headerEl.textContent =
+            status.venueCategory === 'resort_stay'
+              ? '🚌 Resort Excursions & Shuttles'
+              : '🚝 Resort Park-Hopper Transit';
+        }
         const listEl = hopperBarEl.querySelector('.gev-tour-hopper-list');
         if (listEl) {
           listEl.innerHTML = bridges
@@ -1844,18 +2052,42 @@ export function createWanderDrawer({
       const continent = meta?.continent;
       const continentTag = continent ? ` [${continent}]` : '';
       const customTag = extraCount > 0 ? ` · +${extraCount} custom` : '';
-      const icon = meta?.tourScope === 'venue' ? '🎢' : '🛴';
+      const icon =
+        meta?.venueCategory === 'resort_stay' || isResortStayId(cityKey)
+          ? '🏨'
+          : meta?.tourScope === 'venue'
+            ? '🎢'
+            : '🛴';
       return `<option value="${escapeHtml(cityKey)}">${icon} ${escapeHtml(label)}${escapeHtml(continentTag)} (${total} stops${escapeHtml(customTag)})</option>`;
     };
 
-    const parkDayEntries = [
+    const isResortEntry = (cityKey, meta) =>
+      meta?.venueCategory === 'resort_stay' || isResortStayId(cityKey);
+
+    const resortStayEntries = [
       ...builtInKeys
-        .filter(
-          ([cityKey]) => METRO_TOUR_METADATA[cityKey]?.tourScope === 'venue',
+        .filter(([cityKey]) =>
+          isResortEntry(cityKey, METRO_TOUR_METADATA[cityKey]),
         )
         .map((entry) => formatCatalogOption(entry, false)),
       ...runtimeKeys
-        .filter(([, entry]) => entry?.metadata?.tourScope === 'venue')
+        .filter(([cityKey, entry]) => isResortEntry(cityKey, entry?.metadata))
+        .map((entry) => formatCatalogOption(entry, true)),
+    ].join('');
+    const parkDayEntries = [
+      ...builtInKeys
+        .filter(
+          ([cityKey]) =>
+            METRO_TOUR_METADATA[cityKey]?.tourScope === 'venue' &&
+            !isResortEntry(cityKey, METRO_TOUR_METADATA[cityKey]),
+        )
+        .map((entry) => formatCatalogOption(entry, false)),
+      ...runtimeKeys
+        .filter(
+          ([cityKey, entry]) =>
+            entry?.metadata?.tourScope === 'venue' &&
+            !isResortEntry(cityKey, entry?.metadata),
+        )
         .map((entry) => formatCatalogOption(entry, true)),
     ].join('');
     const cityEntries = [
@@ -1872,6 +2104,9 @@ export function createWanderDrawer({
     const customGroupHtml = customEntries
       ? `<optgroup label="✨ Custom Tours">${customEntries}</optgroup>`
       : '';
+    const resortGroupHtml = resortStayEntries
+      ? `<optgroup label="🏨 Resort Stays">${resortStayEntries}</optgroup>`
+      : '';
     const parkGroupHtml = parkDayEntries
       ? `<optgroup label="🎢 Theme Park Days">${parkDayEntries}</optgroup>`
       : '';
@@ -1882,7 +2117,7 @@ export function createWanderDrawer({
     const autoOpt = includeAuto
       ? '<option value="auto">📍 Nearest Metro / Current View</option>'
       : '';
-    return `${autoOpt}${parkGroupHtml}${customGroupHtml}${dynamicEntries}${cityGroupHtml}`;
+    return `${autoOpt}${resortGroupHtml}${parkGroupHtml}${customGroupHtml}${dynamicEntries}${cityGroupHtml}`;
   }
 
   function syncTourCitySelectOptions(
@@ -2541,6 +2776,15 @@ export function createWanderDrawer({
           <button class="gev-tour-mode-btn" data-tour-mode="front_of_park" type="button">🚀 Front of Park (7)</button>
           <button class="gev-tour-mode-btn" data-tour-mode="world_showcase" type="button">🌍 11 Countries (11)</button>
         </div>
+        <div class="gev-resort-transit-bar" style="display: none;" aria-label="Resort Day Transit Mode">
+          <button class="gev-resort-transit-btn active" data-resort-transit="walk_midway" type="button" title="Stroll resort paths (3.2 m/s; auto Golf Cart on fairways)">🚶 Walk</button>
+          <button class="gev-resort-transit-btn" data-resort-transit="scooter" type="button" title="Cruise resort loops by E-Scooter (6.7 m/s)">🛴 E-Scooter</button>
+          <button class="gev-resort-transit-btn" data-resort-transit="resort_cart" type="button" title="Resort Golf Cart cruiser (5.5 m/s)">⛳ Golf Cart</button>
+        </div>
+        <div class="gev-resort-checkin-bar" style="display: none;">
+          <button class="gev-resort-checkin-btn" type="button" title="Check into this resort as a temporary home base without altering your claimed estates">🏨 Check In (Temp Basecamp)</button>
+          <button class="gev-resort-open-basecamp-btn" type="button" style="display: none;" title="Open Estates & Fleet Drawer to depart by Drive, Transit, or Heli">🏡 Basecamp</button>
+        </div>
         <div class="gev-play-activities-grid gev-play-controls" style="display: none;"></div>
         <div class="gev-tour-no-tour-cta">
           <span class="gev-tour-no-tour-cta-text">No tour here yet — know this spot personally?</span>
@@ -2667,6 +2911,7 @@ export function createWanderDrawer({
         </div>
         <div class="gev-tour-play-row gev-tour-active-actions" style="display: none;">
           <button class="gev-tour-action-btn gev-tour-open-card-btn" type="button" title="Open Wikimedia Photo & 4K POV Experience Card">🎬 Card</button>
+          <button class="gev-tour-action-btn gev-tour-firepit-btn" type="button" style="display: none;" title="Toggle Lakeside Fire Pit & Acoustic Sunset Lounge">🔥 Fire Pit</button>
           <button class="gev-tour-action-btn gev-tour-fireworks-btn" type="button" style="display: none;" title="Toggle Procedural Dusk Fireworks Finale">🎆 Fireworks</button>
           <button class="gev-tour-action-btn gev-tour-takeover-btn" title="Take over at normal walking wander speed (1.2 m/s)">🚶 Walk Here (1.2 m/s)</button>
           <button class="gev-tour-action-btn continue gev-tour-continue-btn" title="Resume scooter tour to next randomized landmark">🛴 Continue Tour ▶</button>
@@ -2769,18 +3014,29 @@ export function createWanderDrawer({
           g.lon,
           g.elev || 0,
         );
+        const autoIsResort =
+          ctx?.venueCategory === 'resort_stay' || isResortStayId(ctx?.cityId);
         tourAndPlayEngine.startCityTour({
           cityId: ctx?.cityId || null,
           lat: g.lat,
           lon: g.lon,
           elev: g.elev || 0,
           tourMode: selectedTourMode,
+          ...(autoIsResort && selectedResortTransitMode !== 'walk_midway'
+            ? { transitMode: selectedResortTransitMode }
+            : {}),
           cameraMode: WANDER_CAMERA_MODES.ISO_CHASE,
         });
       } else {
+        const selIsResort =
+          METRO_TOUR_METADATA[selVal]?.venueCategory === 'resort_stay' ||
+          isResortStayId(selVal);
         tourAndPlayEngine.startCityTour({
           cityId: selVal,
           tourMode: selectedTourMode,
+          ...(selIsResort && selectedResortTransitMode !== 'walk_midway'
+            ? { transitMode: selectedResortTransitMode }
+            : {}),
           cameraMode: WANDER_CAMERA_MODES.ISO_CHASE,
         });
       }
@@ -2903,9 +3159,72 @@ export function createWanderDrawer({
       });
 
     drawerEl
+      .querySelector('.gev-resort-transit-bar')
+      ?.addEventListener('click', (e) => {
+        const btn = e.target?.closest?.('.gev-resort-transit-btn');
+        if (!btn) return;
+        const nextTransit =
+          btn.getAttribute('data-resort-transit') || 'walk_midway';
+        selectedResortTransitMode = nextTransit;
+        const st = tourAndPlayEngine?.getStatus?.();
+        if (st?.isTour && st.venueCategory === 'resort_stay') {
+          // Selecting Walk restores default promenade + auto Golf Cart on fairways;
+          // E-Scooter or Golf Cart pins that mode across resort stops.
+          tourAndPlayEngine.setTransitMode?.(
+            nextTransit === 'walk_midway' ? 'auto' : nextTransit,
+          );
+        }
+        syncDrawerState();
+      });
+
+    drawerEl
+      .querySelector('.gev-resort-checkin-btn')
+      ?.addEventListener('click', (e) => {
+        const btn = e.currentTarget;
+        const resortId = btn?.getAttribute?.('data-resort-id');
+        if (!resortId) return;
+        const currentTemp = getTempBasecamp();
+        if (currentTemp?.resortId === resortId) {
+          checkOutTempBasecamp();
+        } else {
+          const allMetaMap = getAllTourCatalogEntries().metadataByCityId;
+          const meta = allMetaMap[resortId] || METRO_TOUR_METADATA[resortId];
+          if (meta) {
+            checkInTempBasecamp(meta);
+          }
+        }
+        syncDrawerState();
+      });
+
+    drawerEl
+      .querySelector('.gev-resort-open-basecamp-btn')
+      ?.addEventListener('click', () => {
+        if (typeof window !== 'undefined' && window.__gevEstateDrawer?.open) {
+          window.__gevEstateDrawer.open();
+        } else {
+          dock.openDrawer?.('estate');
+        }
+      });
+
+    drawerEl
+      .querySelector('.gev-tour-firepit-btn')
+      ?.addEventListener('click', () => {
+        if (parkFireworks?.toggleFirePit) {
+          parkFireworks.toggleFirePit();
+        } else {
+          parkFireworks?.toggle?.('fire_pit_lounge');
+        }
+        syncDrawerState();
+      });
+
+    drawerEl
       .querySelector('.gev-tour-fireworks-btn')
       ?.addEventListener('click', () => {
-        parkFireworks?.toggle?.();
+        if (parkFireworks?.toggleFireworks) {
+          parkFireworks.toggleFireworks();
+        } else {
+          parkFireworks?.toggle?.();
+        }
         syncDrawerState();
       });
 
@@ -3273,6 +3592,12 @@ export function createWanderDrawer({
       });
     }
 
+    unsubscribeTempBasecamp = onTempBasecampChange(() => {
+      if (isOpen) {
+        syncDrawerState();
+      }
+    });
+
     dock.registerDrawer('wander', {
       open: () => open(),
       close: () => close(),
@@ -3342,6 +3667,7 @@ export function createWanderDrawer({
     unsubscribeAgentCaps?.();
     unsubscribeParkAdventures?.();
     unsubscribeParkFireworks?.();
+    unsubscribeTempBasecamp?.();
     launcherBtn?.remove();
     drawerEl?.remove();
     pointerLockBannerEl?.remove();

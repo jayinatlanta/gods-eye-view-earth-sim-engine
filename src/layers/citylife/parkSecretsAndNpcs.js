@@ -11,6 +11,10 @@ import * as Cesium from 'cesium';
 import { haversineDistanceMeters } from '../../citylife/cityWaypoints.js';
 import { getCompanionPersonaName } from './companionDot.js';
 import { STAGE3_THEME_PARK_LANDMARKS } from './themeParkCatalog.js';
+import {
+  RESORT_HIDDEN_SECRETS_CATALOG,
+  isResortStayId,
+} from './resortStayCatalog.js';
 
 export const PASSPORT_STORAGE_KEY = 'gev_tour_passport_v1';
 export const SECRET_COLLECT_RADIUS_METERS = 24;
@@ -1103,6 +1107,7 @@ export const HIDDEN_SECRETS_CATALOG = Object.freeze({
       },
     ],
   ),
+  ...RESORT_HIDDEN_SECRETS_CATALOG,
 });
 
 /**
@@ -1323,18 +1328,80 @@ export const PARK_NPC_ROLES = Object.freeze([
   },
 ]);
 
-export function generateParkNpcsForTour(cityId, landmarks = [], secrets = []) {
+export const RESORT_NPC_ROLES = Object.freeze([
+  {
+    id: 'concierge',
+    roleLabel: 'Resort Concierge',
+    icon: '🛎️',
+    colorHex: '#38bdf8',
+    names: ['Elena', 'Marcus', 'Claire', 'Tariq', 'Hannah', 'Julian'],
+    greetings: [
+      'Welcome home to the resort! Taking a well-earned Day Off on property?',
+      'Fresh towels, paddleboats, and evening fire pits are all lined up for you today.',
+      'Whenever you’re ready to head out to the parks or downtown, our shuttle desk has you covered.',
+    ],
+  },
+  {
+    id: 'poolside_server',
+    roleLabel: 'Poolside Server',
+    icon: '🍹',
+    colorHex: '#f59e0b',
+    names: ['Sofia', 'Kai', 'Mateo', 'Leilani', 'Devon', 'Nadia'],
+    greetings: [
+      'Sun’s warm and the lagoon breeze is perfect—can I bring something chilled to your cabana?',
+      'Best poolside hour right before golden hour hits the water!',
+      'Fresh coastal seafood bites and citrus refreshers just came off the terrace grill.',
+    ],
+  },
+  {
+    id: 'golf_pro',
+    roleLabel: 'Resort Golf Pro',
+    icon: '⛳',
+    colorHex: '#34d399',
+    names: [
+      'Coach Owen',
+      'Coach Priya',
+      'Coach Grant',
+      'Coach Lin',
+      'Coach Cole',
+      'Coach Tessa',
+    ],
+    greetings: [
+      'Fairways are rolling fast this afternoon—golf carts are charged and ready at the bag drop!',
+      'If you’re cruising the course loop, watch how the breeze shifts near the water hazards.',
+      'Even a nine-hole casual loop or a bucket at the range makes a great Day Off.',
+    ],
+  },
+  {
+    id: 'fellow_guest',
+    roleLabel: 'Fellow Resort Guest',
+    icon: '🧳',
+    colorHex: '#f472b6',
+    names: ['Jordan', 'Mina', 'Samir', 'Tess', 'Lucas', 'Chloe'],
+    greetings: [
+      'We skipped the early park rush today to enjoy the resort pools—zero regrets!',
+      'Wait until dusk hits the fire pit lawn; it’s the best hidden view on the whole property.',
+      'Have you spotted all the off-path resort gems yet? There’s a quiet overlook just past the deck.',
+    ],
+  },
+]);
+
+export function generateParkNpcsForTour(
+  cityId,
+  landmarks = [],
+  secrets = [],
+  { venueCategory = null } = {},
+) {
   if (!Array.isArray(landmarks) || landmarks.length === 0) return [];
   const key = String(cityId || '')
     .trim()
     .toLowerCase();
+  const isResort = venueCategory === 'resort_stay' || isResortStayId(key);
+  const rolePool = isResort ? RESORT_NPC_ROLES : PARK_NPC_ROLES;
   const rng = createMulberry32(hashStringToSeed(`npcs:${key}`));
-  const step = Math.max(
-    1,
-    Math.floor(landmarks.length / PARK_NPC_ROLES.length),
-  );
+  const step = Math.max(1, Math.floor(landmarks.length / rolePool.length));
 
-  return PARK_NPC_ROLES.map((role, idx) => {
+  return rolePool.map((role, idx) => {
     const stopIndex = Math.min(landmarks.length - 1, idx * step);
     const stop = landmarks[stopIndex] || landmarks[0];
     const bearingDeg = Math.round((idx * 85 + 25 + rng() * 40) % 360);
@@ -1345,11 +1412,14 @@ export function generateParkNpcsForTour(cityId, landmarks = [], secrets = []) {
     const targetSecret =
       secrets.length > 0 ? secrets[idx % secrets.length] : null;
     const insiderTip =
-      role.id === 'food_vendor' && stop.snackNote
-        ? `Local snack tip near ${stop.name}: ask for "${stop.snackNote}".`
-        : role.id === 'ride_op' && Number.isFinite(stop.estimatedWaitMin)
-          ? `Current pacing around ${stop.name}: ~${stop.estimatedWaitMin} min posted wait.`
-          : `Insider detail near ${stop.name}: ${stop.companionNote || stop.lore || 'Enjoy the atmosphere!'}`;
+      (role.id === 'food_vendor' || role.id === 'poolside_server') &&
+      stop.snackNote
+        ? `Local dining tip near ${stop.name}: ask for "${stop.snackNote}".`
+        : role.id === 'golf_pro' && stop.amenityTag
+          ? `Course & amenity tip near ${stop.name}: ${stop.amenityTag} — switch to Golf Cart mode for the fairway loop!`
+          : role.id === 'ride_op' && Number.isFinite(stop.estimatedWaitMin)
+            ? `Current pacing around ${stop.name}: ~${stop.estimatedWaitMin} min posted wait.`
+            : `Insider detail near ${stop.name}: ${stop.companionNote || stop.lore || 'Enjoy the atmosphere!'}`;
 
     return {
       id: `${key}_npc_${role.id}`,
@@ -1368,6 +1438,7 @@ export function generateParkNpcsForTour(cityId, landmarks = [], secrets = []) {
       lon: pos.lon,
       elev: stop.elev || 32,
       seed: hashStringToSeed(`${key}:${role.id}`),
+      isResortNpc: isResort,
     };
   });
 }
@@ -1669,7 +1740,9 @@ export function createParkAdventureController({
       activeSecrets = getHiddenSecretsForTour(nextCity, landmarks);
       activeNpcs =
         nextScope === 'venue'
-          ? generateParkNpcsForTour(nextCity, landmarks, activeSecrets)
+          ? generateParkNpcsForTour(nextCity, landmarks, activeSecrets, {
+              venueCategory: status.venueCategory || null,
+            })
           : [];
       nearestNpcId = null;
       activeDialogue = null;

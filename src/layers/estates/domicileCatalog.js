@@ -18,6 +18,7 @@ import { resolveZeroCreditLocality } from '../../ui/worldSimDock.js';
 import { RAPID_TRANSIT_ROUTES } from '../citylife/metroNetworkCatalog.js';
 
 export const STORAGE_KEY = 'gev_personal_estates_v1';
+export const TEMP_BASECAMP_STORAGE_KEY = 'gev_temp_resort_basecamp_v1';
 
 export const DOMICILE_TYPOLOGIES = Object.freeze({
   PRIMARY_RESIDENCE: 'PRIMARY_RESIDENCE',
@@ -486,4 +487,142 @@ export function clearClaimedDomicilesForTest({ includeStarter = false } = {}) {
   customDomiciles = includeStarter ? createStarterDomiciles() : [];
   saveStoredDomiciles(customDomiciles);
   emitRegistryChange();
+}
+
+// ---------- Non-Destructive Temporary Resort Basecamp Check-In ----------
+// Strictly isolated from `gev_personal_estates_v1` so checking into a tourist
+// resort never mutates or overwrites user-claimed permanent domiciles.
+
+let activeTempBasecamp = null;
+const tempBasecampListeners = new Set();
+
+function loadTempBasecamp() {
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return activeTempBasecamp;
+  }
+  try {
+    const raw = window.localStorage.getItem(TEMP_BASECAMP_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (
+      parsed &&
+      typeof parsed === 'object' &&
+      parsed.resortId &&
+      Number.isFinite(Number(parsed.lat)) &&
+      Number.isFinite(Number(parsed.lon))
+    ) {
+      return parsed;
+    }
+  } catch {}
+  return null;
+}
+
+function saveTempBasecamp(entry) {
+  activeTempBasecamp = entry || null;
+  if (typeof window === 'undefined' || !window.localStorage) return;
+  try {
+    if (entry) {
+      window.localStorage.setItem(
+        TEMP_BASECAMP_STORAGE_KEY,
+        JSON.stringify(entry),
+      );
+    } else {
+      window.localStorage.removeItem(TEMP_BASECAMP_STORAGE_KEY);
+    }
+  } catch {
+    // Ignore storage quota errors
+  }
+}
+
+activeTempBasecamp = loadTempBasecamp();
+
+function emitTempBasecampChange() {
+  const snap = getTempBasecamp();
+  for (const cb of tempBasecampListeners) {
+    try {
+      cb(snap);
+    } catch {}
+  }
+}
+
+export function onTempBasecampChange(callback) {
+  if (typeof callback !== 'function') return () => {};
+  tempBasecampListeners.add(callback);
+  return () => tempBasecampListeners.delete(callback);
+}
+
+export function getTempBasecamp() {
+  return activeTempBasecamp ? { ...activeTempBasecamp } : null;
+}
+
+export function checkInTempBasecamp(resort = {}) {
+  const resortId = String(resort?.id || resort?.resortId || '')
+    .trim()
+    .toLowerCase();
+  const safeLat = Number(resort?.centerLat ?? resort?.lat);
+  const safeLon = Number(resort?.centerLon ?? resort?.lon);
+  if (!resortId || !Number.isFinite(safeLat) || !Number.isFinite(safeLon)) {
+    return null;
+  }
+  const footprint = generateParcelFootprint(
+    safeLat,
+    safeLon,
+    DOMICILE_TYPOLOGIES.VACATION_SANCTUARY,
+  );
+  const nearestTransit = findNearestMetroStation(safeLat, safeLon);
+  const cosLat = Math.max(0.2, Math.cos((safeLat * Math.PI) / 180));
+  const title =
+    String(resort?.name || resort?.shortName || resortId).trim() || resortId;
+  const address =
+    String(
+      resort?.cityLabel || resort?.address || resort?.country || '',
+    ).trim() || `${safeLat.toFixed(4)}°, ${safeLon.toFixed(4)}°`;
+
+  const entry = {
+    id: `temp_resort_${resortId}`,
+    resortId,
+    title,
+    shortName: String(resort?.shortName || title).trim(),
+    subtitle: `Temporary Resort Basecamp · ${address}`,
+    typology: DOMICILE_TYPOLOGIES.VACATION_SANCTUARY,
+    isTempBasecamp: true,
+    lat: Number(safeLat.toFixed(6)),
+    lon: Number(safeLon.toFixed(6)),
+    address,
+    checkedInAt: new Date().toISOString(),
+    source: 'resort_check_in',
+    hasWaterfrontDock: Boolean(resort?.hasWaterfrontDock),
+    highwayCorridor:
+      String(resort?.highwayCorridor || '').trim() ||
+      `${address} Resort Porte-Cochère ➔ Regional Excursions`,
+    highwayTarget: {
+      lat: Number((safeLat + 0.012).toFixed(6)),
+      lon: Number((safeLon + 0.015 / cosLat).toFixed(6)),
+      label: `${title} Porte-Cochère Departure`,
+    },
+    waterwayTarget: {
+      lat: Number((safeLat + 0.008).toFixed(6)),
+      lon: Number((safeLon + 0.012 / cosLat).toFixed(6)),
+      label: `${title} Waterfront Launch`,
+    },
+    nearestTransit,
+    ...footprint,
+  };
+  saveTempBasecamp(entry);
+  emitTempBasecampChange();
+  return getTempBasecamp();
+}
+
+export function checkOutTempBasecamp() {
+  const hadActive = Boolean(activeTempBasecamp);
+  saveTempBasecamp(null);
+  if (hadActive) {
+    emitTempBasecampChange();
+  }
+  return hadActive;
+}
+
+export function clearTempBasecampForTest() {
+  saveTempBasecamp(null);
+  emitTempBasecampChange();
 }
