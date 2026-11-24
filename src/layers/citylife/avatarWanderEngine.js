@@ -139,9 +139,17 @@ export function createAvatarWanderEngine({
   }
 
   const cameraAuthority = createCameraAuthority({
-    viewer,
     engineId: 'avatar-wander',
-    identityMatrix4: Cesium.Matrix4.IDENTITY,
+    cancelCameraFlight: () => viewer?.camera?.cancelFlight?.(),
+    resetCameraLookAt: () =>
+      viewer?.camera?.lookAtTransform?.(Cesium.Matrix4.IDENTITY),
+    clearTrackedEntity: () => {
+      if (viewer && viewer.trackedEntity !== undefined) {
+        viewer.trackedEntity = undefined;
+      }
+    },
+    getTilesetPrimitives: () => viewer?.scene?.primitives || null,
+    isRendererDestroyed: () => Boolean(viewer?.isDestroyed?.()),
     onCameraModeApplied: notifyCameraModeListeners,
   });
 
@@ -1423,11 +1431,16 @@ export function createAvatarWanderEngine({
             );
             applyCamera(cart, currentCoordinates.heading, normal);
           }
-          butterGoogle3DTiles(viewer, 'wander-swoop-arrive', {
-            maxMs: 2400,
-            cameraIntentGuard: () => cameraAuthority.isCurrentIntent(swoopSeq),
-            onSettled: () => reClampGroundAndCamera(),
-          });
+          butterGoogle3DTiles(
+            viewer?.scene?.primitives,
+            'wander-swoop-arrive',
+            {
+              maxMs: 2400,
+              cameraIntentGuard: () =>
+                cameraAuthority.isCurrentIntent(swoopSeq),
+              onSettled: () => reClampGroundAndCamera(),
+            },
+          );
         },
         cancel: () => {
           isTransitioning = false;
@@ -1508,7 +1521,7 @@ export function createAvatarWanderEngine({
 
     isWandering = true;
     const startSeq = cameraAuthority.getSeq();
-    butterGoogle3DTiles(viewer, 'wander-start', {
+    butterGoogle3DTiles(viewer?.scene?.primitives, 'wander-start', {
       maxMs: 2600,
       cameraIntentGuard: () => cameraAuthority.isCurrentIntent(startSeq),
       onSettled: () => reClampGroundAndCamera(),

@@ -102,9 +102,17 @@ export function createPedestrianEngine({
   }
 
   const cameraAuthority = createCameraAuthority({
-    viewer,
     engineId: 'pedestrian-sim',
-    identityMatrix4: Cesium.Matrix4.IDENTITY,
+    cancelCameraFlight: () => viewer?.camera?.cancelFlight?.(),
+    resetCameraLookAt: () =>
+      viewer?.camera?.lookAtTransform?.(Cesium.Matrix4.IDENTITY),
+    clearTrackedEntity: () => {
+      if (viewer && viewer.trackedEntity !== undefined) {
+        viewer.trackedEntity = undefined;
+      }
+    },
+    getTilesetPrimitives: () => viewer?.scene?.primitives || null,
+    isRendererDestroyed: () => Boolean(viewer?.isDestroyed?.()),
     onCameraModeApplied: notifyCameraModeListeners,
   });
 
@@ -859,7 +867,9 @@ export function createPedestrianEngine({
 
     // Spawn and latch AFTER camera arrival completes
     spawnPedestrians(city, density);
-    butterGoogle3DTiles(viewer, 'pedestrian-step-city', { maxMs: 2600 });
+    butterGoogle3DTiles(viewer?.scene?.primitives, 'pedestrian-step-city', {
+      maxMs: 2600,
+    });
 
     return city;
   }
@@ -1188,7 +1198,9 @@ export function createPedestrianEngine({
       thoughtBubble.show(pos, latched.persona);
       applyCameraFollow(latched, currentCameraMode);
     }
-    butterGoogle3DTiles(viewer, 'pedestrian-step-location', { maxMs: 2600 });
+    butterGoogle3DTiles(viewer?.scene?.primitives, 'pedestrian-step-location', {
+      maxMs: 2600,
+    });
 
     return dynamicLocale;
   }

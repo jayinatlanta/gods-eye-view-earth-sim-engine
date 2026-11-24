@@ -144,9 +144,17 @@ export function createPersonalFleetEngine({
   }
 
   const cameraAuthority = createCameraAuthority({
-    viewer,
     engineId: 'personal-fleet',
-    identityMatrix4: Cesium.Matrix4.IDENTITY,
+    cancelCameraFlight: () => viewer?.camera?.cancelFlight?.(),
+    resetCameraLookAt: () =>
+      viewer?.camera?.lookAtTransform?.(Cesium.Matrix4.IDENTITY),
+    clearTrackedEntity: () => {
+      if (viewer && viewer.trackedEntity !== undefined) {
+        viewer.trackedEntity = undefined;
+      }
+    },
+    getTilesetPrimitives: () => viewer?.scene?.primitives || null,
+    isRendererDestroyed: () => Boolean(viewer?.isDestroyed?.()),
     onCameraModeApplied: notifyCameraModeListeners,
   });
 
@@ -180,7 +188,9 @@ export function createPersonalFleetEngine({
     isActive = true;
 
     update3DEntities();
-    butterGoogle3DTiles(viewer, 'fleet-spawn', { maxMs: 2400 });
+    butterGoogle3DTiles(viewer?.scene?.primitives, 'fleet-spawn', {
+      maxMs: 2400,
+    });
   }
 
   function setFleetMode(modeKeyOrObj) {
@@ -452,7 +462,9 @@ export function createPersonalFleetEngine({
       currentAlt = activeMode.cruiseAltMeters || 305;
     }
     update3DEntities();
-    butterGoogle3DTiles(viewer, 'fleet-start', { maxMs: 2400 });
+    butterGoogle3DTiles(viewer?.scene?.primitives, 'fleet-start', {
+      maxMs: 2400,
+    });
   }
 
   function stop() {

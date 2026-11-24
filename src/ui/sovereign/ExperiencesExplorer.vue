@@ -199,31 +199,14 @@ function stopResize() {
   writeStoredFeedWidth(feedWidthPx.value);
 }
 
-// ── Projected Globe Pins (Pure WGS84 math + zero per-frame allocations) ──
-const WGS84_A = 6378137.0;
-const WGS84_E2 = 0.006694379990141316;
-const scratchCartesian = { x: 0, y: 0, z: 0 };
-const scratchScreen = { x: 0, y: 0 };
+// ── Projected Globe Pins (Renderer-agnostic port via store.runtime) ──
 const projectedPins = ref([]);
-let removePostRender = null;
+let removeFrameListener = null;
 let lastProjectMs = 0;
 
-function geodeticToEcef(latDeg, lonDeg, heightM, out) {
-  const lat = (latDeg * Math.PI) / 180;
-  const lon = (lonDeg * Math.PI) / 180;
-  const sinLat = Math.sin(lat);
-  const cosLat = Math.cos(lat);
-  const n = WGS84_A / Math.sqrt(1 - WGS84_E2 * sinLat * sinLat);
-  out.x = (n + heightM) * cosLat * Math.cos(lon);
-  out.y = (n + heightM) * cosLat * Math.sin(lon);
-  out.z = (n * (1 - WGS84_E2) + heightM) * sinLat;
-  return out;
-}
-
 function projectVisiblePins() {
-  const viewer = store.runtime?.viewer;
-  const scene = viewer?.scene;
-  if (!scene || typeof scene.cartesianToCanvasCoordinates !== 'function') {
+  const projectPin = store.runtime?.projectGeoToViewport;
+  if (typeof projectPin !== 'function') {
     projectedPins.value = [];
     return;
   }
@@ -232,24 +215,18 @@ function projectVisiblePins() {
   if (now - lastProjectMs < 60) return;
   lastProjectMs = now;
 
-  const width = scene.canvas?.clientWidth || globalThis?.innerWidth || 1280;
-  const height = scene.canvas?.clientHeight || globalThis?.innerHeight || 800;
-  const minX = width > 720 ? feedWidthPx.value + 16 : 16;
   const maxPins = 28;
   const next = [];
 
   for (const item of filteredItems.value) {
     if (next.length >= maxPins) break;
-    geodeticToEcef(item.lat, item.lon, item.elev || 0, scratchCartesian);
     try {
-      const pt = scene.cartesianToCanvasCoordinates(
-        scratchCartesian,
-        scratchScreen,
-      );
+      const pt = projectPin(item.lat, item.lon, item.elev || 0);
+      if (!pt || !Number.isFinite(pt.x) || !Number.isFinite(pt.y)) continue;
+      const width = pt.width || globalThis?.innerWidth || 1280;
+      const height = pt.height || globalThis?.innerHeight || 800;
+      const minX = width > 720 ? feedWidthPx.value + 16 : 16;
       if (
-        pt &&
-        Number.isFinite(pt.x) &&
-        Number.isFinite(pt.y) &&
         pt.x >= minX &&
         pt.x <= width - 20 &&
         pt.y >= 48 &&
@@ -294,10 +271,8 @@ watch([filteredItems, feedWidthPx], () => {
 
 onMounted(() => {
   window.addEventListener('keydown', onKeyDown, true);
-  const viewer = store.runtime?.viewer;
-  if (viewer?.scene?.postRender?.addEventListener) {
-    removePostRender =
-      viewer.scene.postRender.addEventListener(projectVisiblePins);
+  if (typeof store.runtime?.onFrameRender === 'function') {
+    removeFrameListener = store.runtime.onFrameRender(projectVisiblePins);
   }
   projectVisiblePins();
 });
@@ -305,9 +280,9 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeyDown, true);
   stopResize();
-  if (typeof removePostRender === 'function') {
-    removePostRender();
-    removePostRender = null;
+  if (typeof removeFrameListener === 'function') {
+    removeFrameListener();
+    removeFrameListener = null;
   }
 });
 </script>

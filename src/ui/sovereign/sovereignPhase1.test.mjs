@@ -65,14 +65,13 @@ test('tilesetButter holds continuous render until tilesLoaded settles and never 
       return i === 0 ? fakeTileset : null;
     },
   };
-  const viewer = { scene };
   installRenderGovernor(framePortFor(scene));
 
-  assert.equal(collectActive3DTilesets(viewer).length, 1);
-  assert.equal(areActiveTilesetsSettled(viewer), false);
+  assert.equal(collectActive3DTilesets(scene.primitives).length, 1);
+  assert.equal(areActiveTilesetsSettled(scene.primitives), false);
 
   let settledResult = null;
-  butterGoogle3DTiles(viewer, 'test-teleport', {
+  butterGoogle3DTiles(scene.primitives, 'test-teleport', {
     maxMs: 1200,
     pollIntervalMs: 40,
     onSettled: (info) => {

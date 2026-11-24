@@ -53,6 +53,7 @@ import {
   butterGoogle3DTiles,
   cancelGoogle3DTilesButter,
   getTilesetButterState,
+  setDefaultTilesetPrimitivesProvider,
 } from '../ui/sovereign/tilesetButter.js';
 import '../ui/styles/sovereign-ui.css';
 
@@ -393,6 +394,51 @@ export function attachSovereignTools({
   debug.corridorDrawer = corridorDrawer;
   window.__gevCorridorDrawer = corridorDrawer;
 
+  setDefaultTilesetPrimitivesProvider(
+    () => cesiumViewer?.scene?.primitives || null,
+  );
+  defer(() => setDefaultTilesetPrimitivesProvider(null));
+
+  const scratchPinCartesian = new Cesium.Cartesian3();
+  const scratchPinScreen = new Cesium.Cartesian2();
+  const scratchPinOut = { x: 0, y: 0, width: 0, height: 0 };
+
+  function projectGeoToViewport(lat, lon, elev = 0) {
+    const scene = cesiumViewer?.scene;
+    if (!scene || typeof scene.cartesianToCanvasCoordinates !== 'function') {
+      return null;
+    }
+    Cesium.Cartesian3.fromDegrees(
+      lon,
+      lat,
+      elev,
+      undefined,
+      scratchPinCartesian,
+    );
+    const pt = scene.cartesianToCanvasCoordinates(
+      scratchPinCartesian,
+      scratchPinScreen,
+    );
+    if (!pt || !Number.isFinite(pt.x) || !Number.isFinite(pt.y)) return null;
+    scratchPinOut.x = pt.x;
+    scratchPinOut.y = pt.y;
+    scratchPinOut.width =
+      scene.canvas?.clientWidth || globalThis?.innerWidth || 1280;
+    scratchPinOut.height =
+      scene.canvas?.clientHeight || globalThis?.innerHeight || 800;
+    return scratchPinOut;
+  }
+
+  function onFrameRender(callback) {
+    if (
+      typeof callback !== 'function' ||
+      !cesiumViewer?.scene?.postRender?.addEventListener
+    ) {
+      return () => {};
+    }
+    return cesiumViewer.scene.postRender.addEventListener(callback);
+  }
+
   const sovereignUiStore = useSovereignUiStore(applicationPinia());
   const coordinator = getGlobalDrawerCoordinator();
 
@@ -499,7 +545,9 @@ export function attachSovereignTools({
     } catch {
       /* ignore headless mock errors */
     }
-    butterGoogle3DTiles(cesiumViewer, reason, { maxMs: 2600 });
+    butterGoogle3DTiles(cesiumViewer?.scene?.primitives, reason, {
+      maxMs: 2600,
+    });
   }
 
   function syncActiveSimSnapshot(preferredKind = null) {
@@ -593,20 +641,28 @@ export function attachSovereignTools({
         cityId: item.launch.cityId,
         tourMode: item.launch.tourMode || 'all',
       });
-      butterGoogle3DTiles(cesiumViewer, `exp-launch-${item.launch.cityId}`, {
-        maxMs: 2800,
-      });
+      butterGoogle3DTiles(
+        cesiumViewer?.scene?.primitives,
+        `exp-launch-${item.launch.cityId}`,
+        {
+          maxMs: 2800,
+        },
+      );
       syncActiveSimSnapshot('tour');
     } else if (kind === 'city') {
       cityEngine?.stepIntoCity?.(item.launch.cityId);
-      butterGoogle3DTiles(cesiumViewer, `exp-city-${item.launch.cityId}`, {
-        maxMs: 2800,
-      });
+      butterGoogle3DTiles(
+        cesiumViewer?.scene?.primitives,
+        `exp-city-${item.launch.cityId}`,
+        {
+          maxMs: 2800,
+        },
+      );
       syncActiveSimSnapshot('city');
     } else if (kind === 'wilderness') {
       wildernessDrawer?.selectTrailhead?.(item.launch.trailheadId);
       butterGoogle3DTiles(
-        cesiumViewer,
+        cesiumViewer?.scene?.primitives,
         `exp-trail-${item.launch.trailheadId}`,
         {
           maxMs: 2800,
@@ -680,6 +736,8 @@ export function attachSovereignTools({
     corridorDrawer,
     flyToCoords,
     getCameraGroundTarget,
+    projectGeoToViewport,
+    onFrameRender,
     launchExperience,
     syncActiveSimSnapshot,
     addQuickCustomStop,
@@ -746,7 +804,7 @@ export function attachSovereignTools({
   window.__gevSovereignUiStore = sovereignUiStore;
   window.__gevTilesetButter = {
     butterGoogle3DTiles: (reason, opts) =>
-      butterGoogle3DTiles(cesiumViewer, reason, opts),
+      butterGoogle3DTiles(cesiumViewer?.scene?.primitives, reason, opts),
     getTilesetButterState,
   };
 

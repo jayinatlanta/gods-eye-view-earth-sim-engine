@@ -29,6 +29,16 @@ export const MAX_BUTTER_CAP_MS = 3500;
 export const DEFAULT_BUTTER_POLL_MS = 120;
 
 let activeButterSession = null;
+let defaultPrimitivesProvider = null;
+
+/**
+ * Registers a renderer-side primitives collection provider (wired by
+ * `src/app/sovereignTools.js`) so renderer-agnostic callers can invoke
+ * `butterGoogle3DTiles(null, reason)` without reaching into Cesium directly.
+ */
+export function setDefaultTilesetPrimitivesProvider(provider) {
+  defaultPrimitivesProvider = typeof provider === 'function' ? provider : null;
+}
 
 function isLikely3DTileset(primitive) {
   if (!primitive || typeof primitive !== 'object') return false;
@@ -42,14 +52,27 @@ function isLikely3DTileset(primitive) {
   );
 }
 
+function resolvePrimitivesRoot(source) {
+  const candidate =
+    typeof source === 'function'
+      ? source()
+      : (source ?? defaultPrimitivesProvider?.() ?? null);
+  if (!candidate || typeof candidate !== 'object') return null;
+  if (typeof candidate.length === 'number') return candidate;
+  if (candidate.primitives && typeof candidate.primitives.length === 'number') {
+    return candidate.primitives;
+  }
+  return null;
+}
+
 /**
- * Safely collects all visible, non-destroyed Cesium3DTileset primitives from a
- * viewer's scene primitives, recursing into nested PrimitiveCollections.
- * Returns `[]` cleanly in stub/headless unit test environments.
+ * Safely collects all visible, non-destroyed 3D tileset primitives from a
+ * primitives collection (or provider function), recursing into nested
+ * collections. Returns `[]` cleanly in stub/headless unit test environments.
  */
-export function collectActive3DTilesets(viewer) {
+export function collectActive3DTilesets(primitivesSource = null) {
   const result = [];
-  const root = viewer?.scene?.primitives;
+  const root = resolvePrimitivesRoot(primitivesSource);
   if (!root || typeof root.length !== 'number') return result;
 
   const visited = new Set();

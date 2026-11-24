@@ -74,16 +74,25 @@ export function isolatePointerEvent(event) {
 /**
  * Creates a per-engine monotonic camera authority controller.
  *
+ * Accepts explicit renderer-agnostic lifecycle hooks from engine adapters so
+ * this module remains 100% decoupled from Cesium internals.
+ *
  * @param {object} options
- * @param {object|null} [options.viewer] Cesium Viewer
  * @param {string} [options.engineId='sovereign'] Diagnostic prefix
- * @param {object|null} [options.identityMatrix4] Optional Cesium.Matrix4.IDENTITY
+ * @param {Function|null} [options.cancelCameraFlight] Cancels any in-flight camera flight
+ * @param {Function|null} [options.resetCameraLookAt] Resets lookAtTransform to world frame
+ * @param {Function|null} [options.clearTrackedEntity] Clears tracked entity lock
+ * @param {Function|null} [options.getTilesetPrimitives] Returns active 3D tileset primitives collection
+ * @param {Function|null} [options.isRendererDestroyed] Returns true when renderer is destroyed
  * @param {Function|null} [options.onCameraModeApplied] Optional reactive sink
  */
 export function createCameraAuthority({
-  viewer = null,
   engineId = 'sovereign',
-  identityMatrix4 = null,
+  cancelCameraFlight = null,
+  resetCameraLookAt = null,
+  clearTrackedEntity: clearTrackedEntityHook = null,
+  getTilesetPrimitives = null,
+  isRendererDestroyed = null,
   onCameraModeApplied = null,
 } = {}) {
   let intentSeq = 0;
@@ -139,22 +148,23 @@ export function createCameraAuthority({
       /* ignore */
     }
 
-    if (viewer && !viewer.isDestroyed?.()) {
+    const destroyed = Boolean(isRendererDestroyed?.());
+    if (!destroyed) {
       try {
-        viewer.camera?.cancelFlight?.();
+        cancelCameraFlight?.();
       } catch {
         /* ignore */
       }
-      if (resetLookAt && typeof viewer.camera?.lookAtTransform === 'function') {
+      if (resetLookAt) {
         try {
-          viewer.camera.lookAtTransform(identityMatrix4 || IDENTITY_MATRIX4);
+          resetCameraLookAt?.();
         } catch {
           /* ignore */
         }
       }
-      if (clearTrackedEntity && viewer.trackedEntity !== undefined) {
+      if (clearTrackedEntity) {
         try {
-          viewer.trackedEntity = undefined;
+          clearTrackedEntityHook?.();
         } catch {
           /* ignore */
         }
@@ -169,8 +179,8 @@ export function createCameraAuthority({
       }
     }
 
-    if (butter && viewer && !viewer.isDestroyed?.()) {
-      butterGoogle3DTiles(viewer, butterReason, {
+    if (butter && !destroyed) {
+      butterGoogle3DTiles(getTilesetPrimitives, butterReason, {
         maxMs: butterMaxMs,
         cameraIntentGuard: () => isCurrentIntent(seq),
         onSettled,

@@ -106,7 +106,9 @@ export function createWildernessDrawer({
           duration: 1.6,
         });
       }
-      butterGoogle3DTiles(viewer, `wilderness-${trail.id}`, { maxMs: 2600 });
+      butterGoogle3DTiles(viewer?.scene?.primitives, `wilderness-${trail.id}`, {
+        maxMs: 2600,
+      });
     }
     getStore()?.bumpTelemetry?.();
     return activeTrailhead;
