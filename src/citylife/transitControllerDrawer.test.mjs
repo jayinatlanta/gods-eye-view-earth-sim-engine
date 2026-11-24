@@ -203,155 +203,59 @@ test('Living City Transit — Transit Controller Drawer & Persistent Sim Coexist
       assert.equal(metroCameraEnabled, false);
 
       try {
-        // Verify Fleet List rendering contains Heli camera latch pill
+        // Verify zero legacy vanilla DOM is mounted into container
+        assert.equal(
+          container.children.length,
+          0,
+          'Phase 2 Transit compatibility shim must mount zero vanilla DOM controls',
+        );
+
+        // Verify supported networks cover all major metropolitan & theme-park transit systems
+        const networks = drawer.getSupportedNetworks();
+        for (const id of [
+          'atlanta',
+          'los_angeles',
+          'san_francisco',
+          'washington_dc',
+          'northeast_corridor',
+          'wdw_monorail',
+          'dlr_monorail',
+          'wdw_mk_railroad',
+          'dlr_railroad',
+          'chicago',
+          'new_york',
+          'tokyo',
+          'london',
+        ]) {
+          assert.ok(networks.includes(id), `Expected network ${id}`);
+        }
+
+        // Open/close/toggle lifecycle
         drawer.open();
-        const fleetListEl = drawer
-          .getDrawerElement()
-          .querySelector('.gev-transit-fleet-list');
-        assert.ok(fleetListEl);
-        assert.equal(fleetListEl.innerHTML.includes('gev-latch-follow'), false);
-        assert.ok(fleetListEl.innerHTML.includes('gev-latch-cab'));
-        assert.ok(fleetListEl.innerHTML.includes('gev-latch-chase'));
-        assert.ok(fleetListEl.innerHTML.includes('gev-latch-door'));
-        assert.ok(fleetListEl.innerHTML.includes('gev-latch-heli'));
-        assert.ok(fleetListEl.innerHTML.includes('🚁 Heli'));
+        assert.equal(drawer.isOpen(), true);
+        drawer.close();
+        assert.equal(drawer.isOpen(), false);
+        drawer.toggle();
+        assert.equal(drawer.isOpen(), true);
 
-        // Switch to metro and verify multi-line filters and 4 radio camera pills without redundant Follow button
+        // Mode switching transfers camera authority without stopping persistent sims
         drawer.switchMode('metro');
-        const metroFleetList = drawer
-          .getDrawerElement()
-          .querySelector('.gev-transit-fleet-list');
-        assert.ok(metroFleetList);
-        assert.equal(
-          metroFleetList.innerHTML.includes('gev-latch-follow'),
-          false,
-        );
-        assert.ok(metroFleetList.innerHTML.includes('gev-latch-cab'));
-        assert.ok(metroFleetList.innerHTML.includes('gev-latch-chase'));
-        assert.ok(metroFleetList.innerHTML.includes('gev-latch-door'));
-        assert.ok(metroFleetList.innerHTML.includes('gev-latch-heli'));
+        assert.equal(drawer.getActiveMode(), 'metro');
+        assert.equal(metroCameraEnabled, true);
+        assert.equal(busCameraEnabled, false);
 
-        // Verify City Select options in drawer template contain all 9 major metropolitan regions
-        const drawerHtml = drawer.getDrawerElement().innerHTML;
-        assert.ok(drawerHtml.includes('value="los_angeles"'));
-        assert.ok(drawerHtml.includes('value="san_francisco"'));
-        assert.ok(drawerHtml.includes('value="washington_dc"'));
-        assert.ok(drawerHtml.includes('value="northeast_corridor"'));
+        drawer.switchMode('bus');
+        assert.equal(drawer.getActiveMode(), 'bus');
+        assert.equal(busCameraEnabled, true);
+        assert.equal(metroCameraEnabled, false);
 
-        // Verify Dedicated Full-Width Segmented Mode Switcher & Non-Overflow Layout
-        assert.ok(
-          drawerHtml.includes('gev-transit-mode-switcher'),
-          'Mode switcher must exist in drawer DOM',
-        );
-        assert.ok(
-          drawerHtml.includes('gev-transit-mode-bus'),
-          'Mode switcher must contain bus button',
-        );
-        assert.ok(
-          drawerHtml.includes('gev-transit-mode-metro'),
-          'Mode switcher must contain metro button',
-        );
-
-        const btnBus = drawer
-          .getDrawerElement()
-          .querySelector('.gev-transit-mode-bus');
-        const btnMetro = drawer
-          .getDrawerElement()
-          .querySelector('.gev-transit-mode-metro');
-        assert.ok(btnBus, 'Bus button must be resolvable');
-        assert.ok(btnMetro, 'Metro button must be resolvable');
-
-        // Test Responsive Click Event Listeners
-        // Clicking Metro button switches mode to metro and enables metro camera
-        btnMetro.dispatchEvent({ type: 'click' });
-        assert.equal(
-          drawer.getActiveMode(),
-          'metro',
-          'Clicking metro button must switch active mode to metro',
-        );
-        assert.equal(metroCameraEnabled, true, 'Metro camera must be enabled');
-        assert.equal(busCameraEnabled, false, 'Bus camera must be disabled');
-
-        // Clicking Bus button switches back to bus mode
-        btnBus.dispatchEvent({ type: 'click' });
-        assert.equal(
-          drawer.getActiveMode(),
-          'bus',
-          'Clicking bus button must switch active mode to bus',
-        );
-        assert.equal(busCameraEnabled, true, 'Bus camera must be enabled');
-        assert.equal(
-          metroCameraEnabled,
-          false,
-          'Metro camera must be disabled',
-        );
-
-        // Verify delegated camera latch clicks work across Cab, Chase, Door, Heli, and card-header select
-        // without wiping DOM innerHTML on unchanged refreshes
-        drawer.switchMode('metro');
-        let lastMetroCamMode = null;
-        mockMetroEngine.setCameraMode = (m) => {
-          lastMetroCamMode = m;
-        };
-        const metroListEl = drawer
-          .getDrawerElement()
-          .querySelector('.gev-transit-fleet-list');
-        const snapshotHtml = metroListEl.innerHTML;
-        const makeLatchClick = (action, id) => ({
-          target: {
-            closest: () => ({
-              getAttribute: (attr) =>
-                attr === 'data-cam-action'
-                  ? action
-                  : attr === 'data-id'
-                    ? id
-                    : null,
-            }),
-            getAttribute: (attr) =>
-              attr === 'data-cam-action'
-                ? action
-                : attr === 'data-id'
-                  ? id
-                  : null,
-          },
-        });
-        metroListEl.dispatchEvent({
-          type: 'click',
-          ...makeLatchClick('cab', 'CTA-LOOP-1'),
-        });
-        assert.equal(lastMetroCamMode, 'lead_cab');
-        metroListEl.dispatchEvent({
-          type: 'click',
-          ...makeLatchClick('chase', 'CTA-LOOP-1'),
-        });
-        assert.equal(lastMetroCamMode, 'chase');
-        metroListEl.dispatchEvent({
-          type: 'click',
-          ...makeLatchClick('door', 'CTA-LOOP-1'),
-        });
-        assert.equal(lastMetroCamMode, 'passenger_window');
-        metroListEl.dispatchEvent({
-          type: 'click',
-          ...makeLatchClick('heli', 'CTA-LOOP-1'),
-        });
-        assert.equal(lastMetroCamMode, 'heli');
-        assert.equal(
-          metroListEl.innerHTML,
-          snapshotHtml,
-          'Unchanged fleet refreshes must not replace button innerHTML mid-click',
-        );
-
-        // Verify simple system Lines visibility toggle syncs both metro & bus engines
-        const btnLines = drawer
-          .getDrawerElement()
-          .querySelector('.gev-transit-btn-lines');
-        assert.ok(btnLines, 'Lines toggle button must exist');
+        // Verify system Lines visibility toggle syncs both metro & bus engines
         assert.equal(drawer.isLinesVisible(), true);
-        btnLines.dispatchEvent({ type: 'click' });
+        drawer.setLinesVisible(false);
         assert.equal(drawer.isLinesVisible(), false);
         assert.equal(busLinesVisible, false);
         assert.equal(metroLinesVisible, false);
-        btnLines.dispatchEvent({ type: 'click' });
+        drawer.setLinesVisible(true);
         assert.equal(drawer.isLinesVisible(), true);
         assert.equal(busLinesVisible, true);
         assert.equal(metroLinesVisible, true);

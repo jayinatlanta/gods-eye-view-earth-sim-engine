@@ -428,24 +428,23 @@ test('World of Rails drawer, Transit Controller drawer, and Theme Park Day Ride 
       getActiveTelemetry: () => null,
     };
 
-    // 1. Verify World of Rails drawer exposes all 4 Disney rail/monorail corridors
+    // 1. Verify World of Rails drawer shim selects all 4 Disney rail/monorail corridors cleanly with zero vanilla DOM
     const railDrawer = createRailDrawer({
       railwayEngine: mockRailEngine,
       container: win.document.body,
     });
-    const railOptions = [
-      ...win.document.querySelectorAll('.gev-rail-corridor-select option'),
-    ].map((o) => o.value);
     for (const id of [
       'wdw_monorail',
       'dlr_monorail',
       'wdw_mk_railroad',
       'dlr_railroad',
     ]) {
-      assert.ok(railOptions.includes(id), `World of Rails option ${id} present`);
+      assert.ok(RAIL_CORRIDORS[id], `World of Rails corridor ${id} present`);
+      const sel = railDrawer.selectCorridor(id);
+      assert.equal(sel?.corridorId, id, `railDrawer.selectCorridor(${id}) works`);
     }
 
-    // 2. Verify Transit Controller drawer exposes all 4 Disney transit networks
+    // 2. Verify Transit Controller drawer shim exposes all 4 Disney transit networks with zero vanilla DOM
     const startedMetroCities = [];
     const transitDrawer = createTransitControllerDrawer({
       busEngine: { stopBusFleet: () => {}, isSimActive: () => false },
@@ -463,9 +462,7 @@ test('World of Rails drawer, Transit Controller drawer, and Theme Park Day Ride 
       },
       container: win.document.body,
     });
-    const transitOptions = [
-      ...win.document.querySelectorAll('.gev-transit-city-select option'),
-    ].map((o) => o.value);
+    const transitOptions = transitDrawer.getSupportedNetworks();
     for (const id of [
       'wdw_monorail',
       'dlr_monorail',

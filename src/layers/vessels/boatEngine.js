@@ -24,6 +24,8 @@ import {
   subscribeToMapStack,
 } from '../citylife/surfaceHeight.js';
 import { nudgeTilesetStreaming } from '../../renderGovernor.js';
+import { createCameraAuthority } from '../../ui/sovereign/cameraControlBridge.js';
+import { butterGoogle3DTiles } from '../../ui/sovereign/tilesetButter.js';
 
 export const WATER_SURFACE_OFFSET_METERS = 0.5;
 
@@ -333,6 +335,32 @@ export function applyBoatCameraFollow(
 export function createBoatEngine({ viewer = null, operations = null } = {}) {
   let activeVesselEntity = null;
   let activeRawVesselPositionProperty = null;
+  const cameraModeListeners = new Set();
+
+  function notifyCameraModeListeners(mode) {
+    for (const cb of cameraModeListeners) {
+      try {
+        cb(mode);
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  const cameraAuthority = createCameraAuthority({
+    engineId: 'boat',
+    cancelCameraFlight: () => viewer?.camera?.cancelFlight?.(),
+    resetCameraLookAt: () =>
+      viewer?.camera?.lookAtTransform?.(Cesium.Matrix4.IDENTITY),
+    clearTrackedEntity: () => {
+      if (viewer && viewer.trackedEntity !== undefined) {
+        viewer.trackedEntity = undefined;
+      }
+    },
+    getTilesetPrimitives: () => viewer?.scene?.primitives || null,
+    isRendererDestroyed: () => Boolean(isDestroyed || viewer?.isDestroyed?.()),
+    onCameraModeApplied: notifyCameraModeListeners,
+  });
   let activeWakeEntity = null;
   let preRenderListener = null;
   let mapStackUnsub = null;
@@ -670,14 +698,28 @@ export function createBoatEngine({ viewer = null, operations = null } = {}) {
       last3DWaterSampleMs = -Infinity;
       syncVesselAndCameraPose();
       nudgeTilesetStreaming('boat-map-stack-switch', { force: true });
+      butterGoogle3DTiles(viewer?.scene?.primitives, 'boat-map-stack-switch', {
+        maxMs: 2400,
+      });
       viewer?.scene?.requestRender?.();
     });
 
+    butterGoogle3DTiles(viewer?.scene?.primitives, 'boat-sim-start', {
+      maxMs: 2600,
+    });
     return activeRouteData;
   }
 
   function setCameraMode(mode) {
     currentCameraMode = mode;
+    cameraAuthority.beginAtomicCameraSwitch({
+      mode,
+      clearTrackedEntity: true,
+      resetLookAt: true,
+      butter: true,
+      butterReason: `boat-cam-${mode}`,
+      butterMaxMs: 2200,
+    });
     if (mode === 'free') {
       return currentCameraMode;
     }
@@ -842,6 +884,15 @@ export function createBoatEngine({ viewer = null, operations = null } = {}) {
     clearActiveBoatRoute,
     setCameraMode,
     snapBack,
+    getCameraMode: () => currentCameraMode,
+    onCameraModeChange: (cb) => {
+      if (typeof cb === 'function') {
+        cameraModeListeners.add(cb);
+        return () => cameraModeListeners.delete(cb);
+      }
+      return () => {};
+    },
+    getCameraIntentSeq: () => cameraAuthority.getSeq(),
     setThrottle,
     getActiveRoute: () => activeRouteData,
     getActiveTelemetry,

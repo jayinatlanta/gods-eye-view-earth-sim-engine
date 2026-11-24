@@ -1299,12 +1299,18 @@ test('driveDrawer surfaces OSRM vs Straight-Line Fallback status and reason', as
       driveEngine: mockEngine,
       container: body,
     });
-    const drawerEl = body.children[0];
-    const hudStripEl = body.children[1];
+    assert.equal(
+      body.children.length,
+      0,
+      'Phase 2 Drive compatibility shim mounts zero legacy vanilla DOM',
+    );
 
-    await drawerApi.startCustomDrive('28.5383,-81.3792', '33.749,-84.388');
-    assert.match(drawerEl.querySelector('.gev-drive-status').textContent, /OSRM Road Route/);
-    assert.match(hudStripEl.querySelector('.gev-drive-hud-sub').textContent, /OSRM/);
+    const osrmRes = await drawerApi.startCustomDrive(
+      '28.5383,-81.3792',
+      '33.749,-84.388',
+    );
+    assert.equal(osrmRes.routeStatus, 'osrm');
+    assert.equal(osrmRes.routeFallbackReason, null);
 
     nextResult = {
       corridor: { name: 'Custom Drive' },
@@ -1312,15 +1318,12 @@ test('driveDrawer surfaces OSRM vs Straight-Line Fallback status and reason', as
       routeStatus: 'straight_fallback',
       routeFallbackReason: 'Route proxy error (HTTP 503)',
     };
-    await drawerApi.startCustomDrive('28.5383,-81.3792', '33.749,-84.388');
-    assert.match(
-      drawerEl.querySelector('.gev-drive-status').textContent,
-      /Straight-Line Fallback.*HTTP 503/,
+    const fallbackRes = await drawerApi.startCustomDrive(
+      '28.5383,-81.3792',
+      '33.749,-84.388',
     );
-    assert.match(
-      hudStripEl.querySelector('.gev-drive-hud-sub').textContent,
-      /Straight Fallback.*HTTP 503/,
-    );
+    assert.equal(fallbackRes.routeStatus, 'straight_fallback');
+    assert.match(fallbackRes.routeFallbackReason, /HTTP 503/);
 
     drawerApi.destroy();
   } finally {

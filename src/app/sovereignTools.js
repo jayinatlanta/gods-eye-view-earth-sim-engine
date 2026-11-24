@@ -462,6 +462,49 @@ export function attachSovereignTools({
     { id: 'overview', label: msg('Overview') },
     { id: 'free', label: msg('Free') },
   ]);
+  const FLIGHT_CAMERA_OPTIONS = Object.freeze([
+    { id: 'cockpit', label: msg('Cockpit') },
+    { id: 'chase', label: msg('Chase') },
+    { id: 'heli', label: msg('Heli') },
+    { id: 'overview', label: msg('Overview') },
+    { id: 'free', label: msg('Free') },
+  ]);
+  const RAIL_CAMERA_OPTIONS = Object.freeze([
+    { id: 'cab', label: msg('Cab') },
+    { id: 'chase', label: msg('Chase') },
+    { id: 'heli', label: msg('Heli') },
+    { id: 'overview', label: msg('Overview') },
+    { id: 'free', label: msg('Free') },
+  ]);
+  const DRIVE_CAMERA_OPTIONS = Object.freeze([
+    { id: 'chase', label: msg('Chase') },
+    { id: 'seat', label: msg('Cockpit') },
+    { id: 'copter', label: msg('Copter') },
+    { id: 'overview', label: msg('Overview') },
+    { id: 'free', label: msg('Free') },
+  ]);
+  const BOAT_CAMERA_OPTIONS = Object.freeze([
+    { id: 'helm', label: msg('Helm') },
+    { id: 'chase', label: msg('Chase') },
+    { id: 'flybridge', label: msg('Bridge') },
+    { id: 'overview', label: msg('Overview') },
+    { id: 'free', label: msg('Free') },
+  ]);
+  const TRANSIT_CAMERA_OPTIONS = Object.freeze([
+    { id: 'cab', label: msg('Cab') },
+    { id: 'chase', label: msg('Chase') },
+    { id: 'door', label: msg('Door') },
+    { id: 'heli', label: msg('Heli') },
+    { id: 'overview', label: msg('Overview') },
+    { id: 'free', label: msg('Free') },
+  ]);
+  const FREIGHT_CAMERA_OPTIONS = Object.freeze([
+    { id: 'IN_CAB', label: msg('In-Cab') },
+    { id: 'SEMI_CHASE', label: msg('Chase') },
+    { id: 'APRON_TRANSLOAD', label: msg('Apron') },
+    { id: 'HELI_PATROL', label: msg('Heli') },
+    { id: 'MACRO_ORBITAL', label: msg('Orbital') },
+  ]);
 
   function getCameraGroundTarget() {
     const camPos = cityEngine?.getCurrentCameraGroundPosition?.();
@@ -619,6 +662,121 @@ export function attachSovereignTools({
       });
       return;
     }
+    if (
+      (preferredKind === 'flight' || !preferredKind) &&
+      flightEngine?.getActiveFlight?.()
+    ) {
+      const tel = flightEngine.getActiveTelemetry?.() || {};
+      sovereignUiStore.setActiveSim({
+        kind: 'flight',
+        title:
+          tel.fromCode && tel.toCode
+            ? `${tel.fromCode} → ${tel.toCode}`
+            : msg('Flight Simulator'),
+        subtitle: tel.altText || tel.aircraftType || '',
+        speedLabel: tel.speedText || '',
+        cameraMode: flightEngine.getCameraMode?.() || 'chase',
+        cameraModes: FLIGHT_CAMERA_OPTIONS,
+        canStep: false,
+        canResume: false,
+      });
+      return;
+    }
+    if (
+      (preferredKind === 'rail' || !preferredKind) &&
+      railwayEngine?.getActiveRoute?.()
+    ) {
+      const tel = railwayEngine.getActiveTelemetry?.() || {};
+      sovereignUiStore.setActiveSim({
+        kind: 'rail',
+        title: tel.trainName || msg('World of Rails'),
+        subtitle: tel.nextStation || '',
+        speedLabel: Number.isFinite(tel.speedMph) ? `${tel.speedMph} mph` : '',
+        cameraMode: railwayEngine.getCameraMode?.() || 'cab',
+        cameraModes: RAIL_CAMERA_OPTIONS,
+        canStep: false,
+        canResume: false,
+      });
+      return;
+    }
+    if (
+      (preferredKind === 'drive' || !preferredKind) &&
+      driveEngine?.getActiveDrive?.()
+    ) {
+      const tel = driveEngine.getActiveTelemetry?.() || {};
+      sovereignUiStore.setActiveSim({
+        kind: 'drive',
+        title: tel.currentLocation || msg('Infinite Drive'),
+        subtitle: tel.isParked ? msg('Parked') : tel.nextLocation || '',
+        speedLabel: Number.isFinite(tel.speedMph) ? `${tel.speedMph} mph` : '',
+        cameraMode: driveEngine.getCameraMode?.() || 'chase',
+        cameraModes: DRIVE_CAMERA_OPTIONS,
+        canStep: false,
+        canResume: false,
+      });
+      return;
+    }
+    if (
+      (preferredKind === 'boat' || !preferredKind) &&
+      boatEngine?.getActiveRoute?.()
+    ) {
+      const tel = boatEngine.getActiveTelemetry?.() || {};
+      sovereignUiStore.setActiveSim({
+        kind: 'boat',
+        title: tel.currentLocation || msg('World of Sails'),
+        subtitle: tel.nextLocation || '',
+        speedLabel: Number.isFinite(tel.speedKnots)
+          ? `${tel.speedKnots} kts`
+          : '',
+        cameraMode: boatEngine.getCameraMode?.() || 'chase',
+        cameraModes: BOAT_CAMERA_OPTIONS,
+        canStep: false,
+        canResume: false,
+      });
+      return;
+    }
+    if (
+      (preferredKind === 'transit' || !preferredKind) &&
+      (metroEngine?.isSimActive?.() || busEngine?.isSimActive?.())
+    ) {
+      const useBus =
+        transitDrawer?.getActiveMode?.() === 'bus' &&
+        busEngine?.isSimActive?.();
+      const tel = useBus
+        ? busEngine.getActiveTelemetry?.() || {}
+        : metroEngine.getActiveTelemetry?.() || {};
+      const camMode = useBus
+        ? busEngine.getCameraMode?.() || 'chase'
+        : metroEngine.getCameraMode?.() || 'chase';
+      sovereignUiStore.setActiveSim({
+        kind: 'transit',
+        title: tel.lineName || tel.routeName || msg('Transit Controller'),
+        subtitle: tel.nextStation || tel.nextStop || '',
+        speedLabel: Number.isFinite(tel.speedMph) ? `${tel.speedMph} mph` : '',
+        cameraMode: camMode,
+        cameraModes: TRANSIT_CAMERA_OPTIONS,
+        canStep: false,
+        canResume: false,
+      });
+      return;
+    }
+    if (
+      (preferredKind === 'freight' || !preferredKind) &&
+      freightEngine?.isSimActive?.()
+    ) {
+      const tel = freightEngine.getActiveTelemetry?.() || {};
+      sovereignUiStore.setActiveSim({
+        kind: 'freight',
+        title: tel.carrierLivery || msg('Intermodal Freight'),
+        subtitle: tel.truckId || '',
+        speedLabel: Number.isFinite(tel.speedMph) ? `${tel.speedMph} mph` : '',
+        cameraMode: freightEngine.getCameraMode?.() || 'SEMI_CHASE',
+        cameraModes: FREIGHT_CAMERA_OPTIONS,
+        canStep: false,
+        canResume: false,
+      });
+      return;
+    }
     if (!preferredKind) {
       sovereignUiStore.setActiveSim(null);
     }
@@ -677,6 +835,95 @@ export function attachSovereignTools({
         reason: `exp-domicile-${item.launch.domicileId}`,
       });
       syncActiveSimSnapshot('estate');
+    } else if (kind === 'flight') {
+      void flightEngine
+        ?.spawnFlightRoute?.(item.launch.fromCode, item.launch.toCode, {
+          cruiseAlt: item.launch.cruiseAlt,
+          isRotorcraft: Boolean(item.launch.isRotorcraft),
+          aircraftType: item.launch.aircraftType,
+          cockpit: false,
+        })
+        ?.then?.(() => {
+          syncActiveSimSnapshot('flight');
+          sovereignUiStore.bumpTelemetry();
+        });
+      butterGoogle3DTiles(
+        cesiumViewer?.scene?.primitives,
+        `exp-flight-${item.launch.fromCode}-${item.launch.toCode}`,
+        { maxMs: 2800 },
+      );
+    } else if (kind === 'rail') {
+      coordinator.notifySimulationStarted('rail');
+      void railwayEngine
+        ?.spawnRailRoute?.(item.launch.corridorId, null, {
+          corridor: item.launch.trackProfileId,
+          speedMph: item.launch.speedMph,
+          cameraMode: 'chase',
+          cabRide: false,
+        })
+        ?.then?.(() => {
+          syncActiveSimSnapshot('rail');
+          sovereignUiStore.bumpTelemetry();
+        });
+      butterGoogle3DTiles(
+        cesiumViewer?.scene?.primitives,
+        `exp-rail-${item.launch.corridorId}`,
+        { maxMs: 2800 },
+      );
+    } else if (kind === 'drive') {
+      void driveEngine
+        ?.startRouteDrive?.(item.launch.corridorId, null, {
+          speedMph: item.launch.speedMph || 75,
+          cameraMode: 'chase',
+          seat: false,
+        })
+        ?.then?.((res) => {
+          if (res) {
+            coordinator.notifySimulationStarted('drive', {
+              keepIds: ['composite'],
+            });
+            syncActiveSimSnapshot('drive');
+            sovereignUiStore.bumpTelemetry();
+          }
+        });
+      butterGoogle3DTiles(
+        cesiumViewer?.scene?.primitives,
+        `exp-drive-${item.launch.corridorId}`,
+        { maxMs: 2800 },
+      );
+    } else if (kind === 'boat') {
+      void boatEngine
+        ?.spawnBoatRoute?.(item.launch.presetId, null, {
+          vesselClass: item.launch.vesselClass || 'sloop',
+          speedKnots: item.launch.speedKnots || 8,
+          cameraMode: 'chase',
+        })
+        ?.then?.((res) => {
+          if (res) {
+            coordinator.notifySimulationStarted('boat');
+            syncActiveSimSnapshot('boat');
+            sovereignUiStore.bumpTelemetry();
+          }
+        });
+      butterGoogle3DTiles(
+        cesiumViewer?.scene?.primitives,
+        `exp-boat-${item.launch.presetId}`,
+        { maxMs: 2800 },
+      );
+    } else if (kind === 'corridor') {
+      sovereignUiStore.openModule('vehicles-mobility', {
+        expandPanel: true,
+        mobilityTab: 'corridors',
+      });
+      void corridorDrawer?.connectPlaces?.(item.launch.from, item.launch.to, {
+        openDrawerOnConnect: false,
+        flyCamera: true,
+      });
+      butterGoogle3DTiles(
+        cesiumViewer?.scene?.primitives,
+        `exp-corridor-${item.id}`,
+        { maxMs: 2800 },
+      );
     }
   }
 
@@ -727,11 +974,17 @@ export function attachSovereignTools({
     railwayEngine,
     railDrawer,
     driveEngine,
+    driveDrawer,
     flightEngine,
+    flightDrawer,
     boatEngine,
+    boatDrawer,
     busEngine,
     metroEngine,
+    motormanControls,
+    transitDrawer,
     freightEngine,
+    freightDrawer,
     sandboxEngine,
     corridorDrawer,
     flyToCoords,
@@ -761,6 +1014,34 @@ export function attachSovereignTools({
     sovereignUiStore.patchActiveSimCameraMode(mode, { kind: 'estate' });
     sovereignUiStore.bumpTelemetry();
   });
+  const unsubFlightCam = flightEngine.onCameraModeChange?.((mode) => {
+    sovereignUiStore.patchActiveSimCameraMode(mode, { kind: 'flight' });
+    sovereignUiStore.bumpTelemetry();
+  });
+  const unsubRailCam = railwayEngine.onCameraModeChange?.((mode) => {
+    sovereignUiStore.patchActiveSimCameraMode(mode, { kind: 'rail' });
+    sovereignUiStore.bumpTelemetry();
+  });
+  const unsubDriveCam = driveEngine.onCameraModeChange?.((mode) => {
+    sovereignUiStore.patchActiveSimCameraMode(mode, { kind: 'drive' });
+    sovereignUiStore.bumpTelemetry();
+  });
+  const unsubBoatCam = boatEngine.onCameraModeChange?.((mode) => {
+    sovereignUiStore.patchActiveSimCameraMode(mode, { kind: 'boat' });
+    sovereignUiStore.bumpTelemetry();
+  });
+  const unsubBusCam = busEngine.onCameraModeChange?.((mode) => {
+    sovereignUiStore.patchActiveSimCameraMode(mode, { kind: 'transit' });
+    sovereignUiStore.bumpTelemetry();
+  });
+  const unsubMetroCam = metroEngine.onCameraModeChange?.((mode) => {
+    sovereignUiStore.patchActiveSimCameraMode(mode, { kind: 'transit' });
+    sovereignUiStore.bumpTelemetry();
+  });
+  const unsubFreightCam = freightEngine.onCameraModeChange?.((mode) => {
+    sovereignUiStore.patchActiveSimCameraMode(mode, { kind: 'freight' });
+    sovereignUiStore.bumpTelemetry();
+  });
   const unsubSimState = coordinator.onSimulationStateChange?.((evt) => {
     if (evt?.type === 'stopped') {
       syncActiveSimSnapshot(null);
@@ -787,6 +1068,13 @@ export function attachSovereignTools({
     unsubWanderCam?.();
     unsubCityCam?.();
     unsubFleetCam?.();
+    unsubFlightCam?.();
+    unsubRailCam?.();
+    unsubDriveCam?.();
+    unsubBoatCam?.();
+    unsubBusCam?.();
+    unsubMetroCam?.();
+    unsubFreightCam?.();
     unsubSimState?.();
     cancelGoogle3DTilesButter();
     unmountSovereignRoot?.();

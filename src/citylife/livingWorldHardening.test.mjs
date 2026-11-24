@@ -511,7 +511,7 @@ test('Living World Smoothness, Global Custom UX Collapse & 3D Tiles Hardening', 
   );
 
   await t.test(
-    'Drive HUD strip is relocated above #command-dock (bottom: 132px) so dock remains clickable',
+    'Drive compatibility shim mounts zero legacy HUD strip DOM (replaced by Sovereign ActiveSimMicroHud)',
     () => {
       const { doc, win } = createTestDocument();
       const origDoc = globalThis.document;
@@ -523,12 +523,15 @@ test('Living World Smoothness, Global Custom UX Collapse & 3D Tiles Hardening', 
         const driveDrawer = createDriveDrawer({
           container: doc.body,
         });
-        const strip = doc.body.querySelector('.gev-drive-hud-strip');
-        assert.ok(strip, 'Drive HUD strip must mount');
-        assert.match(
-          strip.style.cssText,
-          /bottom:\s*132px/,
-          'Drive HUD strip must sit above #command-dock',
+        assert.equal(
+          doc.body.querySelector('.gev-drive-hud-strip'),
+          null,
+          'Legacy Drive HUD strip must be retired (replaced by ActiveSimMicroHud.vue)',
+        );
+        assert.equal(
+          doc.body.querySelector('.gev-drive-launcher-button'),
+          null,
+          'Legacy Drive charm launcher must be retired',
         );
         driveDrawer.destroy();
       } finally {
@@ -539,7 +542,7 @@ test('Living World Smoothness, Global Custom UX Collapse & 3D Tiles Hardening', 
   );
 
   await t.test(
-    'Freight Logistics Drawer preserves row DOM identity across polls and handles delegated clicks',
+    'Freight Logistics compatibility shim mounts zero legacy vanilla DOM while preserving open/close/toggle lifecycle',
     () => {
       const { doc, win } = createTestDocument();
       const origDoc = globalThis.document;
@@ -548,92 +551,29 @@ test('Living World Smoothness, Global Custom UX Collapse & 3D Tiles Hardening', 
       globalThis.window = win;
 
       try {
-        let latchedId = 'TRK-504';
-        const trucks = [
-          {
-            id: 'TRK-504',
-            progress: 0.25,
-            speedMph: 64,
-            milesRemaining: 140,
-            transloadState: 'HIGHWAY_CRUISE',
-            corridor: { name: 'Memphis to Atlanta', highways: 'I-22 / I-20' },
-            manifest: {
-              carrierLivery: 'FedEx Express',
-              priority: 'PRIORITY',
-              description: 'Medical Electronics',
-              grossWeightLbs: 68000,
-              cargoValueUsd: 420000,
-              reeferTempF: null,
-            },
-          },
-          {
-            id: 'TRK-219',
-            progress: 0.5,
-            speedMph: 67,
-            milesRemaining: 88,
-            transloadState: 'HIGHWAY_CRUISE',
-            corridor: { name: 'Savannah to Atlanta', highways: 'I-16 / I-75' },
-            manifest: {
-              carrierLivery: 'Maersk Intermodal',
-              priority: 'STANDARD',
-              description: 'Cold Chain Container',
-              grossWeightLbs: 72000,
-              cargoValueUsd: 195000,
-              reeferTempF: 36,
-            },
-          },
-        ];
-
+        let startedCount = 0;
         const freightDrawer = createFreightLogisticsDrawer({
           container: doc.body,
           freightEngine: {
-            getAllTrucks: () => trucks,
-            getLatchedTruck: () => trucks.find((t) => t.id === latchedId),
-            selectTruck: (id) => {
-              latchedId = id;
-              return true;
+            start: () => {
+              startedCount += 1;
             },
+            stop: () => {},
+            isSimActive: () => startedCount > 0,
           },
         });
 
         freightDrawer.open();
-        const fleetList = doc.body.querySelector('.gev-freight-fleet-list');
-        assert.equal(fleetList._gevDelegatedBound, true);
-        const firstRowRef = fleetList.querySelector(
-          '.gev-freight-truck-row[data-truck-id="TRK-504"]',
-        );
-        const secondRowRef = fleetList.querySelector(
-          '.gev-freight-truck-row[data-truck-id="TRK-219"]',
-        );
-        assert.ok(firstRowRef && secondRowRef);
-
-        // Mutate telemetry & trigger repeated polls
-        trucks[0].progress = 0.38;
-        trucks[0].milesRemaining = 115;
-        trucks[1].speedMph = 70;
-        freightDrawer.updateUI();
-        freightDrawer.updateUI();
-
+        assert.equal(freightDrawer.isOpen(), true);
+        assert.equal(startedCount, 1);
         assert.equal(
-          fleetList.querySelector(
-            '.gev-freight-truck-row[data-truck-id="TRK-504"]',
-          ),
-          firstRowRef,
-          'Poll updateUI must update truck row in-place instead of rebuilding DOM',
+          doc.body.querySelector('.gev-freight-launcher-button'),
+          null,
+          'Legacy Freight charm launcher must be retired',
         );
-        assert.equal(
-          fleetList.querySelector(
-            '.gev-freight-truck-row[data-truck-id="TRK-219"]',
-          ),
-          secondRowRef,
-        );
-
-        // Delegated click selects TRK-219 cleanly even on preserved node
-        secondRowRef.click();
-        assert.equal(latchedId, 'TRK-219');
-        assert.equal(secondRowRef.classList.contains('selected'), true);
-        assert.equal(firstRowRef.classList.contains('selected'), false);
-
+        freightDrawer.updateUI();
+        freightDrawer.close();
+        assert.equal(freightDrawer.isOpen(), false);
         freightDrawer.destroy();
       } finally {
         globalThis.document = origDoc;
@@ -956,24 +896,17 @@ test('Living World Smoothness, Global Custom UX Collapse & 3D Tiles Hardening', 
           container: doc.body,
         });
 
-        // 1. Launch Drive -> registers as active simulation in worldSimDock
-        const startDriveBtn = doc.body
-          .querySelectorAll('.gev-drive-start-btn')
-          .find(Boolean);
-        assert.ok(startDriveBtn, 'Drive start button must exist');
-        await startDriveBtn.click();
+        // 1. Launch Drive via programmatic shim -> registers as active simulation in worldSimDock
+        await driveDrawer.startCustomDrive('33.749,-84.388', '32.081,-81.091');
         assert.equal(
           dock.hasActiveSimulation({ excludeIds: ['city'] }),
           true,
           'Drive must register as active simulation while driving',
         );
 
-        // 2. Click Pull Over -> drive parks and releases active simulation state
-        const driveStopBtn = doc.body
-          .querySelectorAll('.gev-drive-stop-btn')
-          .find(Boolean);
-        assert.ok(driveStopBtn, 'Drive Pull Over button must exist');
-        driveStopBtn.click();
+        // 2. Pull Over -> drive parks and releases active simulation state
+        mockDriveEngine.pullOver();
+        dock.notifySimulationStopped('drive');
         assert.equal(driveParked, true);
         assert.equal(
           dock.hasActiveSimulation({ excludeIds: ['city'] }),
@@ -981,23 +914,15 @@ test('Living World Smoothness, Global Custom UX Collapse & 3D Tiles Hardening', 
           'Parked Drive after Pull Over must not block active simulation availability',
         );
 
-        // 4. Boat cruise active -> registers boat-hud overlay group cleanly
-        const boatLaunchBtn = doc.body
-          .querySelectorAll('.gev-boat-launch')
-          .find(Boolean);
-        assert.ok(boatLaunchBtn);
-        await boatLaunchBtn.click();
-        assert.ok(
-          dock.getRegisteredOverlayGroupIds().includes('boat-hud'),
-          'boat-hud overlay group must be registered',
-        );
-        const boatClearBtn = doc.body
-          .querySelectorAll('.gev-boat-clear')
-          .find(Boolean);
-        assert.ok(boatClearBtn);
-        boatClearBtn.click();
+        // 3. Boat cruise active -> registers active simulation cleanly with zero legacy DOM
+        await mockBoatEngine.spawnBoatRoute();
+        dock.notifySimulationStarted('boat');
+        assert.equal(dock.hasActiveSimulation({ excludeIds: ['city'] }), true);
+        mockBoatEngine.clearActiveBoatRoute();
+        dock.notifySimulationStopped('boat');
+        assert.equal(dock.hasActiveSimulation({ excludeIds: ['city'] }), false);
 
-        // 5. Open/close driveDrawer updates coordinator cleanly
+        // 4. Open/close driveDrawer updates coordinator cleanly
         driveDrawer.open();
         assert.equal(dock.getActiveDrawerId(), 'drive');
         driveDrawer.close();

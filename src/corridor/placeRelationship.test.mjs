@@ -537,10 +537,8 @@ test('CorridorDrawer coordinates mutual exclusion, Alt+H, hotkey K, deeplinks, s
     autoRunDeeplink: false,
   });
 
-  const launcher = document.querySelector('.gev-corridor-launcher-btn');
-  assert.ok(launcher);
-  assert.equal(launcher.style.right, '596px');
-  assert.equal(launcher.style.bottom, '74px');
+  // Phase 2 compatibility shim mounts zero legacy bottom-right charm launcher DOM
+  assert.equal(document.querySelector('.gev-corridor-launcher-btn'), null);
 
   // Mutual exclusion with other drawer
   coordinator.openDrawer('test-other');
@@ -584,13 +582,12 @@ test('CorridorDrawer coordinates mutual exclusion, Alt+H, hotkey K, deeplinks, s
   assert.equal(state.relationship.origin.name, 'Austin Crest Estate');
   assert.ok(state.modes.byId.drive.feasible);
 
-  // 1-click launches for drive and Airbus H145 (must emit coordinator simulation-started so drive HUD strip shows)
+  // 1-click launches for drive and Airbus H145 (must emit coordinator simulation-started so ActiveSimMicroHud shows)
   const simEvents = [];
   const unsubSimEvents = coordinator.onSimulationStateChange((evt) =>
     simEvents.push(evt),
   );
-  const h145Btn = document.querySelector('.gev-corridor-launch-btn[data-mode="h145"]');
-  assert.ok(h145Btn);
+  assert.ok(state.modes.byId.h145.feasible);
   await drawer.launchMode('drive');
   await drawer.launchMode('h145');
   unsubSimEvents();
@@ -731,12 +728,9 @@ test('Claimed domiciles render human-readable titles in Estate dropdowns, sync l
     autoRunDeeplink: false,
   });
 
-  const fromSelect = document.querySelector('.gev-corridor-estate-from-select');
-  const toSelect = document.querySelector('.gev-corridor-estate-to-select');
-  assert.ok(fromSelect && toSelect);
-
-  const optionTexts = [...fromSelect.options].slice(1).map((o) => o.textContent);
-  const optionValues = [...fromSelect.options].slice(1).map((o) => o.value);
+  const initialEstates = drawer.getEstateOptions();
+  const optionTexts = initialEstates.map((o) => o.label);
+  const optionValues = initialEstates.map((o) => o.value);
   assert.equal(optionValues.length, 3);
   assert.ok(optionValues.every((v) => !v.startsWith('claimed_')));
   assert.ok(optionTexts.every((t) => !t.includes('claimed_')));
@@ -746,7 +740,7 @@ test('Claimed domiciles render human-readable titles in Estate dropdowns, sync l
   assert.ok(optionValues.includes('Coastal Sanctuary (Melbourne, FL)'));
   assert.ok(optionValues.includes('Coastal Sanctuary (Savannah, GA)'));
 
-  // Newly claimed domicile syncs live into existing dropdowns
+  // Newly claimed domicile syncs live into existing estate options
   const d4 = claimDomicileAtLocation({
     title: 'Mesa Venture HQ',
     lat: 32.351,
@@ -754,10 +748,9 @@ test('Claimed domiciles render human-readable titles in Estate dropdowns, sync l
     typology: 'venture_hq',
     localityLabel: 'Las Cruces, NM',
   });
-  assert.equal(fromSelect.options.length, 5);
-  assert.ok(
-    [...fromSelect.options].some((o) => o.value === 'Mesa Venture HQ'),
-  );
+  const updatedEstates = drawer.getEstateOptions();
+  assert.equal(updatedEstates.length, 4);
+  assert.ok(updatedEstates.some((o) => o.value === 'Mesa Venture HQ'));
 
   // Selecting an estate populates input & resolves cleanly via title or disambiguated value
   const resolvedUnique = await resolvePlaceEndpoint(d1.title);

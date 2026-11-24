@@ -114,6 +114,16 @@ test('Earth Sim Feature Catalog covers every registered drawer in src/ (dynamic 
       migratedIds.includes('wilderness'),
     'Phase 1 Explore & Play module must declare migrated legacy drawer IDs',
   );
+  assert.ok(
+    migratedIds.includes('flight') &&
+      migratedIds.includes('rail') &&
+      migratedIds.includes('drive') &&
+      migratedIds.includes('boat') &&
+      migratedIds.includes('transit') &&
+      migratedIds.includes('freight') &&
+      migratedIds.includes('corridor'),
+    'Phase 2 Vehicles & Corridors module must declare all 7 migrated mobility drawer IDs',
+  );
   const migratedReport = validateFeatureCatalogAgainstDrawers(migratedIds);
   assert.equal(migratedReport.ok, true);
 });

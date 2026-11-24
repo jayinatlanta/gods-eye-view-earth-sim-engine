@@ -342,21 +342,14 @@ const STRING_MARKUP_PAGES = new Set(['src/tools/globePanel.js']);
 // Earth Sim / Living World standalone vanilla-DOM drawers and HUD overlays
 // (mounted imperatively outside Vue/kit; progressively retired across 24.50a-c).
 const EARTH_SIM_VANILLA_DOM_MODULES = new Set([
-  'src/citylife/freightLogisticsDrawer.js',
   'src/citylife/sandboxDrawer.js',
   'src/citylife/thoughtBubbleOverlay.js',
-  'src/citylife/transitControllerDrawer.js',
-  'src/corridor/corridorDrawer.js',
   'src/discovery/sightseeingDrawer.js',
-  'src/drive/driveDrawer.js',
   'src/flight/compositeTravelEngine.js',
-  'src/flight/flightDrawer.js',
   'src/flight/syntheticFlightEngine.js',
   'src/layers/estates/propertyClaimScout.js',
-  'src/transit/railDrawer.js',
   'src/ui/selfModifyingAgentPanel.js',
   'src/ui/worldSimDock.js',
-  'src/vessels/boatDrawer.js',
 ]);
 
 /**

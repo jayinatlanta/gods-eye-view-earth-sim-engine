@@ -4,7 +4,6 @@
   "src/citylife/sandboxDrawer.js",
   "src/citylife/thoughtBubbleOverlay.js",
   "src/citylife/wildernessDrawer.js",
-  "src/corridor/corridorDrawer.js",
   "src/corridor/corridorVisualizer.js",
   "src/discovery/sightseeingEngine.js",
   "src/drive/roadGeometrySnapper.js",

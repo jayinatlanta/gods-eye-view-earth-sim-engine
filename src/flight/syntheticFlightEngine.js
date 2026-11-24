@@ -30,70 +30,11 @@ import {
 } from '../layers/citylife/surfaceHeight.js';
 import { estimateWaypointElevation } from '../drive/driveWaypoints.js';
 import { getGlobalDrawerCoordinator } from '../ui/worldSimDock.js';
+import { AIRPORT_WAYPOINTS } from './airportCatalog.js';
+import { createCameraAuthority } from '../ui/sovereign/cameraControlBridge.js';
+import { butterGoogle3DTiles } from '../ui/sovereign/tilesetButter.js';
 
-// Canonical default airport/waypoint coordinates (WGS84 Lon/Lat)
-export const AIRPORT_WAYPOINTS = Object.freeze({
-  ATL: {
-    name: 'Atlanta (Hartsfield-Jackson)',
-    lon: -84.4281,
-    lat: 33.6407,
-    elev: 313,
-  },
-  PDK: {
-    name: 'Peachtree DeKalb Airport (Atlanta)',
-    lon: -84.302,
-    lat: 33.8756,
-    elev: 306,
-  },
-  CLT: {
-    name: 'Charlotte Douglas Intl',
-    lon: -80.9431,
-    lat: 35.214,
-    elev: 228,
-  },
-  JFK: {
-    name: 'New York (John F. Kennedy)',
-    lon: -73.7781,
-    lat: 40.6413,
-    elev: 4,
-  },
-  LHR: { name: 'London Heathrow', lon: -0.4543, lat: 51.47, elev: 25 },
-  LAX: { name: 'Los Angeles Intl', lon: -118.4085, lat: 33.9416, elev: 38 },
-  HND: { name: 'Tokyo Haneda', lon: 139.7798, lat: 35.5494, elev: 11 },
-  CDG: {
-    name: 'Paris Charles de Gaulle',
-    lon: 2.5479,
-    lat: 49.0097,
-    elev: 119,
-  },
-  DXB: { name: 'Dubai Intl', lon: 55.3644, lat: 25.2532, elev: 19 },
-  MIA: { name: 'Miami Intl', lon: -80.287, lat: 25.7959, elev: 3 },
-  EYW: { name: 'Key West International', lon: -81.7596, lat: 24.5559, elev: 1 },
-  FLL: {
-    name: 'Fort Lauderdale-Hollywood',
-    lon: -80.1528,
-    lat: 26.0742,
-    elev: 3,
-  },
-  MCO: { name: 'Orlando International', lon: -81.3089, lat: 28.4294, elev: 29 },
-  TPA: { name: 'Tampa International', lon: -82.5332, lat: 27.9755, elev: 8 },
-  RSW: {
-    name: 'Southwest Florida (Fort Myers)',
-    lon: -81.7552,
-    lat: 26.5362,
-    elev: 9,
-  },
-  PBI: {
-    name: 'Palm Beach International',
-    lon: -80.0956,
-    lat: 26.6832,
-    elev: 6,
-  },
-  SAV: { name: 'Savannah/Hilton Head', lon: -81.2021, lat: 32.1276, elev: 15 },
-  ORD: { name: "Chicago O'Hare", lon: -87.9073, lat: 41.9742, elev: 204 },
-  SFO: { name: 'San Francisco Intl', lon: -122.3789, lat: 37.6213, elev: 4 },
-  SEA: { name: 'Seattle-Tacoma Intl', lon: -122.3088, lat: 47.4502, elev: 132 },
-});
+export { AIRPORT_WAYPOINTS };
 
 export const DEFAULT_CRUISE_ALTITUDE_METERS = 10668; // ~35,000 ft
 export const DEFAULT_FLIGHT_DURATION_SECONDS = 180; // Legacy fallback when distance is zero
@@ -523,6 +464,32 @@ export function createSyntheticFlightEngine(optionsOrViewer = {}) {
   let activeFlightData = null;
   let currentCameraMode = 'chase';
   let cameraZoomScale = 1;
+  const cameraModeListeners = new Set();
+
+  function notifyCameraModeListeners(mode) {
+    for (const cb of cameraModeListeners) {
+      try {
+        cb(mode);
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  const cameraAuthority = createCameraAuthority({
+    engineId: 'synthetic-flight',
+    cancelCameraFlight: () => viewer?.camera?.cancelFlight?.(),
+    resetCameraLookAt: () =>
+      viewer?.camera?.lookAtTransform?.(Cesium.Matrix4.IDENTITY),
+    clearTrackedEntity: () => {
+      if (viewer && viewer.trackedEntity !== undefined) {
+        viewer.trackedEntity = undefined;
+      }
+    },
+    getTilesetPrimitives: () => viewer?.scene?.primitives || null,
+    isRendererDestroyed: () => Boolean(isDestroyed || viewer?.isDestroyed?.()),
+    onCameraModeApplied: notifyCameraModeListeners,
+  });
   let telemetryTimer = null;
   let liveClampedFlightPos = null;
   let lastSampledFlightGroundM = null;
@@ -925,6 +892,11 @@ export function createSyntheticFlightEngine(optionsOrViewer = {}) {
       last3DFlightSampleMs = -Infinity;
       syncFlightAndCameraPose();
       nudgeTilesetStreaming('flight-map-stack-switch', { force: true });
+      butterGoogle3DTiles(
+        viewer?.scene?.primitives,
+        'flight-map-stack-switch',
+        { maxMs: 2400 },
+      );
       viewer?.scene?.requestRender?.();
     });
   }
@@ -935,11 +907,15 @@ export function createSyntheticFlightEngine(optionsOrViewer = {}) {
       screenPointerHandler = new Cesium.ScreenSpaceEventHandler(
         viewer.scene.canvas,
       );
-      const onUserInteraction = () => {
+      const onUserInteraction = (movement) => {
+        if (cameraAuthority.shouldIgnoreCanvasPointer(movement)) {
+          return;
+        }
         if (activeFlightData && currentCameraMode !== 'free') {
           currentCameraMode = 'free';
           if (viewer && viewer.trackedEntity) viewer.trackedEntity = undefined;
           updateHudCameraButtons('free');
+          notifyCameraModeListeners('free');
         }
       };
       screenPointerHandler.setInputAction(
@@ -971,11 +947,22 @@ export function createSyntheticFlightEngine(optionsOrViewer = {}) {
   function setCameraMode(mode = 'chase') {
     currentCameraMode = mode;
     cameraZoomScale = 1;
-    if (!activeFlightEntity) return;
+    cameraAuthority.beginAtomicCameraSwitch({
+      mode,
+      clearTrackedEntity: true,
+      resetLookAt: true,
+      butter: true,
+      butterReason: `flight-cam-${mode}`,
+      butterMaxMs: 2200,
+    });
+    if (!activeFlightEntity) {
+      updateHudCameraButtons(mode);
+      return currentCameraMode;
+    }
     if (mode === 'free') {
       if (viewer && viewer.trackedEntity) viewer.trackedEntity = undefined;
       updateHudCameraButtons('free');
-      return;
+      return currentCameraMode;
     }
     const offsets = activeFlightData?.isRotorcraft
       ? ROTORCRAFT_CAMERA_OFFSETS
@@ -1010,12 +997,18 @@ export function createSyntheticFlightEngine(optionsOrViewer = {}) {
       hideContactBracketOverlay();
     }
 
+    updateHudCameraButtons(mode);
+    // Apply exact camera pose synchronously FIRST (never fight Cesium trackedEntity transform)
+    syncFlightAndCameraPose();
     if (viewer) {
       viewer.trackedEntity = isCockpit ? undefined : activeFlightEntity;
       viewer.scene?.requestRender?.();
     }
-    updateHudCameraButtons(mode);
-    syncFlightAndCameraPose();
+    return currentCameraMode;
+  }
+
+  function snapBack(mode = 'chase') {
+    return setCameraMode(mode);
   }
 
   function startTelemetryTimer() {
@@ -1411,6 +1404,9 @@ export function createSyntheticFlightEngine(optionsOrViewer = {}) {
 
     holdContinuousRender('flight-sim');
     nudgeTilesetStreaming('flight-sim-start', { force: true });
+    butterGoogle3DTiles(viewer?.scene?.primitives, 'flight-sim-start', {
+      maxMs: 2600,
+    });
     governorRequestRender('flight-sim-start');
     viewer.scene?.requestRender?.();
     startTelemetryTimer();
@@ -1525,6 +1521,7 @@ export function createSyntheticFlightEngine(optionsOrViewer = {}) {
       totalDistMi,
       distTraveledKm,
       totalDistKm,
+      cameraMode: currentCameraMode,
     };
   }
 
@@ -1552,7 +1549,16 @@ export function createSyntheticFlightEngine(optionsOrViewer = {}) {
     clearActiveFlight,
     stopFlight: clearActiveFlight,
     setCameraMode,
+    snapBack,
     getCameraMode: () => currentCameraMode,
+    onCameraModeChange: (cb) => {
+      if (typeof cb === 'function') {
+        cameraModeListeners.add(cb);
+        return () => cameraModeListeners.delete(cb);
+      }
+      return () => {};
+    },
+    getCameraIntentSeq: () => cameraAuthority.getSeq(),
     getActiveFlight: () => activeFlightData,
     getActiveTelemetry,
     resolveWaypoint,

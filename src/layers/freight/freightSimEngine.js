@@ -41,6 +41,8 @@ import {
   holdContinuousRender,
   releaseContinuousRender,
 } from '../../renderGovernor.js';
+import { createCameraAuthority } from '../../ui/sovereign/cameraControlBridge.js';
+import { butterGoogle3DTiles } from '../../ui/sovereign/tilesetButter.js';
 
 export const ROAD_SURFACE_ALTITUDE_METERS = 0.8;
 
@@ -204,6 +206,32 @@ export function createFreightSimEngine({ viewer = null } = {}) {
   let isRunning = false;
   let preRenderRemove = null;
   let lastTickTime = performance.now();
+  const cameraModeListeners = new Set();
+
+  function notifyCameraModeListeners(mode) {
+    for (const cb of cameraModeListeners) {
+      try {
+        cb(mode);
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  const cameraAuthority = createCameraAuthority({
+    engineId: 'freight',
+    cancelCameraFlight: () => viewer?.camera?.cancelFlight?.(),
+    resetCameraLookAt: () =>
+      viewer?.camera?.lookAtTransform?.(Cesium.Matrix4.IDENTITY),
+    clearTrackedEntity: () => {
+      if (viewer && viewer.trackedEntity !== undefined) {
+        viewer.trackedEntity = undefined;
+      }
+    },
+    getTilesetPrimitives: () => viewer?.scene?.primitives || null,
+    isRendererDestroyed: () => Boolean(viewer?.isDestroyed?.()),
+    onCameraModeApplied: notifyCameraModeListeners,
+  });
 
   const corridorCache = new Map();
 
@@ -1068,6 +1096,9 @@ export function createFreightSimEngine({ viewer = null } = {}) {
     if (viewer?.scene?.preRender) {
       preRenderRemove = viewer.scene.preRender.addEventListener(tick);
     }
+    butterGoogle3DTiles(viewer?.scene?.primitives, 'freight-start', {
+      maxMs: 2600,
+    });
     governorRequestRender('freight-start');
   }
 
@@ -1081,10 +1112,37 @@ export function createFreightSimEngine({ viewer = null } = {}) {
     audio.stopEngine();
   }
 
+  function applyLatchedFreightCamera() {
+    if (!viewer || !latchedTruckId || !activeTrucks.has(latchedTruckId)) return;
+    const latched = activeTrucks.get(latchedTruckId);
+    const pos = latched?.renderPos || latched?.currentPos;
+    const fwd = latched?.renderForward || latched?.tractorForward;
+    if (!pos || !fwd) return;
+    applyFreightCameraFollow(
+      viewer,
+      pos,
+      fwd,
+      activeCameraMode,
+      [
+        latched.entities?.tractor,
+        latched.entities?.trailer,
+        latched.entities?.plane,
+      ].filter(Boolean),
+    );
+  }
+
   function selectTruck(truckId) {
     if (activeTrucks.has(truckId)) {
       latchedTruckId = truckId;
-      viewer?.camera?.cancelFlight?.();
+      cameraAuthority.beginAtomicCameraSwitch({
+        mode: activeCameraMode,
+        clearTrackedEntity: true,
+        resetLookAt: true,
+        butter: true,
+        butterReason: `freight-select-${truckId}`,
+        butterMaxMs: 2400,
+      });
+      applyLatchedFreightCamera();
       audio.playCbRadioChirp();
       governorRequestRender('freight-select');
       return true;
@@ -1103,11 +1161,23 @@ export function createFreightSimEngine({ viewer = null } = {}) {
   function setCameraMode(mode) {
     if (FREIGHT_CAMERA_MODES[mode]) {
       activeCameraMode = mode;
-      viewer?.camera?.cancelFlight?.();
+      cameraAuthority.beginAtomicCameraSwitch({
+        mode,
+        clearTrackedEntity: true,
+        resetLookAt: true,
+        butter: true,
+        butterReason: `freight-cam-${mode}`,
+        butterMaxMs: 2200,
+      });
+      applyLatchedFreightCamera();
       governorRequestRender('freight-camera');
       return true;
     }
     return false;
+  }
+
+  function snapBack(mode = FREIGHT_CAMERA_MODES.SEMI_CHASE) {
+    return setCameraMode(mode);
   }
 
   function getCameraMode() {
@@ -1222,7 +1292,16 @@ export function createFreightSimEngine({ viewer = null } = {}) {
     getActiveTelemetry,
     isSimActive: () => isRunning,
     setCameraMode,
+    snapBack,
     getCameraMode,
+    onCameraModeChange: (cb) => {
+      if (typeof cb === 'function') {
+        cameraModeListeners.add(cb);
+        return () => cameraModeListeners.delete(cb);
+      }
+      return () => {};
+    },
+    getCameraIntentSeq: () => cameraAuthority.getSeq(),
     fastForwardTransload,
     rerouteWeatherDetour,
     getAudioEngine: () => audio,

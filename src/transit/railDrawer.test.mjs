@@ -91,7 +91,7 @@ test('World of Rails - Drawer Modal & Camera Perspective Architecture', async (t
     drawer.destroy();
   });
 
-  await t.test('renders drawer DOM, controls camera perspectives, and triggers snap back', () => {
+  await t.test('compatibility shim mounts zero legacy DOM while preserving open/close/selectCorridor and engine contracts', () => {
     const origDoc = global.document;
     const origReq = global.requestAnimationFrame;
 
@@ -103,7 +103,6 @@ test('World of Rails - Drawer Modal & Camera Perspective Architecture', async (t
     global.requestAnimationFrame = (fn) => fn();
 
     let activeCamMode = 'cab';
-    let snappedBack = false;
     let clearedRoute = false;
     let spawnedRoute = null;
 
@@ -113,7 +112,6 @@ test('World of Rails - Drawer Modal & Camera Perspective Architecture', async (t
       },
       getCameraMode: () => activeCamMode,
       snapBack: (mode) => {
-        snappedBack = true;
         activeCamMode = mode;
       },
       clearActiveRailRoute: () => {
@@ -148,6 +146,11 @@ test('World of Rails - Drawer Modal & Camera Perspective Architecture', async (t
     });
 
     assert.ok(drawer);
+    assert.equal(
+      container.children.length,
+      0,
+      'Phase 2 Rail compatibility shim mounts zero legacy vanilla DOM',
+    );
 
     // 1. Initial State: Closed
     assert.equal(drawer.isOpen(), false);
@@ -156,46 +159,18 @@ test('World of Rails - Drawer Modal & Camera Perspective Architecture', async (t
     drawer.open();
     assert.equal(drawer.isOpen(), true);
 
-    // 3. Camera Perspective Buttons
-    const drawerEl = container.children[0];
-    const camBtns = drawerEl.querySelectorAll('.gev-rail-cam-btn');
-    assert.equal(camBtns.length, 5); // Cab, Chase, Heli, Overview, Free
+    // 3. Programmatic corridor selection
+    const selected = drawer.selectCorridor('wdw_monorail');
+    assert.equal(selected?.corridorId, 'wdw_monorail');
+    assert.equal(drawer.getSelectedCorridor().corridorId, 'wdw_monorail');
 
-    const snapBtn = drawerEl.querySelector('.gev-rail-snap-btn');
-    assert.ok(snapBtn);
-
-    // Click Heli camera mode
-    const heliBtn = camBtns.find((b) => b.getAttribute('data-cam') === 'heli');
-    assert.ok(heliBtn);
-    heliBtn.click();
-    assert.equal(activeCamMode, 'heli');
-
-    // Click Overview camera mode
-    const overviewBtn = camBtns.find((b) => b.getAttribute('data-cam') === 'overview');
-    assert.ok(overviewBtn);
-    overviewBtn.click();
-
-    assert.equal(activeCamMode, 'overview');
-    assert.equal(snapBtn.style.display, 'block'); // Exposed in overview
-
-    // Click Snap Back
-    snapBtn.click();
-    assert.equal(snappedBack, true);
-    assert.equal(activeCamMode, 'cab');
-    assert.equal(snapBtn.style.display, 'none'); // Hidden after snap back
-
-    // 4. Clear Route
-    const clearBtn = drawerEl.querySelector('.gev-rail-clear');
-    assert.ok(clearBtn);
-    clearBtn.click();
-    assert.equal(clearedRoute, true);
-
-    // 5. Close and Destroy
+    // 4. Close and Destroy
     drawer.close();
     assert.equal(drawer.isOpen(), false);
 
     drawer.destroy();
     assert.equal(container.children.length, 0);
+    assert.equal(clearedRoute, false);
 
     global.document = origDoc;
     global.requestAnimationFrame = origReq;

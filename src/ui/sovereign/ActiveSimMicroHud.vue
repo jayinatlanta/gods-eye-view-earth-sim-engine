@@ -89,6 +89,19 @@ function selectCameraMode(modeId) {
     rt.driveEngine?.setCameraMode?.(modeId);
   } else if (sim.kind === 'boat') {
     rt.boatEngine?.setCameraMode?.(modeId);
+  } else if (sim.kind === 'transit') {
+    const activeTransitMode =
+      rt.transitDrawer?.getActiveMode?.() ||
+      (rt.metroEngine?.isCameraEnabled?.() ? 'metro' : 'bus');
+    if (activeTransitMode === 'bus') {
+      rt.metroEngine?.setCameraEnabled?.(false);
+      rt.busEngine?.setCameraMode?.(modeId);
+    } else {
+      rt.busEngine?.setCameraEnabled?.(false);
+      rt.metroEngine?.setCameraMode?.(modeId);
+    }
+  } else if (sim.kind === 'freight') {
+    rt.freightEngine?.setCameraMode?.(modeId);
   }
   store.bumpTelemetry();
 }
@@ -108,6 +121,33 @@ function snapBack() {
   } else if (sim.kind === 'estate') {
     rt.fleetEngine?.snapBack?.('chase');
     store.patchActiveSimCameraMode('chase', { kind: sim.kind });
+  } else if (sim.kind === 'flight') {
+    rt.flightEngine?.snapBack?.('chase');
+    store.patchActiveSimCameraMode('chase', { kind: sim.kind });
+  } else if (sim.kind === 'rail') {
+    rt.railwayEngine?.snapBack?.('cab');
+    store.patchActiveSimCameraMode('cab', { kind: sim.kind });
+  } else if (sim.kind === 'drive') {
+    rt.driveEngine?.snapBack?.('chase');
+    store.patchActiveSimCameraMode('chase', { kind: sim.kind });
+  } else if (sim.kind === 'boat') {
+    rt.boatEngine?.snapBack?.('chase');
+    store.patchActiveSimCameraMode('chase', { kind: sim.kind });
+  } else if (sim.kind === 'transit') {
+    const activeTransitMode =
+      rt.transitDrawer?.getActiveMode?.() ||
+      (rt.metroEngine?.isCameraEnabled?.() ? 'metro' : 'bus');
+    if (activeTransitMode === 'bus') {
+      rt.metroEngine?.setCameraEnabled?.(false);
+      rt.busEngine?.snapBack?.('chase');
+    } else {
+      rt.busEngine?.setCameraEnabled?.(false);
+      rt.metroEngine?.snapBack?.('chase');
+    }
+    store.patchActiveSimCameraMode('chase', { kind: sim.kind });
+  } else if (sim.kind === 'freight') {
+    rt.freightEngine?.snapBack?.('SEMI_CHASE');
+    store.patchActiveSimCameraMode('SEMI_CHASE', { kind: sim.kind });
   }
   store.bumpTelemetry();
 }
@@ -148,12 +188,41 @@ function stopActiveSim() {
     rt.cityEngine?.clearPedestrians?.();
   } else if (sim.kind === 'estate') {
     rt.fleetEngine?.stop?.();
+  } else if (sim.kind === 'flight') {
+    rt.flightEngine?.clearActiveFlight?.();
+  } else if (sim.kind === 'rail') {
+    rt.railwayEngine?.clearActiveRailRoute?.();
+  } else if (sim.kind === 'drive') {
+    rt.driveEngine?.clearActiveDrive?.();
+  } else if (sim.kind === 'boat') {
+    rt.boatEngine?.clearActiveBoatRoute?.();
+  } else if (sim.kind === 'transit') {
+    rt.busEngine?.stopBusFleet?.();
+    rt.metroEngine?.stopMetroSystem?.();
+  } else if (sim.kind === 'freight') {
+    rt.freightEngine?.stop?.();
   }
   store.clearActiveSim(sim.kind);
   store.bumpTelemetry();
 }
 
 function openEarthSimPanel() {
+  const kind = activeSim.value?.kind;
+  const mobilityMap = {
+    flight: 'flight',
+    rail: 'rail',
+    drive: 'drive',
+    boat: 'sail',
+    transit: 'metro',
+    freight: 'freight',
+  };
+  if (kind && mobilityMap[kind]) {
+    store.openModule('vehicles-mobility', {
+      expandPanel: true,
+      mobilityTab: mobilityMap[kind],
+    });
+    return;
+  }
   store.openModule('explore-play', { expandPanel: true });
 }
 

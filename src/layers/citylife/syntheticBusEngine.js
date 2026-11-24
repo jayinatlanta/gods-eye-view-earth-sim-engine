@@ -19,6 +19,8 @@ import {
   releaseContinuousRender,
   governorRequestRender,
 } from '../../renderGovernor.js';
+import { createCameraAuthority } from '../../ui/sovereign/cameraControlBridge.js';
+import { butterGoogle3DTiles } from '../../ui/sovereign/tilesetButter.js';
 import {
   createRouteOverlayState,
   appendRouteOverlay,
@@ -406,6 +408,32 @@ export function createSyntheticBusEngine({
   const routeOverlay = createRouteOverlayState();
   let routeLinesVisible = true;
   let lastTickTime = Date.now();
+  const cameraModeListeners = new Set();
+
+  function notifyCameraModeListeners(mode) {
+    for (const cb of cameraModeListeners) {
+      try {
+        cb(mode);
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  const cameraAuthority = createCameraAuthority({
+    engineId: 'synthetic-bus',
+    cancelCameraFlight: () => viewer?.camera?.cancelFlight?.(),
+    resetCameraLookAt: () =>
+      viewer?.camera?.lookAtTransform?.(Cesium.Matrix4.IDENTITY),
+    clearTrackedEntity: () => {
+      if (viewer && viewer.trackedEntity !== undefined) {
+        viewer.trackedEntity = undefined;
+      }
+    },
+    getTilesetPrimitives: () => viewer?.scene?.primitives || null,
+    isRendererDestroyed: () => Boolean(viewer?.isDestroyed?.()),
+    onCameraModeApplied: notifyCameraModeListeners,
+  });
 
   function startBusFleet(cityId = 'atlanta', options = {}) {
     stopBusFleet();
@@ -600,6 +628,9 @@ export function createSyntheticBusEngine({
 
     if (activeFleet.length > 0) {
       holdContinuousRender('synthetic-bus');
+      butterGoogle3DTiles(viewer?.scene?.primitives, 'bus-start', {
+        maxMs: 2400,
+      });
       governorRequestRender('bus-start');
     }
 
@@ -1127,14 +1158,17 @@ export function createSyntheticBusEngine({
   }
 
   function showTransitMap() {
-    if (!viewer?.camera) return;
     cameraMode = 'overview';
     isCameraEnabled = false;
-    if (viewer) viewer.trackedEntity = undefined;
-    viewer.camera.cancelFlight?.();
-    if (typeof viewer.camera.lookAtTransform === 'function') {
-      viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
-    }
+    cameraAuthority.beginAtomicCameraSwitch({
+      mode: 'overview',
+      clearTrackedEntity: true,
+      resetLookAt: true,
+      butter: true,
+      butterReason: 'bus-overview',
+      butterMaxMs: 2400,
+    });
+    if (!viewer?.camera) return;
 
     const contactPositions = [];
     for (const bus of activeFleet) {
@@ -1167,14 +1201,22 @@ export function createSyntheticBusEngine({
   }
 
   function snapBack(mode = 'chase') {
-    if (!activeBus || !viewer?.camera) return;
-    viewer.camera.cancelFlight?.();
-    if (viewer) viewer.trackedEntity = undefined;
-    cameraMode = normalizeBusCameraMode(mode);
+    const normalized = normalizeBusCameraMode(mode);
+    cameraMode = normalized;
     isCameraEnabled = true;
+    cameraAuthority.beginAtomicCameraSwitch({
+      mode: normalized,
+      clearTrackedEntity: true,
+      resetLookAt: true,
+      butter: true,
+      butterReason: `bus-snap-${normalized}`,
+      butterMaxMs: 2200,
+    });
+    if (!activeBus || !viewer?.camera) return cameraMode;
     for (const b of activeFleet) b._styleKey = null;
     applyBusCameraFollow(activeBus, cameraMode);
     governorRequestRender('bus-snap');
+    return cameraMode;
   }
 
   function setCameraMode(mode) {
@@ -1185,16 +1227,29 @@ export function createSyntheticBusEngine({
       showTransitMap();
     } else if (normalized === 'free') {
       isCameraEnabled = false;
-      viewer?.camera?.cancelFlight?.();
-      if (viewer) viewer.trackedEntity = undefined;
+      cameraAuthority.beginAtomicCameraSwitch({
+        mode: 'free',
+        clearTrackedEntity: true,
+        resetLookAt: true,
+        butter: true,
+        butterReason: 'bus-free',
+        butterMaxMs: 2000,
+      });
       governorRequestRender('bus-free');
     } else {
-      viewer?.camera?.cancelFlight?.();
-      if (viewer) viewer.trackedEntity = undefined;
       isCameraEnabled = true;
+      cameraAuthority.beginAtomicCameraSwitch({
+        mode: normalized,
+        clearTrackedEntity: true,
+        resetLookAt: true,
+        butter: true,
+        butterReason: `bus-cam-${normalized}`,
+        butterMaxMs: 2200,
+      });
       if (activeBus) applyBusCameraFollow(activeBus, normalized);
       governorRequestRender('bus-camera');
     }
+    return cameraMode;
   }
 
   function setCameraEnabled(enabled) {
@@ -1240,6 +1295,14 @@ export function createSyntheticBusEngine({
     setActiveBus,
     setCameraMode,
     getCameraMode: () => cameraMode,
+    onCameraModeChange: (cb) => {
+      if (typeof cb === 'function') {
+        cameraModeListeners.add(cb);
+        return () => cameraModeListeners.delete(cb);
+      }
+      return () => {};
+    },
+    getCameraIntentSeq: () => cameraAuthority.getSeq(),
     showTransitMap,
     snapBack,
     setCameraEnabled,

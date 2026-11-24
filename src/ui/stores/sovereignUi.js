@@ -15,6 +15,16 @@ const LEGACY_DRAWER_TO_EXPLORE_TAB = Object.freeze({
   wilderness: 'wilderness',
 });
 
+const LEGACY_DRAWER_TO_MOBILITY_TAB = Object.freeze({
+  flight: 'flight',
+  rail: 'rail',
+  drive: 'drive',
+  boat: 'sail',
+  transit: 'metro',
+  freight: 'freight',
+  corridor: 'corridors',
+});
+
 function readStoredModuleId() {
   try {
     return globalThis?.localStorage?.getItem?.(ACTIVE_MODULE_STORAGE_KEY) || '';
@@ -62,6 +72,9 @@ export const useSovereignUiStore = defineStore('gev-sovereign-ui', () => {
 
   /** Active sub-tab inside `ExplorePlayModule` (`tour` | `city` | `estate` | `wilderness`). */
   const activeExploreTab = ref('tour');
+
+  /** Active sub-tab inside `VehiclesMobilityModule` (`flight` | `rail` | `drive` | `sail` | `metro` | `freight` | `corridors`). */
+  const activeMobilityTab = ref('flight');
 
   /** Full-screen sibling `ExperiencesExplorer` visibility and filters. */
   const explorerOpen = ref(false);
@@ -197,6 +210,22 @@ export const useSovereignUiStore = defineStore('gev-sovereign-ui', () => {
     }
   }
 
+  function setActiveMobilityTab(tabId) {
+    if (
+      [
+        'flight',
+        'rail',
+        'drive',
+        'sail',
+        'metro',
+        'freight',
+        'corridors',
+      ].includes(tabId)
+    ) {
+      activeMobilityTab.value = tabId;
+    }
+  }
+
   function expandEarthSimPanel() {
     if (customUiHidden.value) {
       setCustomUiHidden(false);
@@ -238,7 +267,7 @@ export const useSovereignUiStore = defineStore('gev-sovereign-ui', () => {
 
   function openModule(
     moduleId = activeModuleId.value || 'explore-play',
-    { expandPanel = true, exploreTab = null } = {},
+    { expandPanel = true, exploreTab = null, mobilityTab = null } = {},
   ) {
     if (customUiHidden.value) {
       setCustomUiHidden(false);
@@ -246,6 +275,9 @@ export const useSovereignUiStore = defineStore('gev-sovereign-ui', () => {
     setActiveModule(moduleId);
     if (exploreTab) {
       setActiveExploreTab(exploreTab);
+    }
+    if (mobilityTab) {
+      setActiveMobilityTab(mobilityTab);
     }
     if (expandPanel) {
       expandEarthSimPanel();
@@ -256,6 +288,11 @@ export const useSovereignUiStore = defineStore('gev-sovereign-ui', () => {
     const exploreTab = LEGACY_DRAWER_TO_EXPLORE_TAB[legacyId];
     if (exploreTab) {
       openModule('explore-play', { expandPanel: true, exploreTab });
+      return true;
+    }
+    const mobilityTab = LEGACY_DRAWER_TO_MOBILITY_TAB[legacyId];
+    if (mobilityTab) {
+      openModule('vehicles-mobility', { expandPanel: true, mobilityTab });
       return true;
     }
     const coordinator = resolveCoordinator(runtime.value);
@@ -356,6 +393,7 @@ export const useSovereignUiStore = defineStore('gev-sovereign-ui', () => {
     chromeSuppressed,
     activeModuleId,
     activeExploreTab,
+    activeMobilityTab,
     explorerOpen,
     explorerIntroMode,
     explorerQuery,
@@ -374,6 +412,7 @@ export const useSovereignUiStore = defineStore('gev-sovereign-ui', () => {
     setExclusiveUpstreamSurface,
     setActiveModule,
     setActiveExploreTab,
+    setActiveMobilityTab,
     expandEarthSimPanel,
     collapseEarthSimPanel,
     openModule,

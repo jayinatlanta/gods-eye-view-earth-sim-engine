@@ -5,11 +5,9 @@
  * entry here — zero edits to upstream `LayerPanelsView.vue`, `PanelRailView.vue`,
  * `mobileSheets.js`, or `PanelChrome`.
  *
- * Phase 1 (`24.50a`) registers:
- * - `explore-play`: Explore & Play (Wander, Tour v2, Living City, Estates, Wilderness)
- *
- * Phase 2 (`24.50b`) will register `vehicles-mobility`, and Phase 3 (`24.50c`)
- * will register `sandbox-creator` and `ai-forge`.
+ * Phase 1 (`24.50a`) registers `explore-play`.
+ * Phase 2 (`24.50b`) registers `vehicles-mobility`.
+ * Phase 3 (`24.50c`) will register `sandbox-creator` and `ai-forge`.
  */
 
 import { defineAsyncComponent } from 'vue';
@@ -46,6 +44,37 @@ export const EARTH_SIM_MODULES = Object.freeze([
       'wilderness',
     ]),
     badges: Object.freeze(['Tours v2', 'Cities', 'Estates', 'Trails']),
+  }),
+  Object.freeze({
+    id: 'vehicles-mobility',
+    group: 'mobility',
+    icon: 'navigation',
+    label: msg('Vehicles & Corridors'),
+    summary: msg(
+      'Flight, World of Rails, Infinite Drive, World of Sails, Metro/Bus, Freight & Connect Places.',
+    ),
+    hotkey: 'T',
+    component: defineAsyncComponent(
+      () => import('./modules/VehiclesMobilityModule.vue'),
+    ),
+    coversLegacyDrawers: Object.freeze([
+      'flight',
+      'rail',
+      'drive',
+      'boat',
+      'transit',
+      'freight',
+      'corridor',
+    ]),
+    badges: Object.freeze([
+      'Flight',
+      'Rail',
+      'Drive',
+      'Sail',
+      'Metro',
+      'Freight',
+      'Corridors',
+    ]),
   }),
 ]);
 

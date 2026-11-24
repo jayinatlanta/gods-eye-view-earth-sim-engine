@@ -17,6 +17,8 @@ import {
   governorRequestRender,
   nudgeTilesetStreaming,
 } from '../../renderGovernor.js';
+import { createCameraAuthority } from '../../ui/sovereign/cameraControlBridge.js';
+import { butterGoogle3DTiles } from '../../ui/sovereign/tilesetButter.js';
 import {
   MAX_OSRM_TOTAL_KM,
   resolveDriveWaypoints,
@@ -440,6 +442,32 @@ export function createDriveEngine({
   let lastSampledGroundM = null;
   let liveClampedVehiclePos = null;
   let liveClampedStalkerPos = null;
+  const cameraModeListeners = new Set();
+
+  function notifyCameraModeListeners(mode) {
+    for (const cb of cameraModeListeners) {
+      try {
+        cb(mode);
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  const cameraAuthority = createCameraAuthority({
+    engineId: 'drive',
+    cancelCameraFlight: () => viewer?.camera?.cancelFlight?.(),
+    resetCameraLookAt: () =>
+      viewer?.camera?.lookAtTransform?.(Cesium.Matrix4.IDENTITY),
+    clearTrackedEntity: () => {
+      if (viewer && viewer.trackedEntity !== undefined) {
+        viewer.trackedEntity = undefined;
+      }
+    },
+    getTilesetPrimitives: () => viewer?.scene?.primitives || null,
+    isRendererDestroyed: () => Boolean(isDestroyed || viewer?.isDestroyed?.()),
+    onCameraModeApplied: notifyCameraModeListeners,
+  });
 
   function getCameraOffset(mode) {
     if (mode === 'seat' || mode === 'dashcam' || mode === 'cockpit') {
@@ -668,6 +696,9 @@ export function createDriveEngine({
       last3DSurfaceSampleMs = -Infinity;
       syncVehicleAndCameraPose();
       nudgeTilesetStreaming('drive-map-stack-switch', { force: true });
+      butterGoogle3DTiles(viewer?.scene?.primitives, 'drive-map-stack-switch', {
+        maxMs: 2400,
+      });
       viewer?.scene?.requestRender?.();
     });
   }
@@ -1113,6 +1144,9 @@ export function createDriveEngine({
     bindPreRenderCameraFollow();
     holdContinuousRender('drive-sim');
     nudgeTilesetStreaming('drive-sim-start', { force: true });
+    butterGoogle3DTiles(viewer?.scene?.primitives, 'drive-sim-start', {
+      maxMs: 2600,
+    });
     governorRequestRender('drive-sim-start');
     viewer.scene?.requestRender?.();
 
@@ -1297,6 +1331,9 @@ export function createDriveEngine({
     bindPreRenderCameraFollow();
     holdContinuousRender('drive-sim');
     nudgeTilesetStreaming('drive-sim-start', { force: true });
+    butterGoogle3DTiles(viewer?.scene?.primitives, 'drive-sim-start', {
+      maxMs: 2600,
+    });
     governorRequestRender('drive-sim-start');
     viewer.scene?.requestRender?.();
 
@@ -1310,11 +1347,15 @@ export function createDriveEngine({
    * Switches the active camera mode: 'chase', 'seat' (driver's cockpit), 'copter', 'overview' (regional tactical map), or 'free' (detached).
    */
   function setCameraMode(mode) {
-    viewer?.camera?.cancelFlight?.();
-    if (viewer && viewer.trackedEntity) {
-      viewer.trackedEntity = undefined;
-    }
     currentCameraMode = mode;
+    cameraAuthority.beginAtomicCameraSwitch({
+      mode,
+      clearTrackedEntity: true,
+      resetLookAt: true,
+      butter: true,
+      butterReason: `drive-cam-${mode}`,
+      butterMaxMs: 2200,
+    });
     const targetEntity = activeVehicleEntity || stalkerEntity;
     if (targetEntity) {
       const offset = getCameraOffset(mode);
@@ -1330,7 +1371,8 @@ export function createDriveEngine({
       activeDriveData.cameraMode = mode;
       activeDriveData.isFreeCam = mode === 'free';
     }
-    if (mode !== 'free' && activeDriveData && !isParked) {
+    // Apply pose immediately even while parked so camera buttons work on Click #1
+    if (mode !== 'free' && activeDriveData) {
       syncVehicleAndCameraPose();
     }
     governorRequestRender(`drive-cam-${mode}`);
@@ -1341,12 +1383,7 @@ export function createDriveEngine({
    * Snaps camera directly back to the active vehicle from Overview or Free Cam.
    */
   function snapBack(mode = 'chase') {
-    viewer?.camera?.cancelFlight?.();
-    setCameraMode(mode);
-    if (!viewer) return mode;
-    syncVehicleAndCameraPose();
-    governorRequestRender('drive-snap');
-    return mode;
+    return setCameraMode(mode);
   }
 
   /**
@@ -1616,6 +1653,14 @@ export function createDriveEngine({
     getActiveTelemetry,
     snapBack,
     getCameraMode: () => currentCameraMode,
+    onCameraModeChange: (cb) => {
+      if (typeof cb === 'function') {
+        cameraModeListeners.add(cb);
+        return () => cameraModeListeners.delete(cb);
+      }
+      return () => {};
+    },
+    getCameraIntentSeq: () => cameraAuthority.getSeq(),
     isParked: () => isParked,
     destroy: () => {
       isDestroyed = true;

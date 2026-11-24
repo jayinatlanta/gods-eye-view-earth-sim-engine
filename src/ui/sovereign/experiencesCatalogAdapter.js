@@ -9,12 +9,21 @@
  * - Living Cities (`livingCitiesCatalog.js`)
  * - Wilderness Trailheads (`trailheadCatalog.js`)
  * - Curated & Claimed Domiciles (`domicileCatalog.js`)
- *
- * Phase 2 (`24.50b`) will extend this adapter with Rails & Monorails, Flights &
- * Heli, Scenic Drives, Waterways, and Corridors.
+ * - Rails, Monorails, Skyliner & Tramways (`railWaypoints.js`)
+ * - Iconic Flight & Helicopter Corridors (`airportCatalog.js`)
+ * - Scenic Drives (`driveWaypoints.js`)
+ * - Waterways (`waterWaypoints.js`)
+ * - Multi-Modal Corridors (Connect Places)
  */
 
 import { msg } from '../../i18n/index.js';
+import {
+  AIRPORT_WAYPOINTS,
+  ICONIC_FLIGHT_ROUTES,
+} from '../../flight/airportCatalog.js';
+import { RAIL_CORRIDORS } from '../../transit/railWaypoints.js';
+import { DRIVE_CORRIDORS } from '../../drive/driveWaypoints.js';
+import { WATER_PRESETS } from '../../vessels/waterWaypoints.js';
 import {
   PARK_FIREWORKS_ANCHORS,
   STAGE3_THEME_PARK_LANDMARKS,
@@ -73,6 +82,31 @@ export const EXPERIENCE_CATEGORIES = Object.freeze([
     icon: 'location_city',
   }),
   Object.freeze({
+    id: 'rails-monorails',
+    label: msg('Rails & Monorails'),
+    icon: 'train',
+  }),
+  Object.freeze({
+    id: 'flights-heli',
+    label: msg('Flights & Heli'),
+    icon: 'flight',
+  }),
+  Object.freeze({
+    id: 'scenic-drives',
+    label: msg('Scenic Drives'),
+    icon: 'traffic',
+  }),
+  Object.freeze({
+    id: 'waterways',
+    label: msg('Waterways'),
+    icon: 'directions_boat',
+  }),
+  Object.freeze({
+    id: 'corridors',
+    label: msg('Corridors'),
+    icon: 'timeline',
+  }),
+  Object.freeze({
     id: 'wilderness',
     label: msg('Wilderness'),
     icon: 'navigation',
@@ -128,6 +162,16 @@ function makeAccentForCategory(category) {
       return '#fbbf24';
     case 'living-cities':
       return '#60a5fa';
+    case 'rails-monorails':
+      return '#f59e0b';
+    case 'flights-heli':
+      return '#00ffcc';
+    case 'scenic-drives':
+      return '#22d3ee';
+    case 'waterways':
+      return '#38bdf8';
+    case 'corridors':
+      return '#818cf8';
     case 'wilderness':
       return '#10b981';
     case 'domiciles':
@@ -424,6 +468,241 @@ export function buildExperiencesCatalog({ includeDomiciles = true } = {}) {
         launch: { kind: 'domicile', domicileId: dom.id },
       });
     }
+  }
+
+  // 8. Rails, Monorails, Skyliner & Aerial Tramways (Phase 2)
+  let railRank = 210;
+  for (const [corridorId, corridor] of Object.entries(RAIL_CORRIDORS)) {
+    const profileKey =
+      corridor.defaultCorridor ||
+      Object.keys(corridor.trackProfiles || {})[0] ||
+      '';
+    const profile = corridor.trackProfiles?.[profileKey] || null;
+    const waypoints = profile?.waypoints || [];
+    const anchor = corridor.from || waypoints[0];
+    if (!anchor) continue;
+    const vehicleMode = profile?.vehicleMode || 'rail';
+    pushItem({
+      id: `rail:${corridorId}`,
+      title: corridor.name,
+      shortTitle: corridor.city || corridor.name,
+      category: 'rails-monorails',
+      categoryLabel: 'Rails & Monorails',
+      region: corridor.city || `${corridor.from?.name || 'Rail Corridor'}`,
+      summary:
+        profile?.description ||
+        `${corridor.from?.name || ''} → ${corridor.to?.name || ''}`.trim(),
+      lat: anchor.lat,
+      lon: anchor.lon,
+      elev: anchor.elev || 20,
+      stopCount: Math.max(2, waypoints.length),
+      metaText: `${corridor.defaultSpeedMph || 45} mph · ${vehicleMode.replace(/_/g, ' ')}`,
+      tags: [
+        'Rail',
+        'Transit',
+        vehicleMode,
+        corridor.city || '',
+        profile?.name || '',
+      ].filter(Boolean),
+      thumbnailUrl: '',
+      wikiTitle: '',
+      accent: makeAccentForCategory('rails-monorails'),
+      icon: 'train',
+      actionLabel: 'Ride Rail',
+      featuredRank: railRank++,
+      launch: {
+        kind: 'rail',
+        corridorId,
+        trackProfileId: profileKey,
+        speedMph: corridor.defaultSpeedMph || 45,
+      },
+    });
+  }
+
+  // 9. Iconic Flight & Helicopter Routes (Phase 2)
+  let flightRank = 240;
+  for (const route of ICONIC_FLIGHT_ROUTES) {
+    const fromWp = AIRPORT_WAYPOINTS[route.fromCode];
+    const toWp = AIRPORT_WAYPOINTS[route.toCode];
+    if (!fromWp || !toWp) continue;
+    pushItem({
+      id: `flight:${route.id}`,
+      title: route.title,
+      shortTitle: route.shortTitle,
+      category: 'flights-heli',
+      categoryLabel: 'Flights & Heli',
+      region: route.region,
+      summary: route.summary,
+      lat: fromWp.lat,
+      lon: fromWp.lon,
+      elev: fromWp.elev || 20,
+      stopCount: 2,
+      metaText: route.isRotorcraft
+        ? `Airbus H145 · ${route.fromCode} → ${route.toCode}`
+        : `Jet · ${route.fromCode} → ${route.toCode}`,
+      tags: [...(route.tags || []), route.fromCode, route.toCode],
+      thumbnailUrl: '',
+      wikiTitle: '',
+      accent: makeAccentForCategory('flights-heli'),
+      icon: 'flight',
+      actionLabel: route.isRotorcraft ? 'Fly H145' : 'Launch Flight',
+      featuredRank: flightRank++,
+      launch: {
+        kind: 'flight',
+        fromCode: route.fromCode,
+        toCode: route.toCode,
+        cruiseAlt: route.cruiseAlt,
+        isRotorcraft: route.isRotorcraft,
+        aircraftType: route.aircraftType,
+      },
+    });
+  }
+
+  // 10. Iconic Scenic Drives (Phase 2)
+  let driveRank = 270;
+  for (const [corridorId, corridor] of Object.entries(DRIVE_CORRIDORS)) {
+    const anchor = corridor.from || corridor.waypoints?.[0];
+    if (!anchor) continue;
+    pushItem({
+      id: `drive:${corridorId}`,
+      title: corridor.name,
+      shortTitle: corridor.from?.name || corridor.name,
+      category: 'scenic-drives',
+      categoryLabel: 'Scenic Drives',
+      region:
+        `${corridor.from?.name || ''} → ${corridor.to?.name || ''}`.trim(),
+      summary:
+        corridor.description ||
+        `Highway corridor from ${corridor.from?.name || 'Origin'} to ${corridor.to?.name || 'Destination'}.`,
+      lat: anchor.lat,
+      lon: anchor.lon,
+      elev: anchor.elev || 20,
+      stopCount: corridor.waypoints?.length || 2,
+      metaText: `${corridor.defaultSpeedMph || 75} mph · Scenic Drive`,
+      tags: ['Drive', 'Highway', 'Road Trip', corridor.name].filter(Boolean),
+      thumbnailUrl: '',
+      wikiTitle: '',
+      accent: makeAccentForCategory('scenic-drives'),
+      icon: 'traffic',
+      actionLabel: 'Start Drive',
+      featuredRank: driveRank++,
+      launch: {
+        kind: 'drive',
+        corridorId,
+        speedMph: corridor.defaultSpeedMph || 75,
+      },
+    });
+  }
+
+  // 11. Waterways & Sailing Presets (Phase 2)
+  let waterRank = 300;
+  for (const [presetId, preset] of Object.entries(WATER_PRESETS)) {
+    const anchor = preset.from || preset.waypoints?.[0];
+    if (!anchor) continue;
+    pushItem({
+      id: `water:${presetId}`,
+      title: preset.name,
+      shortTitle: preset.region || preset.name,
+      category: 'waterways',
+      categoryLabel: 'Waterways',
+      region:
+        preset.region || (preset.isOcean ? 'Coastal Waters' : 'Inland Lake'),
+      summary: `${preset.from?.name || 'Harbor'} → ${preset.to?.name || 'Destination'} (${preset.isOcean ? 'Sea Level' : `${preset.nominalElevationM}m elev`}).`,
+      lat: anchor.lat,
+      lon: anchor.lon,
+      elev: preset.nominalElevationM || 0,
+      stopCount: preset.waypoints?.length || 2,
+      metaText: `${preset.defaultSpeedKnots || 8} kts · ${preset.defaultVessel || 'sloop'}`,
+      tags: [
+        'Waterway',
+        'Sail',
+        preset.defaultVessel || 'sloop',
+        preset.region || '',
+      ].filter(Boolean),
+      thumbnailUrl: '',
+      wikiTitle: '',
+      accent: makeAccentForCategory('waterways'),
+      icon: 'directions_boat',
+      actionLabel: 'Set Sail',
+      featuredRank: waterRank++,
+      launch: {
+        kind: 'boat',
+        presetId,
+        vesselClass: preset.defaultVessel || 'sloop',
+        speedKnots: preset.defaultSpeedKnots || 8,
+      },
+    });
+  }
+
+  // 12. Multi-Modal Spatial Corridors (Connect Places — Phase 2)
+  const featuredCorridors = [
+    {
+      id: 'austin_san_antonio',
+      // i18n-ignore: proper corridor name
+      title: 'Austin ↔ San Antonio Corridor',
+      shortTitle: 'Austin ↔ SA',
+      from: 'Austin, TX',
+      to: 'San Antonio, TX',
+      region: 'Texas I-35 Corridor',
+      summary:
+        'Compare Drive, Airbus H145, Rail, and Regional Jet feasibility along the Texas Hill Country spine.',
+      lat: 30.2672,
+      lon: -97.7431,
+      elev: 149,
+    },
+    {
+      id: 'atlanta_tokyo',
+      // i18n-ignore: proper corridor name
+      title: 'Atlanta ↔ Tokyo Great-Circle Corridor',
+      shortTitle: 'ATL ↔ TYO',
+      from: 'Atlanta, GA',
+      to: 'Tokyo, Japan',
+      region: 'Transpacific Polar Corridor',
+      summary:
+        'Explore intercontinental great-circle distance, solar delta, and long-haul jet flight feasibility.',
+      lat: AIRPORT_WAYPOINTS.ATL.lat,
+      lon: AIRPORT_WAYPOINTS.ATL.lon,
+      elev: AIRPORT_WAYPOINTS.ATL.elev,
+    },
+    {
+      id: 'miami_nassau',
+      // i18n-ignore: proper corridor name
+      title: 'Miami ↔ Nassau Straits Corridor',
+      shortTitle: 'MIA ↔ NAS',
+      from: 'Miami, FL',
+      to: 'Nassau, Bahamas',
+      region: 'Florida Straits',
+      summary:
+        'Cross-border island corridor comparing H145 rotorcraft, regional jet, and maritime yacht crossing.',
+      lat: AIRPORT_WAYPOINTS.MIA.lat,
+      lon: AIRPORT_WAYPOINTS.MIA.lon,
+      elev: AIRPORT_WAYPOINTS.MIA.elev,
+    },
+  ];
+  let corrRank = 330;
+  for (const corr of featuredCorridors) {
+    pushItem({
+      id: `corridor:${corr.id}`,
+      title: corr.title,
+      shortTitle: corr.shortTitle,
+      category: 'corridors',
+      categoryLabel: 'Corridors',
+      region: corr.region,
+      summary: corr.summary,
+      lat: corr.lat,
+      lon: corr.lon,
+      elev: corr.elev,
+      stopCount: 2,
+      metaText: 'Multi-Modal · Connect Places',
+      tags: ['Corridor', 'Connect Places', corr.from, corr.to],
+      thumbnailUrl: '',
+      wikiTitle: '',
+      accent: makeAccentForCategory('corridors'),
+      icon: 'timeline',
+      actionLabel: 'Explore Corridor',
+      featuredRank: corrRank++,
+      launch: { kind: 'corridor', from: corr.from, to: corr.to },
+    });
   }
 
   return items;

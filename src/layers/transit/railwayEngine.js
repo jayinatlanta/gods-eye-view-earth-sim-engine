@@ -25,6 +25,8 @@ import {
   releaseContinuousRender,
   governorRequestRender,
 } from '../../renderGovernor.js';
+import { createCameraAuthority } from '../../ui/sovereign/cameraControlBridge.js';
+import { butterGoogle3DTiles } from '../../ui/sovereign/tilesetButter.js';
 import {
   resolveFleetTransitModelSpec,
   computeFleetGlbOrientationQuat,
@@ -433,6 +435,32 @@ export function createRailwayEngine({
   let activeRailOffsetM = TOP_OF_RAIL_OFFSET_METERS;
   let activeArrivalCallback = null;
   let arrivalTriggered = false;
+  const cameraModeListeners = new Set();
+
+  function notifyCameraModeListeners(mode) {
+    for (const cb of cameraModeListeners) {
+      try {
+        cb(mode);
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  const cameraAuthority = createCameraAuthority({
+    engineId: 'railway',
+    cancelCameraFlight: () => viewer?.camera?.cancelFlight?.(),
+    resetCameraLookAt: () =>
+      viewer?.camera?.lookAtTransform?.(Cesium.Matrix4.IDENTITY),
+    clearTrackedEntity: () => {
+      if (viewer && viewer.trackedEntity !== undefined) {
+        viewer.trackedEntity = undefined;
+      }
+    },
+    getTilesetPrimitives: () => viewer?.scene?.primitives || null,
+    isRendererDestroyed: () => Boolean(isDestroyed || viewer?.isDestroyed?.()),
+    onCameraModeApplied: notifyCameraModeListeners,
+  });
 
   function getExcludeEntities() {
     return [activeTrainEntity, activeTrackEntity, ...activeCarEntities].filter(
@@ -1009,6 +1037,9 @@ export function createRailwayEngine({
       trackEntity: activeTrackEntity,
     };
 
+    butterGoogle3DTiles(viewer?.scene?.primitives, 'rail-sim-start', {
+      maxMs: 2600,
+    });
     return activeRouteData;
   }
 
@@ -1121,9 +1152,16 @@ export function createRailwayEngine({
    * Instantly re-docks camera follow to the lead locomotive.
    */
   function snapBack(mode = 'cab') {
-    if (!viewer || isDestroyed || !activeTrainEntity) return;
-    viewer.camera?.cancelFlight?.();
     cameraMode = mode;
+    cameraAuthority.beginAtomicCameraSwitch({
+      mode,
+      clearTrackedEntity: true,
+      resetLookAt: true,
+      butter: true,
+      butterReason: `rail-cam-${mode}`,
+      butterMaxMs: 2200,
+    });
+    if (!viewer || isDestroyed || !activeTrainEntity) return cameraMode;
     viewer.trackedEntity = activeTrainEntity;
     if (activeTrainEntity.point) {
       activeTrainEntity.point.show = mode !== 'cab';
@@ -1173,6 +1211,7 @@ export function createRailwayEngine({
         }
       }
     }
+    return cameraMode;
   }
 
   /**
@@ -1180,16 +1219,29 @@ export function createRailwayEngine({
    */
   function setCameraMode(mode) {
     if (mode === 'overview') {
+      cameraAuthority.beginAtomicCameraSwitch({
+        mode: 'overview',
+        clearTrackedEntity: true,
+        resetLookAt: true,
+        butter: true,
+        butterReason: 'rail-cam-overview',
+        butterMaxMs: 2400,
+      });
       if (activeTrainEntity?.model) activeTrainEntity.model.show = true;
       if (activeTrainEntity?.point) activeTrainEntity.point.show = true;
       showRailOverview();
     } else if (mode === 'free') {
       cameraMode = 'free';
+      cameraAuthority.beginAtomicCameraSwitch({
+        mode: 'free',
+        clearTrackedEntity: true,
+        resetLookAt: true,
+        butter: true,
+        butterReason: 'rail-cam-free',
+        butterMaxMs: 2000,
+      });
       if (activeTrainEntity?.model) activeTrainEntity.model.show = true;
       if (activeTrainEntity?.point) activeTrainEntity.point.show = true;
-      if (viewer.trackedEntity) {
-        viewer.trackedEntity = undefined;
-      }
     } else if (
       mode === 'chase' ||
       mode === 'cab' ||
@@ -1198,6 +1250,7 @@ export function createRailwayEngine({
     ) {
       snapBack(mode);
     }
+    return cameraMode;
   }
 
   function getActiveTelemetry() {
@@ -1314,6 +1367,14 @@ export function createRailwayEngine({
     snapBack,
     setCameraMode,
     getCameraMode: () => cameraMode,
+    onCameraModeChange: (cb) => {
+      if (typeof cb === 'function') {
+        cameraModeListeners.add(cb);
+        return () => cameraModeListeners.delete(cb);
+      }
+      return () => {};
+    },
+    getCameraIntentSeq: () => cameraAuthority.getSeq(),
     getActiveCarEntities: () => activeCarEntities,
     destroy: () => {
       isDestroyed = true;

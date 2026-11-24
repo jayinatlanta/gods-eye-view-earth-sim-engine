@@ -31,6 +31,8 @@ import {
   releaseContinuousRender,
   governorRequestRender,
 } from '../../renderGovernor.js';
+import { createCameraAuthority } from '../../ui/sovereign/cameraControlBridge.js';
+import { butterGoogle3DTiles } from '../../ui/sovereign/tilesetButter.js';
 import {
   createRouteOverlayState,
   appendRouteOverlay,
@@ -221,6 +223,32 @@ export function createSyntheticMetroEngine({
   let screenHandler = null;
   let onTrainSelectedCallback = null;
   let lastTickTime = Date.now();
+  const cameraModeListeners = new Set();
+
+  function notifyCameraModeListeners(mode) {
+    for (const cb of cameraModeListeners) {
+      try {
+        cb(mode);
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  const cameraAuthority = createCameraAuthority({
+    engineId: 'synthetic-metro',
+    cancelCameraFlight: () => viewer?.camera?.cancelFlight?.(),
+    resetCameraLookAt: () =>
+      viewer?.camera?.lookAtTransform?.(Cesium.Matrix4.IDENTITY),
+    clearTrackedEntity: () => {
+      if (viewer && viewer.trackedEntity !== undefined) {
+        viewer.trackedEntity = undefined;
+      }
+    },
+    getTilesetPrimitives: () => viewer?.scene?.primitives || null,
+    isRendererDestroyed: () => Boolean(viewer?.isDestroyed?.()),
+    onCameraModeApplied: notifyCameraModeListeners,
+  });
 
   function computeFlatRotationQuat(pos, forward) {
     const normal = Cesium.Ellipsoid.WGS84.geodeticSurfaceNormal(
@@ -611,6 +639,9 @@ export function createSyntheticMetroEngine({
 
     if (activeTrains.length > 0) {
       holdContinuousRender('synthetic-metro');
+      butterGoogle3DTiles(viewer?.scene?.primitives, 'metro-start', {
+        maxMs: 2400,
+      });
       governorRequestRender('metro-start');
     }
 
@@ -1114,14 +1145,17 @@ export function createSyntheticMetroEngine({
   }
 
   function showTransitMap() {
-    if (!viewer?.camera) return;
     cameraMode = 'overview';
     isCameraEnabled = false;
-    if (viewer) viewer.trackedEntity = undefined;
-    viewer.camera.cancelFlight?.();
-    if (typeof viewer.camera.lookAtTransform === 'function') {
-      viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
-    }
+    cameraAuthority.beginAtomicCameraSwitch({
+      mode: 'overview',
+      clearTrackedEntity: true,
+      resetLookAt: true,
+      butter: true,
+      butterReason: 'metro-overview',
+      butterMaxMs: 2400,
+    });
+    if (!viewer?.camera) return;
 
     // Reveal every active train contact dot immediately (even when exiting Cab/Door mode)
     const contactPositions = [];
@@ -1159,16 +1193,24 @@ export function createSyntheticMetroEngine({
   }
 
   function snapBack(mode = 'chase') {
-    if (!activeTrain || !viewer?.camera) return;
-    viewer.camera.cancelFlight?.();
-    if (viewer) viewer.trackedEntity = undefined;
-    cameraMode = normalizeMetroCameraMode(mode);
+    const normalized = normalizeMetroCameraMode(mode);
+    cameraMode = normalized;
     isCameraEnabled = true;
+    cameraAuthority.beginAtomicCameraSwitch({
+      mode: normalized,
+      clearTrackedEntity: true,
+      resetLookAt: true,
+      butter: true,
+      butterReason: `metro-snap-${normalized}`,
+      butterMaxMs: 2200,
+    });
+    if (!activeTrain || !viewer?.camera) return cameraMode;
     for (const t of activeTrains) {
       if (t.cars[0]) t.cars[0]._styleKey = null;
     }
     applyTrainCameraFollow(activeTrain, cameraMode);
     governorRequestRender('metro-snap');
+    return cameraMode;
   }
 
   function setCameraMode(mode) {
@@ -1181,16 +1223,29 @@ export function createSyntheticMetroEngine({
       showTransitMap();
     } else if (normalized === 'free') {
       isCameraEnabled = false;
-      viewer?.camera?.cancelFlight?.();
-      if (viewer) viewer.trackedEntity = undefined;
+      cameraAuthority.beginAtomicCameraSwitch({
+        mode: 'free',
+        clearTrackedEntity: true,
+        resetLookAt: true,
+        butter: true,
+        butterReason: 'metro-free',
+        butterMaxMs: 2000,
+      });
       governorRequestRender('metro-free');
     } else {
-      viewer?.camera?.cancelFlight?.();
-      if (viewer) viewer.trackedEntity = undefined;
       isCameraEnabled = true;
+      cameraAuthority.beginAtomicCameraSwitch({
+        mode: normalized,
+        clearTrackedEntity: true,
+        resetLookAt: true,
+        butter: true,
+        butterReason: `metro-cam-${normalized}`,
+        butterMaxMs: 2200,
+      });
       if (activeTrain) applyTrainCameraFollow(activeTrain, normalized);
       governorRequestRender('metro-camera');
     }
+    return cameraMode;
   }
 
   function setCameraEnabled(enabled) {
@@ -1239,6 +1294,14 @@ export function createSyntheticMetroEngine({
     setActiveTrain,
     setCameraMode,
     getCameraMode: () => cameraMode,
+    onCameraModeChange: (cb) => {
+      if (typeof cb === 'function') {
+        cameraModeListeners.add(cb);
+        return () => cameraModeListeners.delete(cb);
+      }
+      return () => {};
+    },
+    getCameraIntentSeq: () => cameraAuthority.getSeq(),
     showTransitMap,
     snapBack,
     setCameraEnabled,
