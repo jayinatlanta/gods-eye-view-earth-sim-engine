@@ -321,7 +321,8 @@
       "src/ui/stores/live.js",
       "src/ui/views/panels/LivePanel.vue",
       "src/ui/views/panels/CockpitLivePage.vue",
-      "src/ui/liveScreen.js"
+      "src/ui/liveScreen.js",
+      "src/ui/stores/sovereignUi.js"
     ],
     "external": ["vue", "pinia", "vue-i18n"]
   },
@@ -1715,7 +1716,8 @@
       "src/data/liveStreams.js",
       "src/data/youtubeApi.js",
       "src/data/youtubeLivePlayer.js",
-      "src/ui/liveControls.js"
+      "src/ui/liveControls.js",
+      "src/ui/stores/sovereignUi.js"
     ],
     "external": [
       "cesium",
@@ -5679,7 +5681,25 @@
       "src/corridor/placeRelationshipEngine.js",
       "src/corridor/corridorFeasibility.js",
       "src/corridor/corridorVisualizer.js",
-      "src/corridor/corridorDrawer.js"
+      "src/corridor/corridorDrawer.js",
+      "src/ui/stores/sovereignUi.js",
+      "src/ui/styles/sovereign-ui.css",
+      "src/ui/sovereign/tilesetButter.js",
+      "src/ui/sovereign/cameraControlBridge.js",
+      "src/ui/sovereign/moduleRegistry.js",
+      "src/ui/sovereign/experiencesCatalogAdapter.js",
+      "src/ui/sovereign/SovereignUiRoot.vue",
+      "src/ui/sovereign/EarthSimRailPanel.vue",
+      "src/ui/sovereign/ExperiencesExplorer.vue",
+      "src/ui/sovereign/ActiveSimMicroHud.vue",
+      "src/ui/sovereign/modules/ExplorePlayModule.vue",
+      "src/ui/kit/UiSearchField.vue",
+      "src/ui/rail/RailPanel.vue",
+      "src/ui/kit/UiPanel.vue",
+      "src/ui/kit/UiPanelEdge.vue",
+      "src/ui/kit/UiPanelToggle.vue",
+      "src/ui/panelEdge.js",
+      "src/ui/rail/PanelCollapseButton.vue"
     ],
     "external": [
       "hls.js",

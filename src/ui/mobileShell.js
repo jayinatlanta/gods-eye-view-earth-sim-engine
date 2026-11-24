@@ -41,6 +41,11 @@ export const MOBILE_TABS = Object.freeze([
     label: msg('Space Missions'),
     icon: 'rocket_launch',
   }),
+  Object.freeze({
+    sheet: 'earth-sim',
+    label: msg('Earth Sim'),
+    icon: 'public',
+  }),
   Object.freeze({ sheet: 'search', label: msg('Search'), icon: 'search' }),
   Object.freeze({ sheet: 'more', label: msg('More'), icon: 'more_horiz' }),
 ]);
@@ -246,7 +251,13 @@ export function initMobileShell({
     if (!body.classList.contains(MOBILE_SHELL_CLASS)) return;
     const unavailableMissions =
       requested === 'missions' && missionsPanel?.hidden;
-    const sheet = sheetBlocked(body) || unavailableMissions ? null : requested;
+    const earthSimPanel = element('earth-sim-panel');
+    const unavailableEarthSim =
+      requested === 'earth-sim' && (!earthSimPanel || earthSimPanel.hidden);
+    const sheet =
+      sheetBlocked(body) || unavailableMissions || unavailableEarthSim
+        ? null
+        : requested;
     const previous = currentSheetOf(body);
     if (previous === sheet) return;
     if (!previous) {
@@ -354,7 +365,7 @@ export function initMobileShell({
   // ordinary vertical scrolling inside the borrowed panels.
   const sheetRoot = (target, sheet) => {
     const roots =
-      sheet === 'layers'
+      sheet === 'layers' || sheet === 'earth-sim'
         ? [element('left-panel-stack')]
         : sheet === 'search'
           ? [dock]
@@ -481,6 +492,12 @@ export function initMobileShell({
       const sheet = currentSheetOf(body);
       if (!sheet) return;
       if (sheet === 'missions' && missionsPanel?.hidden) {
+        returnFocus = tabFor('layers') ?? returnFocus;
+        setSheet(null);
+      } else if (
+        sheet === 'earth-sim' &&
+        (!element('earth-sim-panel') || element('earth-sim-panel').hidden)
+      ) {
         returnFocus = tabFor('layers') ?? returnFocus;
         setSheet(null);
       } else if (sheetBlocked(body)) {

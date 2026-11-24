@@ -3,6 +3,7 @@ import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
 import { t } from '../../../i18n/index.js';
 import { useDisplayStore } from '../../stores/display.js';
+import { useSovereignUiStore } from '../../stores/sovereignUi.js';
 import { useSpaceMissionsStore } from '../../stores/spaceMissions.js';
 import UiButton from '../../kit/UiButton.vue';
 import UiIcon from '../../kit/UiIcon.vue';
@@ -12,8 +13,13 @@ import UiIcon from '../../kit/UiIcon.vue';
 // it when the shell is destroyed; desktop CSS hides them meanwhile.
 const { phoneShell: phone } = storeToRefs(useDisplayStore());
 const { enabled: missionsEnabled } = storeToRefs(useSpaceMissionsStore());
+const { earthSimTabAvailable } = storeToRefs(useSovereignUiStore());
 const tabs = computed(() =>
-  phone.value?.tabs.filter((tab) => tab.sheet !== 'missions' || missionsEnabled.value),
+  phone.value?.tabs.filter(
+    (tab) =>
+      (tab.sheet !== 'missions' || missionsEnabled.value) &&
+      (tab.sheet !== 'earth-sim' || earthSimTabAvailable.value),
+  ),
 );
 </script>
 

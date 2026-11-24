@@ -1,9 +1,8 @@
 [
-  "src/citylife/cityDrawer.js",
+  "src/app/sovereignTools.js",
   "src/citylife/cityWaypoints.js",
   "src/citylife/sandboxDrawer.js",
   "src/citylife/thoughtBubbleOverlay.js",
-  "src/citylife/wanderDrawer.js",
   "src/citylife/wildernessDrawer.js",
   "src/corridor/corridorDrawer.js",
   "src/corridor/corridorVisualizer.js",

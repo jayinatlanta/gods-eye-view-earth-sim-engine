@@ -9,6 +9,11 @@ import {
   getEarthSimFeaturesByCategory,
   validateFeatureCatalogAgainstDrawers,
 } from './earthSimFeatureCatalog.js';
+import {
+  EARTH_SIM_MODULES,
+  getMigratedLegacyDrawerIds,
+  validateModuleRegistry,
+} from './sovereign/moduleRegistry.js';
 
 const SRC_DIR = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -93,4 +98,22 @@ test('Earth Sim Feature Catalog covers every registered drawer in src/ (dynamic 
       (f) => f.id === 'ai-assistant',
     ),
   );
+
+  // Validate Sovereign Vue module registry contract (Phase 1+ hybrid/registry coverage)
+  const regValidation = validateModuleRegistry(EARTH_SIM_MODULES);
+  assert.equal(
+    regValidation.ok,
+    true,
+    `Invalid Sovereign module registry: ${regValidation.errors.join(', ')}`,
+  );
+  const migratedIds = getMigratedLegacyDrawerIds();
+  assert.ok(
+    migratedIds.includes('wander') &&
+      migratedIds.includes('city') &&
+      migratedIds.includes('estate') &&
+      migratedIds.includes('wilderness'),
+    'Phase 1 Explore & Play module must declare migrated legacy drawer IDs',
+  );
+  const migratedReport = validateFeatureCatalogAgainstDrawers(migratedIds);
+  assert.equal(migratedReport.ok, true);
 });

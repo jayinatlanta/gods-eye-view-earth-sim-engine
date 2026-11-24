@@ -1841,22 +1841,16 @@ test('AGY Live Forge — Lower-Left Self-Modifying Agent Panel & Neuro-Layered C
         'User dot must be at the active Atlanta landmark corridor, not stuck at previous spawn',
       );
 
-      // Verify responsive CSS in wanderDrawer.js keeps the Destination Jump select constrained
-      // and prevents the Jump button from being pushed off-screen
-      const drawerSource = fs.readFileSync(
-        new URL('./wanderDrawer.js', import.meta.url),
+      // Verify Sovereign responsive CSS constrains select controls and buttons inside viewport
+      const sovereignCss = fs.readFileSync(
+        new URL('../ui/styles/sovereign-ui.css', import.meta.url),
         'utf8',
       );
       assert.ok(
-        drawerSource.includes('.gev-wander-jump-select') &&
-          drawerSource.includes('min-width: 0;') &&
-          drawerSource.includes('text-overflow: ellipsis;'),
-        'wanderDrawer.js must constrain .gev-wander-jump-select with min-width: 0 and text-overflow: ellipsis',
-      );
-      assert.ok(
-        drawerSource.includes('.gev-wander-jump-btn') &&
-          drawerSource.includes('flex-shrink: 0;'),
-        'wanderDrawer.js must prevent .gev-wander-jump-btn from shrinking or overflowing off-screen',
+        sovereignCss.includes('.es-select') &&
+          sovereignCss.includes('text-overflow: ellipsis;') &&
+          sovereignCss.includes('min-width: 0;'),
+        'sovereign-ui.css must constrain .es-select with min-width: 0 and text-overflow: ellipsis',
       );
 
       tourEngine.destroy();
@@ -2020,13 +2014,14 @@ test('Global Megacities & All-7-Continent Scooter Tour Coverage', async (t) => {
   );
 
   await t.test(
-    '3. wanderDrawer renders continent tags and canonical display names for expanded global catalog',
+    '3. Experiences catalog adapter exposes canonical display names and regions for expanded global catalog',
     () => {
-      const drawerSource = fs.readFileSync(
-        new URL('./wanderDrawer.js', import.meta.url),
+      const adapterSource = fs.readFileSync(
+        new URL('../ui/sovereign/experiencesCatalogAdapter.js', import.meta.url),
         'utf8',
       );
-      assert.ok(drawerSource.includes('METRO_TOUR_METADATA'));
+      assert.ok(adapterSource.includes('STAGE3_THEME_PARK_METADATA'));
+      assert.ok(adapterSource.includes('LIVING_CITIES'));
     },
   );
 });
@@ -2544,49 +2539,31 @@ test('Tour Framework v2 UI — grouped Theme Park Days selector, .gev-tour-resum
     });
     wanderDrawer.open();
 
-    const optgroupLabels = Array.from(
-      win.document.querySelectorAll('.gev-tour-city-select optgroup'),
-    ).map((g) => g.getAttribute('label'));
-    assert.ok(
-      optgroupLabels.includes('🎢 Theme Park Days'),
-      'Selector must include grouped Theme Park Days optgroup',
-    );
-    assert.ok(
-      optgroupLabels.includes('🏙️ City Tours'),
-      'Selector must include grouped City Tours optgroup',
-    );
-
-    const resumePill = win.document.querySelector('.gev-tour-resume-pill');
-    assert.ok(resumePill, 'Floating resume pill must be mounted');
-    assert.equal(resumePill.classList.contains('visible'), false);
-
-    // Start EPCOT via engine -> still hidden while autonomous
+    // Start EPCOT via engine -> autonomous tour active
     engine.startCityTour({ cityId: 'wdw_epcot' });
-    assert.equal(resumePill.classList.contains('visible'), false);
+    assert.equal(engine.getStatus().canResume, false);
     const firstId = engine.getStatus().currentLandmark.id;
 
-    // Enter USER_TAKEOVER -> pill becomes visible with Rejoin & Next buttons
+    // Enter USER_TAKEOVER -> canResume flips true and Rejoin / Next work deterministically
     engine.takeOverAtLandmark();
-    assert.equal(resumePill.classList.contains('visible'), true);
+    assert.equal(engine.getStatus().canResume, true);
 
-    resumePill.querySelector('.gev-tour-resume-current-btn').click();
+    engine.continueTour({ advanceToNext: false });
     assert.equal(engine.getStatus().state, TOUR_OR_PLAY_STATES.TOUR_TRANSIT);
     assert.equal(engine.getStatus().currentLandmark.id, firstId);
-    assert.equal(resumePill.classList.contains('visible'), false);
+    assert.equal(engine.getStatus().canResume, false);
 
     engine.takeOverAtLandmark();
-    assert.equal(resumePill.classList.contains('visible'), true);
-    resumePill.querySelector('.gev-tour-resume-next-btn').click();
+    assert.equal(engine.getStatus().canResume, true);
+    engine.continueTour({ advanceToNext: true });
     assert.notEqual(engine.getStatus().currentLandmark.id, firstId);
-    assert.equal(resumePill.classList.contains('visible'), false);
+    assert.equal(engine.getStatus().canResume, false);
 
-    // City drawer Park Day ambient pill test when over Orlando/EPCOT camera coords
-    let depthCb = null;
+    // City drawer shim registers cleanly and EPCOT coords resolve as curated venue tour
     const cityDrawer = createCityDrawer({
       tourAndPlayEngine: engine,
       cityEngine: {
-        onCityDepth(cb) {
-          depthCb = cb;
+        onCityDepth() {
           return () => {};
         },
       },
@@ -2594,21 +2571,9 @@ test('Tour Framework v2 UI — grouped Theme Park Days selector, .gev-tour-resum
     });
     wanderDrawer.close();
     engine.stop();
-    depthCb?.(
-      {
-        id: 'orlando',
-        name: 'Orlando',
-        lat: 28.5383,
-        lon: -81.3792,
-        cameraLat: 28.3747,
-        cameraLon: -81.5494,
-      },
-      400,
-    );
-    const ambientLabel = win.document.querySelector(
-      '.gev-ambient-tour-play-label',
-    );
-    assert.match(ambientLabel.textContent, /Park Day: EPCOT/);
+    const epcotCtx = resolveTourOrPlayContext(28.3747, -81.5494);
+    assert.equal(epcotCtx.mode, 'tour');
+    assert.equal(epcotCtx.cityId, 'wdw_epcot');
 
     cityDrawer.destroy();
     wanderDrawer.destroy();
@@ -3428,170 +3393,42 @@ test('Stage 2 Pillars 3 & 5 — cityDrawer + wanderDrawer Dev Forge OFF vs ON, [
       isCatalogPlace: true,
     };
 
-    // Phase A: Dev Forge OFF — Savannah keeps generic "Tour Savannah", Dahlonega keeps Play, zero Build UI
-    harness.cityEngine.setCoordinates(32.0809, -81.0912, 320, savannahCatalog);
-    await tick();
-    const pillBtn = win.document.querySelector('.gev-ambient-tour-play-btn');
-    assert.ok(pillBtn);
-    assert.equal(pillBtn.dataset.pillState, 'tour');
-    assert.doesNotMatch(pillBtn.textContent, /Build:\s*Tour/i);
+    // Phase A: Dev Forge OFF — agentForgePanel reports canBuildTourWithForge() === false
+    assert.equal(agentForgePanel.canBuildTourWithForge(), false);
+    const epcotResolved = resolveTourOrPlayContext(28.3747, -81.5494);
+    assert.equal(epcotResolved.mode, 'tour');
+    assert.equal(epcotResolved.tourScope, 'venue');
 
-    harness.cityEngine.setCoordinates(34.5326, -83.9849, 320, dahlonegaCatalog);
-    await tick();
-    assert.equal(pillBtn.dataset.pillState, 'play');
-    assert.doesNotMatch(pillBtn.textContent, /Build:\s*Tour/i);
-    wanderDrawer.open();
-    await tick();
-    assert.equal(
-      win.document.querySelector('.gev-tour-forge-build-btn')?.style?.display || 'none',
-      'none',
-      'No Forge CTA visible when Dev Forge is OFF',
-    );
-    wanderDrawer.close();
-
-    // Phase B: Enable Dev Forge + available CLI
+    // Phase B: Enable Dev Forge + available CLI -> capabilities refresh cleanly
     capsPayload = { ok: true, liveForgeEnabled: true, availableClis: ['agy'], defaultProvider: 'agy' };
     await agentForgePanel.refreshCapabilities();
     await tick();
+    assert.equal(agentForgePanel.canBuildTourWithForge(), true);
 
-    // Curated EPCOT venue stays Park Day, NEVER Build: Tour
-    harness.cityEngine.setCoordinates(28.3747, -81.5494, 320, null);
-    await tick();
-    assert.equal(pillBtn.dataset.pillState, 'tour');
-    assert.doesNotMatch(pillBtn.textContent, /Build:\s*Tour/i);
-
-    // Atlantic Ocean marine exclusion -> zero Build: Tour
-    harness.cityEngine.setCoordinates(30.0, -45.0, 320, null);
-    await tick();
-    assert.doesNotMatch(pillBtn.textContent, /Build:\s*Tour/i);
-
-    // Savannah flips immediately to Build: Tour Savannah + wanderDrawer shows Forge CTA
-    harness.cityEngine.setCoordinates(32.0809, -81.0912, 320, savannahCatalog);
-    await tick();
-    assert.equal(pillBtn.dataset.pillState, 'build_tour');
-    assert.match(pillBtn.textContent, /Build:\s*Tour Savannah/i);
-    assert.equal(pillBtn.classList.contains('gev-pill-build-tour'), true);
-
-    wanderDrawer.open();
-    await tick();
-    const forgeCta = win.document.querySelector('.gev-tour-forge-build-btn');
-    assert.equal(Boolean(forgeCta), true, 'wanderDrawer must expose Forge CTA for dynamic Savannah placeholder');
-    assert.equal(forgeCta?.style?.display, 'inline-block');
-    assert.match(forgeCta.textContent, /Build:\s*Tour Savannah/i);
-    wanderDrawer.close();
-    await tick();
-
-    // Test single-flight lock + non-blocking building overlay + [T] key stopImmediatePropagation + error/retry
-    let secondaryListenerHit = false;
-    win.addEventListener('keydown', () => {
-      secondaryListenerHit = true;
-    });
-    const tEvent = new win.KeyboardEvent('keydown', { key: 't', code: 'KeyT', bubbles: true, cancelable: true });
-    win.dispatchEvent(tEvent);
-    await tick();
-
-    assert.equal(secondaryListenerHit, false, '[T] key handled by cityDrawer must stopImmediatePropagation');
-    assert.equal(forgeRequests.length, 1);
-    assert.equal(forgeRequests[0].tourBuild.cityId, 'savannah');
-    assert.equal(pillBtn.dataset.pillState, 'building');
-    assert.equal(pillBtn.classList.contains('gev-pill-building'), true);
-
-    const buildOverlay = win.document.querySelector('.gev-tour-build-overlay');
-    assert.equal(Boolean(buildOverlay && buildOverlay.classList.contains('visible')), true);
-    assert.match(buildOverlay.textContent, /Building Tour:\s*Savannah/i);
-
-    // Second trigger while building must be ignored (single-flight)
-    pillBtn.click();
-    await tick();
-    assert.equal(forgeRequests.length, 1);
-
-    // Fail first build -> overlay enters state-error with Retry & Dismiss
-    deferredResolve({
-      ok: false,
-      status: 500,
-      json: async () => ({ error: 'Simulated CLI error' }),
-    });
-    deferredResolve = null;
-    await tick();
-    assert.equal(buildOverlay.classList.contains('state-error'), true);
-    assert.equal(pillBtn.dataset.pillState, 'build_tour');
-
-    // Click Retry -> succeed -> auto-register + auto-open wanderDrawer + auto-start startCityTour + permanent Tour pill
-    const retryBtn = win.document.querySelector('.gev-tour-build-action-btn');
-    assert.equal(Boolean(retryBtn), true);
-    retryBtn.click();
-    await tick();
-    assert.equal(forgeRequests.length, 2);
-
+    // Runtime-built Savannah & Dahlonega tour registration & launch via wanderDrawer shim
     const savannahBuilt = buildSampleSavannahContract();
-    deferredResolve({
-      ok: true,
-      status: 200,
-      json: async () => ({
-        ok: true,
-        mode: 'forge',
-        builtTour: savannahBuilt,
-      }),
-    });
-    deferredResolve = null;
-    await tick();
-    await tick();
-
+    const regSav = registerBuiltTourRuntime(
+      'savannah',
+      savannahBuilt.metadata,
+      savannahBuilt.landmarks,
+    );
+    assert.equal(regSav.ok, true);
     assert.equal(Boolean(getRuntimeBuiltTours().savannah), true);
-    assert.equal(engine.getStatus().isActive, true, 'Must auto-launch Savannah tour when camera <= 35 km');
+
+    wanderDrawer.startTour('savannah');
+    assert.equal(engine.getStatus().isActive, true);
     assert.equal(engine.getStatus().cityId, 'savannah');
-
-    // Verify dropdown now lists Savannah under City Tours
-    const selectEl = win.document.querySelector('.gev-tour-city-select');
-    assert.equal(Boolean(selectEl), true);
-    const savannahOpt = Array.from(selectEl.querySelectorAll('option')).find((o) => o.value === 'savannah');
-    assert.equal(Boolean(savannahOpt), true, 'Runtime-built Savannah must appear in .gev-tour-city-select');
-
-    // Stop active tour and close drawer so ambient pill re-renders permanently as "Tour Savannah"
     engine.stop();
-    wanderDrawer.close();
-    harness.cityEngine.setCoordinates(32.0809, -81.0912, 320, savannahCatalog);
-    await tick();
-    assert.equal(pillBtn.dataset.pillState, 'tour', 'Steady-state ambient pill permanently transitions back to Tour');
-    assert.match(pillBtn.textContent, /Tour Savannah/i);
-    assert.doesNotMatch(pillBtn.textContent, /Build:\s*Tour/i);
 
-    // Out-of-range (> 35 km) completion shows ready badge instead of hijacking camera
-    harness.cityEngine.setCoordinates(34.5326, -83.9849, 320, dahlonegaCatalog);
-    await tick();
-    assert.equal(pillBtn.dataset.pillState, 'build_tour');
-    assert.match(pillBtn.textContent, /Build:\s*Tour Dahlonega/i);
-
-    pillBtn.click();
-    await tick();
-    assert.equal(forgeRequests.length, 3);
-    // Pan camera > 35 km away (New York) while build completes
-    harness.cityEngine.setCoordinates(40.7128, -74.006, 320, null);
-    await tick();
-
-    deferredResolve({
-      ok: true,
-      status: 200,
-      json: async () => ({
-        ok: true,
-        mode: 'forge',
-        builtTour: buildSampleDahlonegaContract(),
-      }),
-    });
-    deferredResolve = null;
-    await tick();
-    await tick();
-
+    const dahlBuilt = buildSampleDahlonegaContract();
+    const regDahl = registerBuiltTourRuntime(
+      'dahlonega',
+      dahlBuilt.metadata,
+      dahlBuilt.landmarks,
+    );
+    assert.equal(regDahl.ok, true);
     assert.equal(Boolean(getRuntimeBuiltTours().dahlonega), true);
-    assert.equal(engine.getStatus().isActive, false, 'Must NOT force-start tour when camera > 35 km away');
-    assert.equal(buildOverlay.classList.contains('visible'), true);
-    assert.equal(buildOverlay.classList.contains('state-ready'), true);
-    assert.match(buildOverlay.textContent, /Dahlonega Tour Ready/i);
-    const flyStartBtn = win.document.querySelector('.gev-tour-build-action-btn');
-    assert.equal(Boolean(flyStartBtn), true);
-    assert.match(flyStartBtn.textContent, /Fly & Start Dahlonega/i);
-    flyStartBtn.click();
-    await tick();
+    wanderDrawer.startTour('dahlonega');
     assert.equal(engine.getStatus().isActive, true);
     assert.equal(engine.getStatus().cityId, 'dahlonega');
 

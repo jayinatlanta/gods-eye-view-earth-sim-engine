@@ -23,7 +23,7 @@ const items = computed(() =>
       const item = PANEL_RAIL_ITEMS[panel.id];
       return {
         id: panel.id,
-        icon: item?.icon ?? PANEL_RAIL_FALLBACK_ICON,
+        icon: item?.icon ?? panel.icon ?? PANEL_RAIL_FALLBACK_ICON,
         // Static markup is translated at boot, so a host's title already is.
         label: item
           ? t(item.label, item.context && { context: item.context })

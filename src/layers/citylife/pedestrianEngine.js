@@ -45,6 +45,8 @@ import {
   getCachedCatalogPlaceAt,
   resolveCatalogPlaceAt,
 } from './tourAndPlayEngine.js';
+import { createCameraAuthority } from '../../ui/sovereign/cameraControlBridge.js';
+import { butterGoogle3DTiles } from '../../ui/sovereign/tilesetButter.js';
 
 export const PEDESTRIAN_DENSITIES = {
   calm: { label: 'Calm', count: 40 },
@@ -87,6 +89,24 @@ export function createPedestrianEngine({
   let renderHoldActive = false;
   let depthLookupGeneration = 0;
   let lastCatalogLookupCellKey = null;
+  const cameraModeListeners = new Set();
+
+  function notifyCameraModeListeners(mode) {
+    for (const cb of cameraModeListeners) {
+      try {
+        cb(mode);
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  const cameraAuthority = createCameraAuthority({
+    viewer,
+    engineId: 'pedestrian-sim',
+    identityMatrix4: Cesium.Matrix4.IDENTITY,
+    onCameraModeApplied: notifyCameraModeListeners,
+  });
 
   const cameraGroundTracker = createSurfaceTracker({
     sampleIntervalMs: 120,
@@ -839,6 +859,7 @@ export function createPedestrianEngine({
 
     // Spawn and latch AFTER camera arrival completes
     spawnPedestrians(city, density);
+    butterGoogle3DTiles(viewer, 'pedestrian-step-city', { maxMs: 2600 });
 
     return city;
   }
@@ -1167,6 +1188,7 @@ export function createPedestrianEngine({
       thoughtBubble.show(pos, latched.persona);
       applyCameraFollow(latched, currentCameraMode);
     }
+    butterGoogle3DTiles(viewer, 'pedestrian-step-location', { maxMs: 2600 });
 
     return dynamicLocale;
   }
@@ -1608,8 +1630,17 @@ export function createPedestrianEngine({
 
   function setCameraMode(mode) {
     currentCameraMode = mode;
+    isTransitioning = false;
+    flightGenerationToken += 1;
     thoughtBubble.setCameraMode?.(mode);
-    viewer?.camera?.cancelFlight?.();
+    cameraAuthority.beginAtomicCameraSwitch({
+      mode,
+      clearTrackedEntity: true,
+      resetLookAt: true,
+      butter: true,
+      butterReason: `pedestrian-cam-${mode}`,
+      butterMaxMs: 2200,
+    });
     if (mode === 'city_map') {
       showCityMap(activeCity?.id);
     } else if (mode === 'free' && viewer) {
@@ -1646,10 +1677,25 @@ export function createPedestrianEngine({
 
   function snapBack(mode = 'companion') {
     currentCameraMode = mode;
-    viewer?.camera?.cancelFlight?.();
+    isTransitioning = false;
+    flightGenerationToken += 1;
+    cameraAuthority.beginAtomicCameraSwitch({
+      mode,
+      clearTrackedEntity: true,
+      resetLookAt: true,
+      butter: true,
+      butterReason: 'pedestrian-snap-back',
+      butterMaxMs: 2200,
+    });
     if (latchedPedestrian) {
       applyCameraFollow(latchedPedestrian, mode);
       governorRequestRender('pedestrian-snap-back');
+    } else if (activeLocale) {
+      const latchedContextual = contextualSpool.getLatchedEntity();
+      if (latchedContextual) {
+        applyCameraFollow(latchedContextual, mode);
+        governorRequestRender('pedestrian-snap-back');
+      }
     }
   }
 
@@ -1695,6 +1741,15 @@ export function createPedestrianEngine({
       ambientSoundscape.startSoundscape(typology);
     },
     setCameraMode,
+    getCameraMode: () => currentCameraMode,
+    onCameraModeChange: (cb) => {
+      if (typeof cb === 'function') {
+        cameraModeListeners.add(cb);
+        return () => cameraModeListeners.delete(cb);
+      }
+      return () => {};
+    },
+    getCameraIntentSeq: () => cameraAuthority.getSeq(),
     setSpeedMultiplier,
     getSpeedMultiplier: () => speedMultiplier,
     setDensity,

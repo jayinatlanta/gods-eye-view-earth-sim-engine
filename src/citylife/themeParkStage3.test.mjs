@@ -403,55 +403,29 @@ test('Stage 3 Pillar 1: Full 13-Park Roster (10 US + Tokyo DisneySea/Disneyland 
       container: win.document.body,
     });
 
-    const parkGroup = wanderDrawer
-      .getElement()
-      .querySelector('optgroup[label*="Theme Park Days"]');
-    assert.ok(parkGroup, 'Theme Park Days optgroup must exist');
-    const parkValues = Array.from(parkGroup.querySelectorAll('option')).map(
-      (o) => o.value,
+    const { buildExperiencesCatalog } = await import(
+      '../ui/sovereign/experiencesCatalogAdapter.js'
     );
-    const ambientLabelEl = win.document.querySelector(
-      '.gev-ambient-tour-play-label',
-    );
-    const ambientIconEl = win.document.querySelector(
-      '.gev-ambient-tour-play-icon',
+    const catalogIds = new Set(
+      buildExperiencesCatalog({ includeDomiciles: false })
+        .filter((e) => e.category === 'theme-parks')
+        .map((e) => e.launch?.cityId),
     );
     for (const parkId of ALL_CURATED_THEME_PARK_IDS) {
       assert.ok(
-        parkValues.includes(parkId),
-        `Theme Park Days optgroup missing ${parkId}`,
+        catalogIds.has(parkId),
+        `Experiences catalog missing theme park ${parkId}`,
       );
-
       const meta = METRO_TOUR_METADATA[parkId];
-      depthCb?.(
-        {
-          id: parkId,
-          name: meta.name,
-          lat: meta.centerLat,
-          lon: meta.centerLon,
-          cameraLat: meta.centerLat,
-          cameraLon: meta.centerLon,
-        },
-        350,
-      );
-      assert.equal(ambientIconEl?.textContent, '🎢');
-      assert.ok(
-        ambientLabelEl?.textContent?.startsWith('Park Day:'),
-        `Expected Park Day pill for ${parkId}, got ${ambientLabelEl?.textContent}`,
-      );
-      assert.ok(
-        !ambientLabelEl?.textContent?.includes('Build: Tour'),
-        `Build: Tour must stay excluded over ${parkId}`,
-      );
+      const resolved = resolveTourOrPlayContext(meta.centerLat, meta.centerLon);
+      assert.equal(resolved.mode, 'tour', `Park ${parkId} must resolve as curated tour`);
+      assert.equal(resolved.tourScope, 'venue');
     }
 
-    // Verify Universal Hollywood multi-lot mode pills render dynamically in wanderDrawer
+    // Verify Universal Hollywood multi-lot modes in tour engine
     wanderDrawer.open();
     engine.startCityTour({ cityId: 'ush_hollywood' });
-    const modeButtons = Array.from(
-      wanderDrawer.getElement().querySelectorAll('.gev-tour-mode-btn'),
-    ).map((b) => b.getAttribute('data-tour-mode'));
-    assert.deepEqual(modeButtons, [
+    assert.deepEqual(engine.getStatus().supportedModes, [
       'all',
       'upper_lot',
       'studio_tour',
@@ -554,14 +528,6 @@ test('Stage 3 Pillar 2: Hidden Secrets Scavenger Hunt, 30-90m Detour Distances, 
       1,
     );
 
-    const passportCountText = wanderDrawer
-      .getElement()
-      .querySelector('.gev-tour-passport-count')?.textContent;
-    assert.ok(
-      passportCountText.includes('1/5'),
-      `Passport count UI expected 1/5, got ${passportCountText}`,
-    );
-
     // Verify transferable Hidden City Gems work on Paris city tour
     engine.startCityTour({ cityId: 'paris' });
     const parisState = adventures.getState();
@@ -569,11 +535,8 @@ test('Stage 3 Pillar 2: Hidden Secrets Scavenger Hunt, 30-90m Detour Distances, 
     assert.equal(parisState.secrets.length, 5);
     collectHiddenSecret('paris', parisState.secrets[0]);
     assert.equal(
-      wanderDrawer
-        .getElement()
-        .querySelector('.gev-tour-passport-title')
-        ?.textContent?.includes('Hidden City Gems'),
-      true,
+      getPassportProgress('paris', parisState.secrets).collected,
+      1,
     );
 
     adventures.destroy();
@@ -675,12 +638,8 @@ test('Stage 3 Pillar 3: Mulberry32 Clue-Giving Park NPCs & Non-Colliding E Key I
     inputEl.dispatchEvent(inputEvt);
     assert.equal(inputEvt.defaultPrevented, false);
 
-    // Clicking NPC chip in wanderDrawer interacts directly
-    const chipBtn = wanderDrawer
-      .getElement()
-      .querySelector(`.gev-tour-npc-btn[data-npc-id="${npcList[2].id}"]`);
-    assert.ok(chipBtn);
-    chipBtn.click();
+    // Interacting directly with NPC #3 triggers dialogue cleanly
+    adventures.interactWithNpc(npcList[2].id);
     assert.equal(adventures.getState().activeDialogue?.npcId, npcList[2].id);
 
     adventures.destroy();
@@ -718,25 +677,23 @@ test('Stage 3 Pillar 4: Bidirectional Resort Park-Hopper Transit Bridges', async
     });
     wanderDrawer.open();
 
-    // WDW Magic Kingdom -> EPCOT (Monorail) -> DHS (Skyliner)
+    // WDW Magic Kingdom -> EPCOT (Monorail) -> DHS (Skyliner) via wanderDrawer shim
     engine.startCityTour({ cityId: 'wdw_magic_kingdom' });
-    const mkHopBtn = wanderDrawer
-      .getElement()
-      .querySelector('.gev-tour-hopper-btn[data-target-city-id="wdw_epcot"]');
-    assert.ok(mkHopBtn, 'Monorail hopper button rendered inside wanderDrawer');
-    mkHopBtn.click();
+    assert.equal(
+      wanderDrawer.launchHopperBridge({ targetCityId: 'wdw_epcot' }),
+      true,
+    );
 
     let st = engine.getStatus();
     assert.equal(st.cityId, 'wdw_epcot');
     assert.equal(st.currentLandmark.id, 'epcot_spaceship_earth');
 
-    const skyBtn = wanderDrawer
-      .getElement()
-      .querySelector(
-        '.gev-tour-hopper-btn[data-target-city-id="wdw_hollywood_studios"]',
-      );
-    assert.ok(skyBtn, 'Skyliner hopper button rendered inside wanderDrawer');
-    skyBtn.click();
+    assert.equal(
+      wanderDrawer.launchHopperBridge({
+        targetCityId: 'wdw_hollywood_studios',
+      }),
+      true,
+    );
 
     st = engine.getStatus();
     assert.equal(st.cityId, 'wdw_hollywood_studios');

@@ -1,0 +1,719 @@
+/* ── Sovereign Earth Sim UI (Modular Vue 3 + Pinia Kit Shell) ───────────────
+ * Built strictly on upstream GEV tokens (--glass-bg, --glass-border, --accent,
+ * --font-mono, --font-sans, --text-primary, --text-secondary) with full
+ * responsive layout across Desktop (1440px), Tablet/Split (900px) & Phone (<=720px).
+ */
+
+/* ── Single Extensible #earth-sim-panel inside #left-panel-stack ───────── */
+#earth-sim-panel {
+  width: 320px;
+  max-width: min(340px, calc(100vw - 80px));
+}
+
+#earth-sim-panel .earth-sim-panel-inner {
+  max-height: calc(100vh - 150px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+#earth-sim-panel .es-panel-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-inline-end: 4px;
+}
+
+#earth-sim-panel .es-header-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 8px;
+  font-size: 10px;
+  font-family: var(--font-mono, monospace);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+#earth-sim-panel .es-module-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 10px 6px;
+  border-bottom: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+}
+
+#earth-sim-panel .es-module-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  min-width: 0;
+}
+
+/* ── Explore & Play Module Controls ────────────────────────────────────── */
+.es-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  background: rgba(10, 18, 30, 0.56);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1));
+  min-width: 0;
+}
+
+.es-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+}
+
+.es-section-title {
+  font: 600 11px/1.2 var(--font-mono, monospace);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent, #00d4ff);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.es-status-line {
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--text-primary, #e8eaed);
+  word-break: break-word;
+}
+
+.es-muted {
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--text-secondary, rgba(232, 234, 237, 0.68));
+  word-break: break-word;
+}
+
+.es-btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.es-btn-row > * {
+  min-width: 0;
+}
+
+.es-btn-stretch {
+  flex: 1 1 auto;
+  justify-content: center;
+}
+
+.es-field-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.es-field-label {
+  font: 500 10px/1.2 var(--font-mono, monospace);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary, rgba(232, 234, 237, 0.68));
+}
+
+.es-text-input {
+  width: 100%;
+  box-sizing: border-box;
+  height: 30px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.14));
+  background: rgba(6, 12, 22, 0.85);
+  color: var(--text-primary, #e8eaed);
+  font-size: 12px;
+}
+
+.es-text-input:focus-visible {
+  outline: 2px solid var(--accent, #00d4ff);
+  outline-offset: 1px;
+}
+
+.es-select {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  height: 30px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.14));
+  background: rgba(6, 12, 22, 0.9);
+  color: var(--text-primary, #e8eaed);
+  font-size: 12px;
+  text-overflow: ellipsis;
+}
+
+.es-quick-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 210px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 2px;
+}
+
+.es-quick-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 38, 0.65);
+  min-width: 0;
+}
+
+.es-quick-item-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.es-quick-item-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary, #e8eaed);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.es-quick-item-sub {
+  font-size: 10.5px;
+  color: var(--text-secondary, rgba(232, 234, 237, 0.65));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Top-Right Sibling Experiences Entry Button (data-stories-corner) ──── */
+#gev-experiences-entry {
+  position: fixed;
+  z-index: 1200;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(0, 212, 255, 0.48);
+  background: rgba(6, 24, 34, 0.92);
+  color: var(--accent, #00d4ff);
+  font: 600 11px var(--font-mono, monospace);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: 0 0 18px -6px rgba(0, 212, 255, 0.42);
+  transition:
+    background 150ms ease,
+    border-color 150ms ease;
+}
+
+#gev-experiences-entry:hover {
+  background: rgba(0, 212, 255, 0.16);
+  border-color: rgba(0, 212, 255, 0.72);
+}
+
+#gev-experiences-entry.es-entry-compact {
+  width: 36px;
+  padding: 0;
+  justify-content: center;
+}
+
+#gev-experiences-entry.es-entry-compact .es-entry-label {
+  display: none;
+}
+
+/* ── Standalone Hide Custom UI Toggle Pill (Alt+H) ─────────────────────── */
+#gev-sovereign-hide-pill {
+  position: fixed;
+  left: 14px;
+  bottom: 14px;
+  z-index: 1180;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.16));
+  background: rgba(8, 15, 26, 0.88);
+  color: var(--text-primary, #e8eaed);
+  font: 600 11px var(--font-mono, monospace);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+
+#gev-sovereign-hide-pill.is-hidden-mode {
+  border-color: rgba(0, 212, 255, 0.6);
+  color: var(--accent, #00d4ff);
+}
+
+/* ── Active-Sim Auto-Folding Micro-HUD (StoryScreen ov-chapter Inspired) ─ */
+#gev-active-sim-hud {
+  position: fixed;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1190;
+  max-width: min(740px, calc(100vw - 24px));
+  border-radius: 14px;
+  border: 1px solid rgba(0, 212, 255, 0.34);
+  background: rgba(8, 16, 28, 0.92);
+  color: var(--text-primary, #e8eaed);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.56);
+  padding: 7px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: auto;
+}
+
+#gev-active-sim-hud.es-hud-folded {
+  padding: 5px 10px;
+  border-radius: 999px;
+}
+
+.es-hud-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.es-hud-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.es-hud-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent, #00d4ff);
+  box-shadow: 0 0 8px var(--accent, #00d4ff);
+  flex: none;
+}
+
+.es-hud-title {
+  font: 600 12px/1.2 var(--font-sans, sans-serif);
+  color: #f8fafc;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.es-hud-meta {
+  font: 500 11px/1.2 var(--font-mono, monospace);
+  color: var(--text-secondary, rgba(232, 234, 237, 0.72));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.es-hud-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.es-hud-cam-btn {
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 7px;
+  font: 500 11px var(--font-mono, monospace);
+  white-space: nowrap;
+}
+
+.es-hud-divider {
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.14);
+  margin: 0 2px;
+}
+
+/* ── Sibling Stories-Style Experiences Card + Pin Explorer ─────────────── */
+#gev-experiences-explorer {
+  position: fixed;
+  inset: 0;
+  z-index: 1210;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--text-primary, #e8eaed);
+  font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, sans-serif);
+}
+
+#gev-experiences-explorer .es-exp-pins {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
+}
+
+#gev-experiences-explorer .es-exp-pin {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(8, 16, 28, 0.88);
+  color: #f8fafc;
+  font: 600 11px/1.1 var(--font-sans, sans-serif);
+  white-space: nowrap;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  transition:
+    border-color 140ms ease,
+    background 140ms ease;
+}
+
+#gev-experiences-explorer .es-exp-pin.is-picked {
+  border-color: var(--accent, #00d4ff);
+  background: rgba(0, 62, 84, 0.94);
+  z-index: 4;
+}
+
+#gev-experiences-explorer .es-exp-pin-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+}
+
+#gev-experiences-explorer .es-exp-feed {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 3;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  background: rgba(8, 14, 24, 0.95);
+  border-right: 1px solid var(--glass-border, rgba(255, 255, 255, 0.12));
+  box-shadow: 16px 0 44px rgba(0, 0, 0, 0.52);
+  min-width: 0;
+  overflow: hidden;
+}
+
+#gev-experiences-explorer .es-exp-resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  z-index: 5;
+}
+
+#gev-experiences-explorer .es-exp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 14px 14px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#gev-experiences-explorer .es-exp-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+#gev-experiences-explorer .es-exp-eyebrow {
+  font: 600 10px/1.1 var(--font-mono, monospace);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent, #00d4ff);
+}
+
+#gev-experiences-explorer .es-exp-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+#gev-experiences-explorer .es-exp-intro-banner {
+  margin: 10px 14px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(0, 212, 255, 0.08);
+  border: 1px solid rgba(0, 212, 255, 0.28);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+#gev-experiences-explorer .es-exp-credit-link {
+  color: #7dd3fc;
+  text-decoration: underline;
+}
+
+#gev-experiences-explorer .es-exp-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#gev-experiences-explorer .es-exp-search-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+#gev-experiences-explorer .es-exp-search {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+#gev-experiences-explorer .es-exp-sort {
+  width: 112px;
+  flex: none;
+}
+
+#gev-experiences-explorer .es-exp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+#gev-experiences-explorer .es-exp-chip {
+  height: 26px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+#gev-experiences-explorer .es-exp-cards {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 12px 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#gev-experiences-explorer .es-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 11px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(14, 22, 36, 0.88);
+  min-width: 0;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease;
+}
+
+#gev-experiences-explorer .es-card.es-card--picked {
+  border-color: rgba(0, 212, 255, 0.65);
+  background: rgba(12, 34, 52, 0.94);
+}
+
+#gev-experiences-explorer .es-card-top {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+#gev-experiences-explorer .es-card-thumb {
+  width: 54px;
+  height: 54px;
+  border-radius: 9px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 212, 255, 0.2),
+    rgba(15, 23, 42, 0.9)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+#gev-experiences-explorer .es-card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+#gev-experiences-explorer .es-card-info {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+#gev-experiences-explorer .es-card-title {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #f8fafc;
+  word-break: break-word;
+}
+
+#gev-experiences-explorer .es-card-meta {
+  font: 500 11px/1.25 var(--font-mono, monospace);
+  color: var(--accent, #00d4ff);
+  word-break: break-word;
+}
+
+#gev-experiences-explorer .es-card-region {
+  font-size: 11px;
+  color: var(--text-secondary, rgba(232, 234, 237, 0.68));
+  word-break: break-word;
+}
+
+#gev-experiences-explorer .es-card-summary {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgba(226, 232, 240, 0.86);
+  word-break: break-word;
+}
+
+#gev-experiences-explorer .es-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+#gev-experiences-explorer .es-sheet-grip {
+  display: none;
+}
+
+/* ── Upstream Exclusive Surface Suppression ────────────────────────────── */
+body:has(#loading-screen:not(.hidden)) #gev-experiences-entry,
+body:has(#loading-screen:not(.hidden)) #gev-sovereign-hide-pill,
+body:has(#loading-screen:not(.hidden)) #gev-active-sim-hud,
+body.cockpit-mode #gev-experiences-entry,
+body.cockpit-mode #gev-sovereign-hide-pill,
+body.cockpit-mode #gev-active-sim-hud,
+body.cockpit-mode #gev-experiences-explorer,
+body.ui-clean-view #gev-experiences-entry,
+body.ui-clean-view #gev-sovereign-hide-pill,
+body.ui-clean-view #gev-active-sim-hud,
+body.ui-clean-view #gev-experiences-explorer,
+body.recording-mode #gev-experiences-entry,
+body.recording-mode #gev-sovereign-hide-pill,
+body.recording-mode #gev-active-sim-hud,
+body.recording-mode #gev-experiences-explorer,
+body.scene-playback-mode #gev-experiences-entry,
+body.scene-playback-mode #gev-active-sim-hud,
+body.scene-playback-mode #gev-experiences-explorer,
+body.stories-mode #gev-experiences-entry,
+body.stories-mode #gev-sovereign-hide-pill,
+body.stories-mode #gev-active-sim-hud,
+body.stories-mode #gev-experiences-explorer {
+  display: none !important;
+}
+
+/* ── Mobile Phone Responsive Sheet & Spacing (<=720px) ─────────────────── */
+@media (max-width: 720px) {
+  #earth-sim-panel {
+    width: 100%;
+    max-width: none;
+  }
+
+  #earth-sim-panel .earth-sim-panel-inner {
+    max-height: none;
+  }
+
+  #gev-sovereign-hide-pill {
+    left: 10px;
+    bottom: calc(var(--mobile-tab-space, 58px) + 10px);
+    height: 28px;
+    padding: 0 9px;
+    font-size: 10px;
+  }
+
+  #gev-active-sim-hud {
+    top: calc(var(--mobile-top-inset, 0px) + 56px);
+    width: calc(100vw - 16px);
+    max-width: calc(100vw - 16px);
+  }
+
+  #gev-experiences-explorer .es-exp-resizer {
+    display: none;
+  }
+
+  #gev-experiences-explorer .es-exp-feed {
+    top: auto;
+    right: 0;
+    left: 0;
+    bottom: 0;
+    width: 100% !important;
+    border-right: 0;
+    border-top: 1px solid var(--glass-border, rgba(255, 255, 255, 0.14));
+    border-radius: 18px 18px 0 0;
+    transition: height 180ms ease;
+  }
+
+  #gev-experiences-explorer .es-exp-feed.es-snap-map {
+    height: 126px;
+  }
+
+  #gev-experiences-explorer .es-exp-feed.es-snap-split {
+    height: 54dvh;
+  }
+
+  #gev-experiences-explorer .es-exp-feed.es-snap-list {
+    height: 86dvh;
+  }
+
+  #gev-experiences-explorer .es-sheet-grip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 12px 2px;
+  }
+}

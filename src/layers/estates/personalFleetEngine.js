@@ -20,6 +20,8 @@ import * as Cesium from 'cesium';
 import { getDomicileById, getAllDomiciles } from './domicileCatalog.js';
 import { trySampleSurfaceHeight } from '../citylife/surfaceHeight.js';
 import { estimateWaypointElevation } from '../../drive/driveWaypoints.js';
+import { createCameraAuthority } from '../../ui/sovereign/cameraControlBridge.js';
+import { butterGoogle3DTiles } from '../../ui/sovereign/tilesetButter.js';
 
 export const FLEET_MODES = Object.freeze({
   WALK: {
@@ -129,6 +131,24 @@ export function createPersonalFleetEngine({
   let isHovering = false;
   let currentAlt = 0;
   let cameraMode = 'default';
+  const cameraModeListeners = new Set();
+
+  function notifyCameraModeListeners(mode) {
+    for (const cb of cameraModeListeners) {
+      try {
+        cb(mode);
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  const cameraAuthority = createCameraAuthority({
+    viewer,
+    engineId: 'personal-fleet',
+    identityMatrix4: Cesium.Matrix4.IDENTITY,
+    onCameraModeApplied: notifyCameraModeListeners,
+  });
 
   let playerEntity = null;
   let companionEntity = null;
@@ -160,6 +180,7 @@ export function createPersonalFleetEngine({
     isActive = true;
 
     update3DEntities();
+    butterGoogle3DTiles(viewer, 'fleet-spawn', { maxMs: 2400 });
   }
 
   function setFleetMode(modeKeyOrObj) {
@@ -229,9 +250,57 @@ export function createPersonalFleetEngine({
     return setHover(!isHovering);
   }
 
+  function applyFleetCamera(mode = cameraMode) {
+    if (!viewer?.camera?.setView || mode === 'free') return;
+    const altOffset =
+      mode === 'first_person'
+        ? 2.2
+        : mode === 'overview'
+          ? 140
+          : activeMode.isRotorcraft
+            ? Math.max(45, (currentAlt || 305) + 25)
+            : 18;
+    const pitchDeg =
+      mode === 'first_person' ? -6 : mode === 'overview' ? -55 : -24;
+    const trailM = mode === 'first_person' ? 0 : mode === 'overview' ? 70 : 22;
+    const headingRad = Cesium.Math.toRadians(headingDeg);
+    const cosLat = Math.max(0.2, Math.cos(Cesium.Math.toRadians(currentLat)));
+    const camLat = currentLat - (trailM * Math.cos(headingRad)) / 111_139;
+    const camLon =
+      currentLon - (trailM * Math.sin(headingRad)) / (111_139 * cosLat);
+    const camElev = (currentElev || activeDomicile?.elev || 0) + altOffset;
+    try {
+      viewer.camera.setView({
+        destination: Cesium.Cartesian3.fromDegrees(camLon, camLat, camElev),
+        orientation: {
+          heading: headingRad,
+          pitch: Cesium.Math.toRadians(pitchDeg),
+          roll: 0,
+        },
+      });
+    } catch {
+      /* ignore headless mock errors */
+    }
+  }
+
   function setCameraMode(mode) {
     cameraMode = mode || 'default';
+    cameraAuthority.beginAtomicCameraSwitch({
+      mode: cameraMode,
+      clearTrackedEntity: true,
+      resetLookAt: true,
+      butter: true,
+      butterReason: `fleet-cam-${cameraMode}`,
+      butterMaxMs: 2200,
+    });
+    if (cameraMode !== 'free' && cameraMode !== 'default') {
+      applyFleetCamera(cameraMode);
+    }
     return cameraMode;
+  }
+
+  function snapBack(mode = 'chase') {
+    return setCameraMode(mode);
   }
 
   function update3DEntities() {
@@ -383,6 +452,7 @@ export function createPersonalFleetEngine({
       currentAlt = activeMode.cruiseAltMeters || 305;
     }
     update3DEntities();
+    butterGoogle3DTiles(viewer, 'fleet-start', { maxMs: 2400 });
   }
 
   function stop() {
@@ -746,7 +816,16 @@ export function createPersonalFleetEngine({
     setHover,
     toggleHover,
     setCameraMode,
+    snapBack,
     getCameraMode: () => cameraMode,
+    onCameraModeChange: (cb) => {
+      if (typeof cb === 'function') {
+        cameraModeListeners.add(cb);
+        return () => cameraModeListeners.delete(cb);
+      }
+      return () => {};
+    },
+    getCameraIntentSeq: () => cameraAuthority.getSeq(),
     start,
     stop,
     step,

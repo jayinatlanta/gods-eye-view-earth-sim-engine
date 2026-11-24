@@ -59,6 +59,7 @@ let _removeCameraListeners = null;
 /** Stops hearing the installed port's holds. */
 let _offHeldChange = null;
 let _settleTimer = null;
+let _settlePollTimer = null;
 
 /** The loop's rate: the display's while held, IDLE_FRAME_RATE while not. */
 function applyRate(held) {
@@ -73,6 +74,10 @@ function clearSettleTimer() {
   if (_settleTimer !== null) {
     clearTimeout(_settleTimer);
     _settleTimer = null;
+  }
+  if (_settlePollTimer !== null) {
+    clearInterval(_settlePollTimer);
+    _settlePollTimer = null;
   }
 }
 
@@ -211,12 +216,20 @@ function releaseFrameHolds() {
 }
 
 /**
- * Nudge active 3D tilesets through a brief continuous-render settle burst
+ * Nudge active 3D tilesets through a bounded continuous-render settle burst
  * so post-flight/post-switch LOD refinement does not stall in requestRenderMode.
+ * When `settleCheck` is provided, releases early once `settleCheck()` returns
+ * true on 2 consecutive poll ticks (or when `durationMs` elapses).
  */
 export function nudgeTilesetStreaming(
   reason = 'tileset-nudge',
-  { force = false } = {},
+  {
+    force = false,
+    durationMs = TILESET_SETTLE_MS,
+    settleCheck = null,
+    pollIntervalMs = 120,
+    onSettled = null,
+  } = {},
 ) {
   if (!_frame) return;
   if (!force) {
@@ -224,13 +237,44 @@ export function nudgeTilesetStreaming(
     return;
   }
   clearSettleTimer();
+  const safeDurationMs = Math.max(
+    100,
+    Math.min(5000, Number(durationMs) || TILESET_SETTLE_MS),
+  );
   holdContinuousRender(TILESET_SETTLE_HOLD);
   governorRequestRender(reason);
-  _settleTimer = setTimeout(() => {
-    _settleTimer = null;
+
+  const finish = (settledEarly = false) => {
+    clearSettleTimer();
     releaseContinuousRender(TILESET_SETTLE_HOLD);
     governorRequestRender(`${reason}-done`);
-  }, TILESET_SETTLE_MS);
+    try {
+      onSettled?.({ settledEarly, reason });
+    } catch {
+      /* ignore */
+    }
+  };
+
+  if (typeof settleCheck === 'function') {
+    let consecutiveReady = 0;
+    const pollMs = Math.max(40, Math.min(300, Number(pollIntervalMs) || 120));
+    _settlePollTimer = setInterval(() => {
+      try {
+        if (settleCheck()) {
+          consecutiveReady += 1;
+          if (consecutiveReady >= 2) {
+            finish(true);
+          }
+        } else {
+          consecutiveReady = 0;
+        }
+      } catch {
+        consecutiveReady = 0;
+      }
+    }, pollMs);
+  }
+
+  _settleTimer = setTimeout(() => finish(false), safeDurationMs);
 }
 
 /**

@@ -73,6 +73,7 @@ export class PanelNavigation {
             .map((panel) => {
               return {
                 id: panel.id,
+                icon: panel.getAttribute('data-rail-icon') || undefined,
                 title:
                   panel
                     .querySelector('.panel-title, .pp-header-label')

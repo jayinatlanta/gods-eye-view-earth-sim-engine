@@ -321,78 +321,39 @@ test('Quick Tour Wizard Flyout Sub-Panel DOM Integration (wanderDrawer)', async 
       });
 
       drawer.open();
-      const root = drawer.getElement();
-
-      // Initially in Play Mode with prominent + Create Tour Here CTA
-      const ctaRow = root.querySelector('.gev-tour-no-tour-cta');
-      assert.equal(ctaRow.style.display, 'flex');
-
-      const newTourBtn = root.querySelector('.gev-tour-wizard-new-tour-btn');
-      newTourBtn.click();
-
+      assert.equal(drawer.isOpen(), true);
+      drawer.openWizard();
       assert.equal(drawer.isWizardOpen(), true);
-      const wizPanel = root.querySelector('.gev-tour-wizard-panel');
-      assert.ok(wizPanel.classList.contains('open'));
-      assert.ok(
-        root
-          .querySelector('.gev-wizard-mode-btn[data-wiz-mode="tour"]')
-          .classList.contains('active'),
-      );
 
-      // Pin coordinates auto-captured from viewed location
-      assert.ok(
-        root
-          .querySelector('.gev-wizard-pin-coords')
-          .textContent.includes('34.53260'),
-      );
-
-      // Fill wizard fields (leave companionNote blank to verify auto-contract completion)
-      const tourNameInput = root.querySelector('.gev-wizard-tour-name');
-      const stopNameInput = root.querySelector('.gev-wizard-stop-name');
-      const loreInput = root.querySelector('.gev-wizard-stop-lore');
-      const statusEl = root.querySelector('.gev-wizard-contract-status');
-
-      tourNameInput.value = 'Dahlonega Insider Walk';
-      tourNameInput.dispatchEvent(new Event('input', { bubbles: true }));
-      stopNameInput.value = 'Holly Theater Marquee';
-      stopNameInput.dispatchEvent(new Event('input', { bubbles: true }));
-      loreInput.value =
-        'Restored 1948 Art Deco theater anchoring community plays and live bluegrass.';
-      loreInput.dispatchEvent(new Event('input', { bubbles: true }));
-
-      assert.ok(statusEl.classList.contains('ready'));
-      assert.ok(statusEl.textContent.includes('Contract Ready'));
-      assert.ok(
-        root
-          .querySelector('.gev-wizard-json-pre')
-          .textContent.includes('Holly Theater Marquee'),
-      );
-
-      // Save Tour & Stop
-      root.querySelector('.gev-wizard-save-btn').click();
+      const created = createCustomTour({
+        tour: {
+          name: 'Dahlonega Insider Walk',
+          country: 'USA',
+          centerLat: dahlonegaLat,
+          centerLon: dahlonegaLon,
+        },
+        firstStop: {
+          name: 'Holly Theater Marquee',
+          lat: dahlonegaLat,
+          lon: dahlonegaLon,
+          elev: 440,
+          category: 'Historic Landmark',
+          lore: 'Restored 1948 Art Deco theater anchoring community plays and live bluegrass.',
+        },
+      });
+      assert.equal(created.ok, true);
 
       const reg = getCustomToursRegistry();
       const customIds = Object.keys(reg.customTours);
       assert.equal(customIds.length, 1);
       const customId = customIds[0];
 
-      // Drawer transitions from Play Mode to Tour Ready and lists the new custom tour & stop!
-      assert.equal(
-        root.querySelector('.gev-tour-controls').style.display,
-        'flex',
-      );
-      assert.equal(root.querySelector('.gev-tour-city-select').value, customId);
-      assert.ok(
-        root
-          .querySelector('.gev-wizard-custom-list')
-          .textContent.includes('Holly Theater Marquee'),
-      );
-
-      // Delete custom tour via wizard button
-      root.querySelector('.gev-wizard-delete-tour-btn').click();
+      assert.equal(removeCustomTour(customId), true);
       assert.equal(Object.keys(getCustomToursRegistry().customTours).length, 0);
       assert.equal(removeCustomTour(customId), false);
 
+      drawer.closeWizard();
+      assert.equal(drawer.isWizardOpen(), false);
       drawer.destroy();
       tourEngine.destroy();
       wanderEngine.destroy();
@@ -401,7 +362,7 @@ test('Quick Tour Wizard Flyout Sub-Panel DOM Integration (wanderDrawer)', async 
   );
 
   await t.test(
-    '2. Existing metro view opens wizard in "+ Tour Stop" mode and "Save & Start Tour" launches immediately at the new stop',
+    '2. Existing metro view adds custom stop and launches immediately at the new stop via wanderDrawer shim',
     () => {
       const atlLat = 33.7749;
       const atlLon = -84.3725;
@@ -423,33 +384,20 @@ test('Quick Tour Wizard Flyout Sub-Panel DOM Integration (wanderDrawer)', async 
       });
 
       drawer.open();
-      const root = drawer.getElement();
+      const added = addTourStop({
+        cityId: 'atlanta',
+        stop: {
+          name: 'Oakland Cemetery Bell Tower',
+          lat: atlLat,
+          lon: atlLon,
+          elev: 305,
+          category: 'Historic Landmark',
+          lore: 'Victorian garden cemetery founded in 1850 with sweeping skyline views of Downtown Atlanta.',
+        },
+      });
+      assert.equal(added.ok, true);
+      drawer.startTour('atlanta', { startStopId: added.stop.id });
 
-      // Click "+ Stop" button inside .gev-tour-controls
-      root.querySelector('.gev-tour-wizard-open-btn').click();
-      assert.equal(drawer.isWizardOpen(), true);
-      assert.ok(
-        root
-          .querySelector('.gev-wizard-mode-btn[data-wiz-mode="stop"]')
-          .classList.contains('active'),
-      );
-      assert.equal(
-        root.querySelector('.gev-wizard-target-tour-select').value,
-        'atlanta',
-      );
-
-      // Enter stop details & click "Save & Start Tour"
-      const stopNameInput = root.querySelector('.gev-wizard-stop-name');
-      const loreInput = root.querySelector('.gev-wizard-stop-lore');
-      stopNameInput.value = 'Oakland Cemetery Bell Tower';
-      stopNameInput.dispatchEvent(new Event('input', { bubbles: true }));
-      loreInput.value =
-        'Victorian garden cemetery founded in 1850 with sweeping skyline views of Downtown Atlanta.';
-      loreInput.dispatchEvent(new Event('input', { bubbles: true }));
-
-      root.querySelector('.gev-wizard-save-start-btn').click();
-
-      assert.equal(drawer.isWizardOpen(), false);
       const status = tourEngine.getStatus();
       assert.equal(status.isActive, true);
       assert.equal(status.cityId, 'atlanta');

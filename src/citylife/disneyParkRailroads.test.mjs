@@ -490,22 +490,15 @@ test('World of Rails drawer, Transit Controller drawer, and Theme Park Day Ride 
     });
     wanderDrawer.open();
 
-    // Magic Kingdom: both 🚝 Ride 3D (WDW Monorail -> EPCOT handoff) & 🚂 Ride 3D (WDW MK Railroad)
+    // Magic Kingdom: both WDW Monorail -> EPCOT handoff & WDW MK Railroad via launchHopperBridge
     tourEngine.startCityTour({ cityId: 'wdw_magic_kingdom' });
-    const mkMonoBtn = wanderDrawer
-      .getElement()
-      .querySelector('.gev-tour-hopper-ride-btn[data-corridor-id="wdw_monorail"]');
-    const mkSteamBtn = wanderDrawer
-      .getElement()
-      .querySelector(
-        '.gev-tour-hopper-ride-btn[data-corridor-id="wdw_mk_railroad"]',
-      );
-    assert.ok(mkMonoBtn, 'MK WDW Monorail Ride 3D button rendered');
-    assert.equal(mkMonoBtn.textContent.trim(), '🚝 Ride 3D');
-    assert.ok(mkSteamBtn, 'MK WDW Railroad Ride 3D button rendered');
-    assert.equal(mkSteamBtn.textContent.trim(), '🚂 Ride 3D');
+    const mkBridges = tourEngine.getStatus().parkHopperBridges || [];
+    const mkMonoBridge = mkBridges.find((b) => b.railCorridorId === 'wdw_monorail');
+    const mkSteamBridge = mkBridges.find((b) => b.railCorridorId === 'wdw_mk_railroad');
+    assert.ok(mkMonoBridge, 'MK WDW Monorail Ride 3D bridge available');
+    assert.ok(mkSteamBridge, 'MK WDW Railroad Ride 3D bridge available');
 
-    mkMonoBtn.click();
+    wanderDrawer.launchHopperBridge(mkMonoBridge);
     assert.equal(spawnedCalls.at(-1).fromQuery, 'wdw_monorail');
     assert.equal(spawnedCalls.at(-1).opts.corridor, 'mk_to_epcot_express');
     assert.equal(typeof spawnedCalls.at(-1).opts.onArrival, 'function');
@@ -517,48 +510,34 @@ test('World of Rails drawer, Transit Controller drawer, and Theme Park Day Ride 
       'epcot_spaceship_earth',
     );
 
-    // EPCOT: 🚝 Ride 3D return to Magic Kingdom
-    const epcotMonoBtn = wanderDrawer
-      .getElement()
-      .querySelector('.gev-tour-hopper-ride-btn[data-corridor-id="wdw_monorail"]');
-    assert.ok(epcotMonoBtn, 'EPCOT WDW Monorail return Ride 3D button rendered');
-    assert.equal(epcotMonoBtn.textContent.trim(), '🚝 Ride 3D');
-    epcotMonoBtn.click();
+    // EPCOT: return to Magic Kingdom
+    const epcotMonoBridge = (tourEngine.getStatus().parkHopperBridges || []).find(
+      (b) => b.railCorridorId === 'wdw_monorail',
+    );
+    assert.ok(epcotMonoBridge, 'EPCOT WDW Monorail return bridge available');
+    wanderDrawer.launchHopperBridge(epcotMonoBridge);
     assert.equal(spawnedCalls.at(-1).opts.corridor, 'epcot_to_mk_express');
 
     // Magic Kingdom Steam Railroad Ride 3D
     tourEngine.startCityTour({ cityId: 'wdw_magic_kingdom' });
-    wanderDrawer
-      .getElement()
-      .querySelector(
-        '.gev-tour-hopper-ride-btn[data-corridor-id="wdw_mk_railroad"]',
-      )
-      .click();
+    wanderDrawer.launchHopperBridge(mkSteamBridge);
     assert.equal(spawnedCalls.at(-1).fromQuery, 'wdw_mk_railroad');
     assert.equal(spawnedCalls.at(-1).opts.corridor, 'mk_perimeter_steam_loop');
 
-    // Disneyland Park Day: both 🚝 Ride 3D (DLR Monorail) & 🚂 Ride 3D (DLR Railroad)
+    // Disneyland Park Day: both DLR Monorail & DLR Railroad
     tourEngine.startCityTour({ cityId: 'dlr_disneyland' });
-    const dlrMonoBtn = wanderDrawer
-      .getElement()
-      .querySelector('.gev-tour-hopper-ride-btn[data-corridor-id="dlr_monorail"]');
-    const dlrSteamBtn = wanderDrawer
-      .getElement()
-      .querySelector('.gev-tour-hopper-ride-btn[data-corridor-id="dlr_railroad"]');
-    assert.ok(dlrMonoBtn, 'Disneyland Monorail Ride 3D button rendered');
-    assert.equal(dlrMonoBtn.textContent.trim(), '🚝 Ride 3D');
-    assert.ok(dlrSteamBtn, 'Disneyland Railroad Ride 3D button rendered');
-    assert.equal(dlrSteamBtn.textContent.trim(), '🚂 Ride 3D');
+    const dlrBridges = tourEngine.getStatus().parkHopperBridges || [];
+    const dlrMonoBridge = dlrBridges.find((b) => b.railCorridorId === 'dlr_monorail');
+    const dlrSteamBridge = dlrBridges.find((b) => b.railCorridorId === 'dlr_railroad');
+    assert.ok(dlrMonoBridge, 'Disneyland Monorail Ride 3D bridge available');
+    assert.ok(dlrSteamBridge, 'Disneyland Railroad Ride 3D bridge available');
 
-    dlrMonoBtn.click();
+    wanderDrawer.launchHopperBridge(dlrMonoBridge);
     assert.equal(spawnedCalls.at(-1).fromQuery, 'dlr_monorail');
     assert.equal(spawnedCalls.at(-1).opts.corridor, 'dlr_monorail_loop');
 
     tourEngine.startCityTour({ cityId: 'dlr_disneyland' });
-    wanderDrawer
-      .getElement()
-      .querySelector('.gev-tour-hopper-ride-btn[data-corridor-id="dlr_railroad"]')
-      .click();
+    wanderDrawer.launchHopperBridge(dlrSteamBridge);
     assert.equal(spawnedCalls.at(-1).fromQuery, 'dlr_railroad');
     assert.equal(spawnedCalls.at(-1).opts.corridor, 'dlr_perimeter_steam_loop');
 

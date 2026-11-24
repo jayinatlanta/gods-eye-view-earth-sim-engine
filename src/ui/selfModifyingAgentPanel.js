@@ -216,6 +216,7 @@ export function createSelfModifyingAgentPanel(options = {}) {
     autoLoadModels = null,
     autoLoadCapabilities = null,
     clipboardWrite = null,
+    mountLauncher = true,
   } = options || {};
   const hasCustomFetchWithoutModels =
     Object.prototype.hasOwnProperty.call(options || {}, 'fetchImpl') &&
@@ -257,8 +258,8 @@ export function createSelfModifyingAgentPanel(options = {}) {
     style.textContent = `
       .gev-agent-forge-launcher {
         position: fixed;
-        bottom: 13px;
-        left: 256px;
+        bottom: 52px;
+        left: 14px;
         width: 34px;
         height: 34px;
         border-radius: 50%;
@@ -277,8 +278,8 @@ export function createSelfModifyingAgentPanel(options = {}) {
       }
       @media (max-width: 720px) {
         .gev-agent-forge-launcher {
-          bottom: 62px;
-          left: 236px;
+          bottom: 104px;
+          left: 10px;
         }
       }
       .gev-agent-forge-launcher:hover,
@@ -1396,18 +1397,20 @@ export function createSelfModifyingAgentPanel(options = {}) {
     if (!host || typeof document === 'undefined') return;
     ensureStyles();
 
-    launcherBtn = document.createElement('button');
-    launcherBtn.id = 'gev-agent-forge-launcher';
-    launcherBtn.className = 'gev-agent-forge-launcher';
-    launcherBtn.title =
-      'AI Assistant & Guide — World/Space Q&A or Opt-In Dev Forge';
-    launcherBtn.setAttribute(
-      'aria-label',
-      'AI Assistant and World Guide Panel',
-    );
-    launcherBtn.textContent = '🤖';
-    launcherBtn.addEventListener('click', () => toggle());
-    host.appendChild(launcherBtn);
+    if (mountLauncher !== false) {
+      launcherBtn = document.createElement('button');
+      launcherBtn.id = 'gev-agent-forge-launcher';
+      launcherBtn.className = 'gev-agent-forge-launcher';
+      launcherBtn.title =
+        'AI Assistant & Guide — World/Space Q&A or Opt-In Dev Forge';
+      launcherBtn.setAttribute(
+        'aria-label',
+        'AI Assistant and World Guide Panel',
+      );
+      launcherBtn.textContent = '🤖';
+      launcherBtn.addEventListener('click', () => toggle());
+      host.appendChild(launcherBtn);
+    }
 
     panelEl = document.createElement('div');
     panelEl.id = 'gev-agent-forge-panel';
@@ -1590,7 +1593,7 @@ export function createSelfModifyingAgentPanel(options = {}) {
     host.appendChild(panelEl);
 
     getGlobalDrawerCoordinator().registerOverlayGroup('agent-forge', {
-      elements: [launcherBtn, panelEl],
+      elements: [launcherBtn, panelEl].filter(Boolean),
       hide: () => close(),
     });
   }

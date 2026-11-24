@@ -145,7 +145,7 @@ function fixture({ mobile = true, expanded = [], afterPublish } = {}) {
     collapse.className = 'panel-collapse-btn';
     panel.append(toggle, collapse, element('button', document));
     const root =
-      id === 'data-panel'
+      ['data-panel', 'earth-sim-panel'].includes(id)
         ? 'left-panel-stack'
         : ['location-bar', 'control-panel'].includes(id)
           ? 'command-dock'

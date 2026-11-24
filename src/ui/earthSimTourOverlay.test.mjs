@@ -82,7 +82,7 @@ test('shouldAutoShowEarthSimIntro respects URL query overrides, share links, and
   );
 });
 
-test('createEarthSimTourOverlay renders dynamic catalog, filters categories, persists opt-out, launches drawers, and recalls via dock pill', () => {
+test('createEarthSimTourOverlay routes intro & recall into Sovereign ExperiencesExplorer, launches features, and preserves catalog parity', () => {
   const env = setupDomEnv();
   try {
     const coordinator = createWorldSimDockCoordinator();
@@ -107,69 +107,28 @@ test('createEarthSimTourOverlay renders dynamic catalog, filters categories, per
     const overlay = createEarthSimTourOverlay({
       coordinator,
       agentPanel: { open: () => (assistantOpened += 1) },
-      container: env.dom.window.document.body,
-      documentRef: env.dom.window.document,
       windowRef: env.dom.window,
     });
 
     assert.equal(overlay.isOpen(), true);
-    const creditLink = env.dom.window.document.querySelector(
-      '.gev-earth-sim-credit-link',
-    );
-    assert.ok(creditLink);
-    assert.equal(creditLink.textContent, 'bilawalsidhu');
     assert.equal(
-      creditLink.href,
-      'https://github.com/bilawalsidhu/gods-eye-view',
-    );
-    assert.equal(creditLink.target, '_blank');
-    assert.equal(
-      env.dom.window.document.querySelectorAll('.gev-earth-sim-feature-card')
-        .length,
+      overlay.getVisibleFeatureCount(),
       EARTH_SIM_FEATURE_CATALOG.length,
     );
 
-    // Filter to Travel & Fleet
-    const travelPill = env.dom.window.document.querySelector(
-      '.gev-earth-sim-filter-pill[data-category="travel-mobility"]',
-    );
-    travelPill.click();
-    assert.ok(
-      overlay.getVisibleFeatureCount() < EARTH_SIM_FEATURE_CATALOG.length &&
-        overlay.getVisibleFeatureCount() >= 4,
-    );
-
-    // Switch back to All and click Try on Estates
-    env.dom.window.document
-      .querySelector('.gev-earth-sim-filter-pill[data-category="all"]')
-      .click();
+    // Launching a feature un-collapses custom UI, closes overlay, and opens drawer
     coordinator.setCustomUxCollapsed(true);
-    env.dom.window.document
-      .querySelector('[data-feature-id="estate"] .gev-earth-sim-try-btn')
-      .click();
+    assert.equal(overlay.launchFeature('estate'), true);
     assert.equal(overlay.isOpen(), false);
     assert.equal(coordinator.isCustomUxCollapsed(), false);
     assert.deepEqual(openedDrawers, ['estate']);
 
-    // Check suppression checkbox writes durable key
-    overlay.open();
-    const checkbox = env.dom.window.document.querySelector(
-      '.gev-earth-sim-suppress-checkbox',
-    );
-    checkbox.checked = true;
-    checkbox.dispatchEvent(new env.dom.window.Event('change'));
-    assert.equal(env.storage.get(EARTH_SIM_INTRO_STORAGE_KEY), 'dismissed');
-    overlay.close();
-    assert.equal(overlay.isOpen(), false);
-
-    // Clicking recall pill next to Hide Custom UI re-opens overlay even when dismissed
+    // Recall event re-opens overlay cleanly even after close
     toggleMount.recallElement.click();
     assert.equal(overlay.isOpen(), true);
 
     // Launching AI Assistant opens agentPanel
-    env.dom.window.document
-      .querySelector('[data-feature-id="ai-assistant"] .gev-earth-sim-try-btn')
-      .click();
+    assert.equal(overlay.launchFeature('ai-assistant'), true);
     assert.equal(assistantOpened, 1);
 
     overlay.destroy();

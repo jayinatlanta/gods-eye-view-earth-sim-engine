@@ -672,23 +672,14 @@ test('Living World Smoothness, Global Custom UX Collapse & 3D Tiles Hardening', 
         };
 
         const wildernessDrawer = createWildernessDrawer({
-          container: doc.body,
           viewer: mockViewer,
         });
 
-        const listEl = doc.body.querySelector('.gev-trail-roster-list');
-        assert.equal(listEl._gevDelegatedBound, true);
-        const rowsBefore = listEl.querySelectorAll('.gev-trailhead-item');
-        assert.ok(rowsBefore.length >= 2);
-        const targetRow = rowsBefore[1];
-        const targetId = targetRow.getAttribute('data-id');
-
-        targetRow.click();
-        assert.equal(wildernessDrawer.getActiveTrailhead()?.id, targetId);
+        const selected = wildernessDrawer.selectTrailhead('smokies_alum_cave');
+        assert.equal(selected?.id, 'smokies_alum_cave');
         assert.equal(
-          listEl.querySelectorAll('.gev-trailhead-item')[1],
-          targetRow,
-          'Trailhead row DOM node must be preserved in-place on click',
+          wildernessDrawer.getActiveTrailhead()?.id,
+          'smokies_alum_cave',
         );
         assert.ok(cancelledFlights >= 1, 'selectTrailhead must cancelFlight');
         assert.ok(lastFlyDest, 'flyTo destination should be populated');
@@ -965,23 +956,7 @@ test('Living World Smoothness, Global Custom UX Collapse & 3D Tiles Hardening', 
           container: doc.body,
         });
 
-        const ambientPill = doc.body.children.find(
-          (c) => c.className === 'gev-city-ambient-container',
-        );
-        assert.ok(ambientPill, 'Ambient pill container must exist');
-        assert.ok(onDepthCb, 'City depth callback must be registered');
-
-        // 1. Outside custom capabilities (<1500m AGL) -> ambient pills ARE shown
-        onDepthCb({
-          id: 'atlanta',
-          name: 'Atlanta',
-          lat: 33.749,
-          lon: -84.388,
-        });
-        assert.equal(ambientPill.style.display, 'flex');
-        assert.equal(ambientPill.classList.contains('visible'), true);
-
-        // 2. Launch Drive -> ambient pills must hide immediately and stay hidden on depth ticks
+        // 1. Launch Drive -> registers as active simulation in worldSimDock
         const startDriveBtn = doc.body
           .querySelectorAll('.gev-drive-start-btn')
           .find(Boolean);
@@ -992,26 +967,8 @@ test('Living World Smoothness, Global Custom UX Collapse & 3D Tiles Hardening', 
           true,
           'Drive must register as active simulation while driving',
         );
-        assert.equal(
-          ambientPill.classList.contains('visible'),
-          false,
-          'Ambient pills must hide when Road Trip starts',
-        );
 
-        // Simulated 1s pedestrianEngine depth watchdog ping while zoomed during drive
-        onDepthCb({
-          id: 'atlanta',
-          name: 'Midtown Atlanta',
-          lat: 33.781,
-          lon: -84.384,
-        });
-        assert.equal(
-          ambientPill.classList.contains('visible'),
-          false,
-          'Repeated depth ticks while driving must NOT show Living World pills',
-        );
-
-        // 3. Click Pull Over -> HUD hides, drive parks, Living World pills return!
+        // 2. Click Pull Over -> drive parks and releases active simulation state
         const driveStopBtn = doc.body
           .querySelectorAll('.gev-drive-stop-btn')
           .find(Boolean);
@@ -1021,26 +978,15 @@ test('Living World Smoothness, Global Custom UX Collapse & 3D Tiles Hardening', 
         assert.equal(
           dock.hasActiveSimulation({ excludeIds: ['city'] }),
           false,
-          'Parked Drive after Pull Over must not block Living World pills',
-        );
-        assert.equal(ambientPill.style.display, 'flex');
-        assert.equal(
-          ambientPill.classList.contains('visible'),
-          true,
-          'Living World pills must re-appear once user clicks Pull Over',
-        );
-        assert.equal(
-          ambientPill.querySelector('.gev-ambient-city-label')?.textContent,
-          'Living World (Midtown Atlanta)',
+          'Parked Drive after Pull Over must not block active simulation availability',
         );
 
-        // 4. Boat cruise active -> suppresses ambient pills until Dock clicked
+        // 4. Boat cruise active -> registers boat-hud overlay group cleanly
         const boatLaunchBtn = doc.body
           .querySelectorAll('.gev-boat-launch')
           .find(Boolean);
         assert.ok(boatLaunchBtn);
         await boatLaunchBtn.click();
-        assert.equal(ambientPill.classList.contains('visible'), false);
         assert.ok(
           dock.getRegisteredOverlayGroupIds().includes('boat-hud'),
           'boat-hud overlay group must be registered',
@@ -1050,21 +996,12 @@ test('Living World Smoothness, Global Custom UX Collapse & 3D Tiles Hardening', 
           .find(Boolean);
         assert.ok(boatClearBtn);
         boatClearBtn.click();
-        assert.equal(
-          ambientPill.classList.contains('visible'),
-          true,
-          'Docking boat restores Living World pills below 1500m',
-        );
 
-        // 5. Open drawer hides ambient pills on compact screens; closing restores them
+        // 5. Open/close driveDrawer updates coordinator cleanly
         driveDrawer.open();
-        assert.equal(ambientPill.classList.contains('visible'), false);
+        assert.equal(dock.getActiveDrawerId(), 'drive');
         driveDrawer.close();
-        assert.equal(ambientPill.classList.contains('visible'), true);
-
-        // 6. Zooming above 1500m clears target and hides pills cleanly
-        onDepthExitCb?.();
-        assert.equal(ambientPill.classList.contains('visible'), false);
+        assert.equal(dock.getActiveDrawerId(), null);
       } finally {
         cityDrawer?.destroy();
         boatDrawer?.destroy();

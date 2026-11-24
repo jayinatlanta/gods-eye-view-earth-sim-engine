@@ -34,6 +34,11 @@ import {
   getGlobalDrawerCoordinator,
 } from '../../ui/worldSimDock.js';
 import { hitTestWorldOverlay } from '../../overlays/worldOverlay.js';
+import {
+  createCameraAuthority,
+  isEventInsideSovereignUi,
+} from '../../ui/sovereign/cameraControlBridge.js';
+import { butterGoogle3DTiles } from '../../ui/sovereign/tilesetButter.js';
 
 export const WANDER_CAMERA_MODES = Object.freeze({
   FIRST_PERSON: 'first_person',
@@ -123,6 +128,22 @@ export function createAvatarWanderEngine({
   let leftMouseDragged = false;
   let currentLocality = null;
   const pointerLockListeners = new Set();
+  const cameraModeListeners = new Set();
+
+  function notifyCameraModeListeners(mode) {
+    for (const cb of cameraModeListeners) {
+      try {
+        cb(mode);
+      } catch {}
+    }
+  }
+
+  const cameraAuthority = createCameraAuthority({
+    viewer,
+    engineId: 'avatar-wander',
+    identityMatrix4: Cesium.Matrix4.IDENTITY,
+    onCameraModeApplied: notifyCameraModeListeners,
+  });
 
   function notifyPointerLockListeners() {
     for (const cb of pointerLockListeners) {
@@ -208,6 +229,7 @@ export function createAvatarWanderEngine({
       exitPointerLock();
       return;
     }
+    if (isEventInsideSovereignUi(e)) return;
     if (e.button === 2) {
       isRightMouseDown = true;
       lastMousePos = { x: e.clientX, y: e.clientY };
@@ -573,23 +595,92 @@ export function createAvatarWanderEngine({
     setCameraMode(modes[nextIndex]);
   }
 
-  function setCameraMode(mode) {
-    if (Object.values(WANDER_CAMERA_MODES).includes(mode)) {
-      currentCameraMode = mode;
-      cameraPitchDeg = getDefaultPitchForMode(mode);
-      // In first person, user avatar contact dot is hidden (user IS the camera lens)
-      if (mode === WANDER_CAMERA_MODES.FIRST_PERSON) {
-        userAvatar?.setVisible?.(false);
-      } else {
-        userAvatar?.setVisible?.(true);
-      }
-      if (
-        mode === WANDER_CAMERA_MODES.FREE &&
-        viewer?.camera?.lookAtTransform
-      ) {
-        viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
+  function reClampGroundAndCamera() {
+    if (!isWandering || isDestroyed || !viewer) return;
+    const excludeEntities = [
+      userAvatar?.getEntity?.(),
+      companionDot?.getEntity?.(),
+    ].filter(Boolean);
+    const curCarto = Cesium.Cartographic.fromDegrees(
+      currentCoordinates.lon,
+      currentCoordinates.lat,
+      currentCoordinates.height || 0,
+    );
+    const sampled = avatarGroundTracker.update(viewer, curCarto, Date.now(), {
+      excludeEntities,
+      intervalMs: 0,
+    });
+    if (sampled !== null && Number.isFinite(sampled)) {
+      currentCoordinates.height = sampled;
+      userAvatar?.updatePosition?.({
+        ...currentCoordinates,
+        forceSample: false,
+      });
+    }
+    const cart =
+      userAvatar?.getCartesian?.() ||
+      Cesium.Cartesian3.fromDegrees(
+        currentCoordinates.lon,
+        currentCoordinates.lat,
+        currentCoordinates.height || 0,
+      );
+    if (
+      cart &&
+      currentCameraMode !== WANDER_CAMERA_MODES.FREE &&
+      !isTransitioning
+    ) {
+      const normal = Cesium.Ellipsoid.WGS84.geodeticSurfaceNormal(
+        cart,
+        new Cesium.Cartesian3(),
+      );
+      applyCamera(cart, currentCoordinates.heading, normal);
+    }
+  }
+
+  function setCameraMode(mode, { preserveSwoop = false } = {}) {
+    if (!Object.values(WANDER_CAMERA_MODES).includes(mode)) return;
+    currentCameraMode = mode;
+    cameraPitchDeg = getDefaultPitchForMode(mode);
+    // In first person, user avatar contact dot is hidden (user IS the camera lens)
+    if (mode === WANDER_CAMERA_MODES.FIRST_PERSON) {
+      userAvatar?.setVisible?.(false);
+    } else {
+      userAvatar?.setVisible?.(true);
+    }
+    if (preserveSwoop) {
+      notifyCameraModeListeners(mode);
+      return;
+    }
+    cameraAuthority.beginAtomicCameraSwitch({
+      mode,
+      cancelSwoop: cancelSwoopTransition,
+      clearTrackedEntity: true,
+      resetLookAt: true,
+      butter: true,
+      butterReason: `wander-cam-${mode}`,
+      butterMaxMs: 2200,
+      onSettled: () => {
+        reClampGroundAndCamera();
+      },
+    });
+    isTransitioning = false;
+    if (mode !== WANDER_CAMERA_MODES.FREE && viewer?.camera) {
+      const cart =
+        userAvatar?.getCartesian?.() ||
+        Cesium.Cartesian3.fromDegrees(
+          currentCoordinates.lon,
+          currentCoordinates.lat,
+          currentCoordinates.height || 0,
+        );
+      if (cart) {
+        const normal = Cesium.Ellipsoid.WGS84.geodeticSurfaceNormal(
+          cart,
+          new Cesium.Cartesian3(),
+        );
+        applyCamera(cart, currentCoordinates.heading, normal);
       }
     }
+    governorRequestRender(`wander-cam-${mode}`);
   }
 
   function getCameraMode() {
@@ -1294,6 +1385,7 @@ export function createAvatarWanderEngine({
 
     if (shouldSwoop) {
       isTransitioning = true;
+      const swoopSeq = cameraAuthority.nextIntent();
       const headingRad = Cesium.Math.toRadians(heading);
       const pitchRad = Cesium.Math.toRadians(-30.0);
       // Swoop to trailing ISO_CHASE position (~6.9m behind avatar, +5.2m AGL)
@@ -1322,6 +1414,7 @@ export function createAvatarWanderEngine({
         easingFunction: Cesium.EasingFunction?.QUADRATIC_OUT,
         complete: () => {
           isTransitioning = false;
+          if (!cameraAuthority.isCurrentIntent(swoopSeq)) return;
           const cart = userAvatar?.getCartesian?.();
           if (cart) {
             const normal = Cesium.Ellipsoid.WGS84.geodeticSurfaceNormal(
@@ -1330,6 +1423,11 @@ export function createAvatarWanderEngine({
             );
             applyCamera(cart, currentCoordinates.heading, normal);
           }
+          butterGoogle3DTiles(viewer, 'wander-swoop-arrive', {
+            maxMs: 2400,
+            cameraIntentGuard: () => cameraAuthority.isCurrentIntent(swoopSeq),
+            onSettled: () => reClampGroundAndCamera(),
+          });
         },
         cancel: () => {
           isTransitioning = false;
@@ -1358,7 +1456,7 @@ export function createAvatarWanderEngine({
     userAvatar.spawn(currentCoordinates);
 
     // Apply active camera mode and reticle visibility invariant
-    setCameraMode(cameraMode);
+    setCameraMode(cameraMode, { preserveSwoop: shouldSwoop });
 
     // Initialize companion
     companionEnabled = companion;
@@ -1409,7 +1507,12 @@ export function createAvatarWanderEngine({
     }
 
     isWandering = true;
-    nudgeTilesetStreaming('wander-start', { force: true });
+    const startSeq = cameraAuthority.getSeq();
+    butterGoogle3DTiles(viewer, 'wander-start', {
+      maxMs: 2600,
+      cameraIntentGuard: () => cameraAuthority.isCurrentIntent(startSeq),
+      onSettled: () => reClampGroundAndCamera(),
+    });
     governorRequestRender('wander-start');
     return true;
   }
@@ -1468,9 +1571,17 @@ export function createAvatarWanderEngine({
     userAvatar?.setVisible?.(
       currentCameraMode !== WANDER_CAMERA_MODES.FIRST_PERSON,
     );
-    if (viewer.camera.lookAtTransform) {
-      viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
-    }
+    cameraAuthority.beginAtomicCameraSwitch({
+      mode: currentCameraMode,
+      cancelSwoop: cancelSwoopTransition,
+      clearTrackedEntity: true,
+      resetLookAt: true,
+      butter: true,
+      butterReason: 'wander-snap-back',
+      butterMaxMs: 2200,
+      onSettled: () => reClampGroundAndCamera(),
+    });
+    isTransitioning = false;
     const cart = userAvatar.getCartesian();
     if (cart) {
       const normal = Cesium.Ellipsoid.WGS84.geodeticSurfaceNormal(
@@ -1479,6 +1590,7 @@ export function createAvatarWanderEngine({
       );
       applyCamera(cart, currentCoordinates.heading, normal);
     }
+    governorRequestRender('wander-snap-back');
   }
 
   function getTelemetry() {
@@ -1535,6 +1647,14 @@ export function createAvatarWanderEngine({
     setCameraMode,
     getCameraMode,
     cycleCameraMode,
+    onCameraModeChange: (cb) => {
+      if (typeof cb === 'function') {
+        cameraModeListeners.add(cb);
+        return () => cameraModeListeners.delete(cb);
+      }
+      return () => {};
+    },
+    getCameraIntentSeq: () => cameraAuthority.getSeq(),
     toggleCompanion,
     isCompanionActive,
     snapBack,

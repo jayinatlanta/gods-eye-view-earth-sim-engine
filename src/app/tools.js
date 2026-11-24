@@ -88,8 +88,10 @@ export async function createApplicationTools({
     installGlobeInViewRecovery(viewer, {
       // The scope mask hides everything outside its keyhole.
       keyholeRadius: () => (isScopeMaskEnabled() ? KEYHOLE_OUTER_RADIUS : 0),
-      // An authored scene frames its own shots, holds included.
-      paused: () => sceneDirector.running,
+      // An authored scene or active Earth Sim frames its own shots, holds included.
+      paused: () =>
+        sceneDirector.running ||
+        Boolean(window.__gevDrawerCoordinator?.hasActiveSimulation?.()),
     }),
   );
   onSceneDirector?.(sceneDirector);
