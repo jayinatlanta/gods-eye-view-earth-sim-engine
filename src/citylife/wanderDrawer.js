@@ -1559,8 +1559,7 @@ export function createWanderDrawer({
 
     const resortTransitBarEl = cardEl.querySelector('.gev-resort-transit-bar');
     if (resortTransitBarEl) {
-      resortTransitBarEl.style.display =
-        !isPlayMode && isResortStay ? 'flex' : 'none';
+      resortTransitBarEl.style.display = isResortStay ? 'flex' : 'none';
       const activeResortMode =
         status.isTour && status.venueCategory === 'resort_stay'
           ? status.transitModeOverride ||
@@ -1586,7 +1585,7 @@ export function createWanderDrawer({
               ? targetMeta
               : ctx?.metadata) || null
         : null;
-      const showCheckIn = Boolean(!isPlayMode && resortMetaForCheckIn?.id);
+      const showCheckIn = Boolean(resortMetaForCheckIn?.id);
       resortCheckInBarEl.style.display = showCheckIn ? 'flex' : 'none';
       if (showCheckIn) {
         const currentTemp = getTempBasecamp();
@@ -1672,7 +1671,9 @@ export function createWanderDrawer({
     }
 
     if (tourControlsEl) {
-      tourControlsEl.style.display = isPlayMode ? 'none' : 'flex';
+      // Keep the Resort Stays / Theme Park Days / City Tours selector always accessible
+      // even when the camera is currently over a non-metro Play Mode location.
+      tourControlsEl.style.display = 'flex';
     }
     if (playControlsEl) {
       playControlsEl.style.display = isPlayMode ? 'grid' : 'none';
@@ -2674,6 +2675,22 @@ export function createWanderDrawer({
   }
 
   function buildJumpOptionsHtml() {
+    const resortOpts = Object.values(METRO_TOUR_METADATA || {})
+      .filter((m) => m?.venueCategory === 'resort_stay')
+      .map(
+        (r) =>
+          `<option value="resort:${escapeHtml(r.id)}">🏨 ${escapeHtml(r.name)} (${escapeHtml(r.cityLabel || r.country || '')})</option>`,
+      )
+      .join('');
+    const parkOpts = Object.values(METRO_TOUR_METADATA || {})
+      .filter(
+        (m) => m?.tourScope === 'venue' && m?.venueCategory !== 'resort_stay',
+      )
+      .map(
+        (p) =>
+          `<option value="park:${escapeHtml(p.id)}">🎢 ${escapeHtml(p.name)}</option>`,
+      )
+      .join('');
     const localeOpts = Object.values(EXEMPLAR_LOCALES || {})
       .map(
         (loc) =>
@@ -2688,6 +2705,8 @@ export function createWanderDrawer({
       .join('');
     return `
       <option value="">Select a destination to jump...</option>
+      ${resortOpts ? `<optgroup label="🏨 Resort Stays (Day Off)">${resortOpts}</optgroup>` : ''}
+      ${parkOpts ? `<optgroup label="🎢 Theme Park Days">${parkOpts}</optgroup>` : ''}
       <optgroup label="World Exemplar Locales">
         ${localeOpts}
       </optgroup>
@@ -3324,7 +3343,37 @@ export function createWanderDrawer({
         tourCitySelect.value = 'auto';
       }
       const [kind, id] = raw.split(':');
-      if (kind === 'locale') {
+      if (kind === 'resort' || kind === 'park') {
+        if (tourAndPlayEngine?.startCityTour) {
+          if (tourCitySelect) {
+            tourCitySelect.value = id;
+          }
+          tourAndPlayEngine.startCityTour({
+            cityId: id,
+            tourMode: 'all',
+            ...(kind === 'resort' && selectedResortTransitMode !== 'walk_midway'
+              ? { transitMode: selectedResortTransitMode }
+              : {}),
+            cameraMode: WANDER_CAMERA_MODES.ISO_CHASE,
+          });
+        } else {
+          const meta = METRO_TOUR_METADATA?.[id];
+          if (
+            meta &&
+            Number.isFinite(meta.centerLat) &&
+            Number.isFinite(meta.centerLon)
+          ) {
+            wanderEngine.startWandering({
+              lat: meta.centerLat,
+              lon: meta.centerLon,
+              elev: null,
+              heading: 0,
+              companion: wanderEngine.isCompanionActive?.() ?? true,
+              cameraMode: WANDER_CAMERA_MODES.ISO_CHASE,
+            });
+          }
+        }
+      } else if (kind === 'locale') {
         const loc =
           EXEMPLAR_LOCALES?.[id] ||
           Object.values(EXEMPLAR_LOCALES || {}).find((l) => l.id === id);
