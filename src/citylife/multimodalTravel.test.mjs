@@ -43,7 +43,7 @@ test('Multi-Modal Planetary Travel, Doorstep Road Trips & Meditative Rotorcraft 
     'Component 1: Dedicated Helipad Waypoint Network & Spatial Nearest Search',
     () => {
       const helipads = getAllHelipads();
-      assert.equal(helipads.length, 7, 'Expected 7 curated helipads');
+      assert.ok(helipads.length >= 8, 'Expected at least 8 curated helipads');
 
       // Verify specific helipads exist
       const pdk = getHelipadById('PDK_PAD');
