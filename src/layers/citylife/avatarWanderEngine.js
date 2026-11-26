@@ -1535,6 +1535,8 @@ export function createAvatarWanderEngine({
    */
   function stopWandering() {
     isWandering = false;
+    cameraAuthority.nextIntent();
+    cancelSwoopTransition();
     try {
       getGlobalDrawerCoordinator().notifySimulationStopped('wander');
     } catch {}
@@ -1568,9 +1570,20 @@ export function createAvatarWanderEngine({
       companionDot = null;
     }
 
+    if (viewer && viewer.trackedEntity !== undefined) {
+      try {
+        viewer.trackedEntity = undefined;
+      } catch {}
+    }
+    if (typeof viewer?.camera?.cancelFlight === 'function') {
+      try {
+        viewer.camera.cancelFlight();
+      } catch {}
+    }
     if (viewer?.camera?.lookAtTransform) {
       viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
     }
+    governorRequestRender('wander-stop');
 
     return true;
   }

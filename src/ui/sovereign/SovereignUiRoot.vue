@@ -1,5 +1,12 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from 'vue';
 import { storeToRefs } from 'pinia';
 import { EXCLUSIVE_SURFACE_CLASSES } from '../../exclusiveSurfaces.js';
 import { t } from '../../i18n/index.js';
@@ -9,6 +16,7 @@ import { useSovereignUiStore } from '../stores/sovereignUi.js';
 import EarthSimRailPanel from './EarthSimRailPanel.vue';
 import ExperiencesExplorer from './ExperiencesExplorer.vue';
 import ActiveSimMicroHud from './ActiveSimMicroHud.vue';
+import LocalZoomPill from './LocalZoomPill.vue';
 import { isolatePointerEvent } from './cameraControlBridge.js';
 
 /**
@@ -113,6 +121,18 @@ let bodyObserver = null;
 let cornerResizeObserver = null;
 let placeTimer = null;
 
+watch(explorerOpen, async () => {
+  await nextTick();
+  placeExperiencesEntry();
+  if (typeof window !== 'undefined') {
+    try {
+      window.dispatchEvent(new window.Event('resize'));
+    } catch {
+      /* ignore */
+    }
+  }
+});
+
 onMounted(() => {
   hasLeftPanelStack.value = Boolean(
     typeof document !== 'undefined' &&
@@ -186,10 +206,14 @@ onBeforeUnmount(() => {
     <!-- Full-Screen Sibling Experiences Card + Pin Explorer -->
     <ExperiencesExplorer
       v-if="explorerOpen && !customUiHidden && !exclusiveUpstreamSurface"
+      :back-btn-pos="entryPos"
     />
 
     <!-- Active-Sim Auto-Folding Micro-HUD -->
     <ActiveSimMicroHud />
+
+    <!-- Zoomed-In Local Context Action Pill (when zoomed close with no active sim) -->
+    <LocalZoomPill />
 
     <!-- Standalone Hide Custom UI (Alt+H) Restore/Toggle Pill -->
     <UiButton

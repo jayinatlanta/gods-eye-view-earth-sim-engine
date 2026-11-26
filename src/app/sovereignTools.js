@@ -45,7 +45,10 @@ import { createCorridorDrawer } from '../corridor/corridorDrawer.js';
 import { checkInTempBasecamp } from '../layers/estates/domicileCatalog.js';
 import { pickActiveGroundPosition } from '../layers/citylife/surfaceHeight.js';
 import { msg } from '../i18n/index.js';
-import { getGlobalDrawerCoordinator } from '../ui/worldSimDock.js';
+import {
+  getGlobalDrawerCoordinator,
+  resolveKnownLocalGazetteer,
+} from '../ui/worldSimDock.js';
 import { applicationPinia, createUiRuntime } from '../ui/vueRuntime.js';
 import { useSovereignUiStore } from '../ui/stores/sovereignUi.js';
 import SovereignUiRoot from '../ui/sovereign/SovereignUiRoot.vue';
@@ -372,6 +375,7 @@ export function attachSovereignTools({
   const sandboxDrawer = createSandboxDrawer({
     viewer: cesiumViewer,
     sandboxEngine,
+    mountLauncher: false,
   });
   defer(() => sandboxDrawer.destroy());
   debug.sandboxDrawer = sandboxDrawer;
@@ -564,6 +568,7 @@ export function attachSovereignTools({
       pitchDeg = -42,
       duration = 1.4,
       reason = 'sovereign-flyto',
+      targetElev = 0,
     } = {},
   ) {
     if (
@@ -574,17 +579,39 @@ export function attachSovereignTools({
       return;
     }
     try {
+      if (cesiumViewer.trackedEntity !== undefined) {
+        cesiumViewer.trackedEntity = undefined;
+      }
       cesiumViewer.camera.cancelFlight?.();
       cesiumViewer.camera.lookAtTransform?.(Cesium.Matrix4.IDENTITY);
-      cesiumViewer.camera.flyTo?.({
-        destination: Cesium.Cartesian3.fromDegrees(lon, lat, heightM),
-        orientation: {
-          heading: Cesium.Math.toRadians(headingDeg),
-          pitch: Cesium.Math.toRadians(pitchDeg),
-          roll: 0,
-        },
-        duration,
-      });
+      const safeElev = Number.isFinite(targetElev)
+        ? Math.max(0, targetElev)
+        : 0;
+      const rangeM = Math.max(120, heightM - safeElev);
+      if (typeof cesiumViewer.camera.flyToBoundingSphere === 'function') {
+        const center = Cesium.Cartesian3.fromDegrees(lon, lat, safeElev);
+        cesiumViewer.camera.flyToBoundingSphere(
+          new Cesium.BoundingSphere(center, 25),
+          {
+            offset: new Cesium.HeadingPitchRange(
+              Cesium.Math.toRadians(headingDeg),
+              Cesium.Math.toRadians(pitchDeg),
+              rangeM,
+            ),
+            duration,
+          },
+        );
+      } else {
+        cesiumViewer.camera.flyTo?.({
+          destination: Cesium.Cartesian3.fromDegrees(lon, lat, heightM),
+          orientation: {
+            heading: Cesium.Math.toRadians(headingDeg),
+            pitch: Cesium.Math.toRadians(pitchDeg),
+            roll: 0,
+          },
+          duration,
+        });
+      }
     } catch {
       /* ignore headless mock errors */
     }
@@ -827,13 +854,26 @@ export function attachSovereignTools({
         },
       );
     } else if (kind === 'domicile') {
+      tourAndPlayEngine?.stop?.();
+      if (wanderEngine?.isWandering) {
+        wanderEngine.stopWandering();
+      }
+      coordinator.notifySimulationStarted('estate');
+      claimScout?.selectDomicile?.(item.launch.domicileId);
       fleetEngine?.spawnAtDomicile?.(item.launch.domicileId);
-      fleetEngine?.setCameraMode?.('chase');
-      flyToCoords(item.lat, item.lon, (item.elev || 20) + 120, {
-        pitchDeg: -38,
-        duration: 1.4,
-        reason: `exp-domicile-${item.launch.domicileId}`,
-      });
+      if (typeof claimScout?.flyToDomicile === 'function') {
+        claimScout.flyToDomicile(item.launch.domicileId, {
+          mode: 'overview',
+          duration: 1.5,
+        });
+      } else {
+        flyToCoords(item.lat, item.lon, (item.elev || 20) + 260, {
+          pitchDeg: -45,
+          duration: 1.5,
+          targetElev: item.elev || 0,
+          reason: `exp-domicile-${item.launch.domicileId}`,
+        });
+      }
       syncActiveSimSnapshot('estate');
     } else if (kind === 'flight') {
       void flightEngine
@@ -986,6 +1026,7 @@ export function attachSovereignTools({
     freightEngine,
     freightDrawer,
     sandboxEngine,
+    sandboxDrawer,
     corridorDrawer,
     flyToCoords,
     getCameraGroundTarget,
@@ -1051,6 +1092,48 @@ export function attachSovereignTools({
     sovereignUiStore.bumpTelemetry();
   });
 
+  // Throttled zoomed-in local context observer (<= 4.5 km -> show LocalZoomPill;
+  // > 5.5 km hysteresis -> hide cleanly; zero steady-state allocations).
+  let lastZoomCheckMs = 0;
+  let wasZoomedIn = false;
+  function updateLocalZoomContext() {
+    if (!cesiumViewer || cesiumViewer.isDestroyed?.()) return;
+    const now =
+      typeof performance !== 'undefined' ? performance.now() : Date.now();
+    if (now - lastZoomCheckMs < 380) return;
+    lastZoomCheckMs = now;
+    const carto = cesiumViewer.camera?.positionCartographic;
+    const altM = carto?.height;
+    if (!Number.isFinite(altM)) return;
+    const threshold = wasZoomedIn ? 5500 : 4500;
+    if (altM <= threshold) {
+      wasZoomedIn = true;
+      const target = getCameraGroundTarget();
+      const lat = target?.lat ?? Cesium.Math.toDegrees(carto.latitude);
+      const lon = target?.lon ?? Cesium.Math.toDegrees(carto.longitude);
+      const gaz = resolveKnownLocalGazetteer(lat, lon);
+      const localityLabel =
+        gaz?.city || gaz?.fullLabel || `${lat.toFixed(2)}°, ${lon.toFixed(2)}°`;
+      sovereignUiStore.setLocalZoomContext({
+        zoomedIn: true,
+        altitudeM: altM,
+        localityLabel,
+        lat,
+        lon,
+      });
+    } else if (wasZoomedIn) {
+      wasZoomedIn = false;
+      sovereignUiStore.setLocalZoomContext({ zoomedIn: false });
+    }
+  }
+  const removeCameraZoomChanged =
+    cesiumViewer?.camera?.changed?.addEventListener?.(updateLocalZoomContext) ||
+    null;
+  const removeCameraZoomMoveEnd =
+    cesiumViewer?.camera?.moveEnd?.addEventListener?.(updateLocalZoomContext) ||
+    null;
+  updateLocalZoomContext();
+
   const sovereignUiRuntime = createUiRuntime({ pinia: applicationPinia() });
   let sovereignHostEl = null;
   let unmountSovereignRoot = null;
@@ -1076,6 +1159,8 @@ export function attachSovereignTools({
     unsubMetroCam?.();
     unsubFreightCam?.();
     unsubSimState?.();
+    removeCameraZoomChanged?.();
+    removeCameraZoomMoveEnd?.();
     cancelGoogle3DTilesButter();
     unmountSovereignRoot?.();
     sovereignUiRuntime.destroy();

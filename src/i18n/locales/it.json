@@ -89,6 +89,7 @@
   "AI & Controls": "IA e controlli",
   "AI AGENT": "AGENTE IA",
   "AI Assistant & Dev Forge": "Assistente IA e Dev Forge",
+  "AI Forge": "Fucina IA",
   "AI Provider": "Provider IA",
   "AI chat": "Chat IA",
   "AID TO NAVIGATION": "AIUTO ALLA NAVIGAZIONE",
@@ -158,8 +159,8 @@
   "Add {name} to Data Layers": "Aggiungi {name} a Livelli dati",
   "Added": "Aggiunti",
   "Added {count} files.": {
-    "one": "Aggiunto {count} file.",
     "many": "Aggiunti {count} di file.",
+    "one": "Aggiunto {count} file.",
     "other": "Aggiunti {count} file."
   },
   "Adjust HUD": "Regola l'HUD",
@@ -220,8 +221,8 @@
   "Anime": "Anime",
   "Any severity": "Qualsiasi gravità",
   "Appended {count} shots: {scene}": {
-    "one": "Aggiunto {count} scatto: {scene}",
     "many": "Aggiunti {count} di scatti: {scene}",
+    "one": "Aggiunto {count} scatto: {scene}",
     "other": "Aggiunti {count} scatti: {scene}"
   },
   "Apply Brake": "Frena",
@@ -233,6 +234,7 @@
   "Apply the full cloud brightness key; 100% filter strength": "Applica al massimo il filtro basato sulla luminosità delle nuvole; intensità del filtro 100%",
   "Apron": "Piazzale",
   "Arachnids": "Aracnidi",
+  "Architect": "Architetto",
   "Area": "Area",
   "Area around landmark": "Area intorno a un punto di interesse",
   "Area around {place}": "Area intorno a {place}",
@@ -390,6 +392,8 @@
   "Browser audio is suspended; select FM again to resume it": "L'audio del browser è sospeso; seleziona di nuovo FM per riprenderlo",
   "Browser location is unavailable": "La posizione del browser non è disponibile",
   "Buffering broadcaster stream…": "Buffering del flusso dell'emittente…",
+  "Build Tour": "Crea tour",
+  "Build Tour Stop Here": "Crea una tappa del tour qui",
   "Bus": "Autobus",
   "Bus Fleet": "Flotta autobus",
   "Business jet": "Business jet",
@@ -430,8 +434,8 @@
   "CONDITIONS UNKNOWN": "CONDIZIONI SCONOSCIUTE",
   "CONFIGURED": "CONFIGURATO",
   "CONFIRM · REMOVE ALL {count}": {
-    "one": "CONFERMA · RIMUOVI {count}",
     "many": "CONFERMA · RIMUOVI TUTTE LE {count}",
+    "one": "CONFERMA · RIMUOVI {count}",
     "other": "CONFERMA · RIMUOVI TUTTE LE {count}"
   },
   "CONFIRMED": "CONFERMATA",
@@ -591,8 +595,8 @@
   "Clear search": "Cancella ricerca",
   "Clear selected data layers": "Disattiva i livelli dati selezionati",
   "Cleared {count} data layers": {
-    "one": "Disattivato {count} livello dati",
     "many": "Disattivati {count} di livelli dati",
+    "one": "Disattivato {count} livello dati",
     "other": "Disattivati {count} livelli dati"
   },
   "Clearing all layers": "Disattivare tutti i livelli",
@@ -614,8 +618,8 @@
   "Click to preview": "Fai clic per l'anteprima",
   "Click where the pin goes.": "Fai clic dove va il segnaposto.",
   "Click {count} more points.": {
-    "one": "Fai clic su {count} altro punto.",
     "many": "Fai clic su altri {count} di punti.",
+    "one": "Fai clic su {count} altro punto.",
     "other": "Fai clic su altri {count} punti."
   },
   "Climate": "Clima",
@@ -696,7 +700,10 @@
   "Confirm: remove every added entry from Data Layers": "Conferma: rimuovi da Livelli dati tutte le voci aggiunte",
   "Conflict": "Conflitti",
   "Conflicts": "Conflitti",
+  "Connect": "Collega",
+  "Connect From Here": "Collega da qui",
   "Connect Places": "Collega luoghi",
+  "Connect Places & Launch Transport": "Collega luoghi e avvia il trasporto",
   "Connect an RTL-SDR to begin.": "Collega un RTL-SDR per iniziare.",
   "Connecting directly to broadcaster…": "Connessione diretta all'emittente…",
   "Connecting to Gemini": "Connessione a Gemini",
@@ -838,8 +845,8 @@
   "DRIZZLE": "PIOVIGGINE",
   "DSP waiting": "DSP in attesa",
   "DSP {count} blocks": {
-    "one": "DSP {count} blocco",
     "many": "DSP {count} di blocchi",
+    "one": "DSP {count} blocco",
     "other": "DSP {count} blocchi"
   },
   "Daily overview": "Panoramica giornaliera",
@@ -912,6 +919,7 @@
   "Disaster": "Disastro",
   "Discovered": "Scoperto",
   "Dishes": "Antenne",
+  "Dismiss local quick actions": "Chiudi le azioni rapide locali",
   "Dismiss voice card": "Chiudi la scheda voce",
   "Dispatch": "Centrale",
   "Dispatcher": "Spedizioniere",
@@ -999,6 +1007,7 @@
   "Earth Sim": "Sim Terra",
   "Earth Sim Active": "Earth Sim attivo",
   "Earth Sim Experiences Explorer": "Esploratore esperienze Earth Sim",
+  "Earth Sim Quick Tools": "Strumenti rapidi Earth Sim",
   "Earth Sim Tour": "Tour Earth Sim",
   "Earth observation: optical, radar, weather and science": "Osservazione della Terra: ottica, radar, meteo e scienza",
   "Earthquake": "Terremoto",
@@ -1049,7 +1058,6 @@
   "Error": "Errore",
   "Error: {message}": "Errore: {message}",
   "Esri map unavailable · no swipe": "Mappa Esri non disponibile · niente confronto",
-  "Estates": "Tenute",
   "Estimate is incomplete — a response was still in flight when the session ended, so its usage was never reported.": "Stima incompleta: una risposta era ancora in corso quando la sessione è terminata, quindi il suo utilizzo non è mai stato riportato.",
   "Estimated destination direction": "Direzione stimata della destinazione",
   "Estimated flight plan": "Piano di volo stimato",
@@ -1061,8 +1069,8 @@
   "European heritage wrecks come from EMODnet Human Activities; notable wrecks worldwide come from Wikidata. Colour shows when the ship sank; marker size grows with deaths. Click a marker for its card.": "I relitti storici europei provengono da EMODnet Human Activities; i relitti noti di tutto il mondo da Wikidata. Il colore indica quando la nave è affondata; il marcatore cresce con il numero di vittime. Fai clic su un marcatore per la sua scheda.",
   "Event age": "Età degli eventi",
   "Event age: {days}d · undated kept": {
-    "one": "Età degli eventi: {days} giorno · senza data mantenuti",
     "many": "Età degli eventi: {days} di giorni · senza data mantenuti",
+    "one": "Età degli eventi: {days} giorno · senza data mantenuti",
     "other": "Età degli eventi: {days} giorni · senza data mantenuti"
   },
   "Event reconstruction": "Ricostruzione dell'evento",
@@ -1127,6 +1135,7 @@
   "Expand map": "Espandi la mappa",
   "Expand panel": "Espandi il pannello",
   "Expand {name}": "Espandi {name}",
+  "Experience Living City Here": "Esplora la città viva qui",
   "Experiences": "Esperienze",
   "Experiences & Tours": "Esperienze e tour",
   "Explore & Play": "Esplora e gioca",
@@ -1414,7 +1423,7 @@
   "Ground stations / obstacles": "Stazioni a terra / ostacoli",
   "Guide": "Guida",
   "Guide · {topic}": "Guida · {topic}",
-  "Guided tours, theme parks, resorts, living cities, estates & wilderness trails.": "Tour guidati, parchi, resort, città vive, tenute e sentieri.",
+  "Guided tours, theme parks, resorts, living cities, domiciles & wilderness trails.": "Tour guidati, parchi a tema, resort, città vive, residenze e sentieri selvaggi.",
   "Gyirong border gate": "Valico di frontiera di Gyirong",
   "H145": "H145",
   "HARMONY · PORT SIDE": "HARMONY · LATO DI BABORDO",
@@ -1627,8 +1636,8 @@
   "LAST MONTH": "ULTIMO MESE",
   "LAST YEAR": "ULTIMO ANNO",
   "LAST {count} DAYS": {
-    "one": "ULTIMO {count} GIORNO",
     "many": "ULTIMI {count} DI GIORNI",
+    "one": "ULTIMO {count} GIORNO",
     "other": "ULTIMI {count} GIORNI"
   },
   "LATEST LOCATION-MATCHED REPORTING": "ULTIME NOTIZIE PER POSIZIONE",
@@ -1696,8 +1705,8 @@
   "Last reported": "Ultima segnalazione",
   "Last year of the shipwreck period": "Ultimo anno del periodo dei naufragi",
   "Last {hours} h": {
-    "one": "Ultima {hours} h",
     "many": "Ultime {hours} h",
+    "one": "Ultima {hours} h",
     "other": "Ultime {hours} h"
   },
   "Last {n} min": "Ultimi {n} min",
@@ -1788,6 +1797,8 @@
   "Loading {feeds}": "Caricamento di {feeds}",
   "Local": "Locale",
   "Local ADS-B": "ADS-B locale",
+  "Local Area": "Area locale",
+  "Local Area Actions": "Azioni nell'area locale",
   "Local FM stopped: internet radio started": "FM locale fermata: radio internet avviata",
   "Local Play Mode": "Modalità gioco locale",
   "Local RTL-SDR receiver": "Ricevitore RTL-SDR locale",
@@ -1897,14 +1908,14 @@
   "Mark {targets}": "Segna {targets}",
   "Mark {targets} +{more}": "Segna {targets} +{more}",
   "Marked {count} places": {
-    "one": "Segnato {count} luogo",
     "many": "Segnati {count} di luoghi",
+    "one": "Segnato {count} luogo",
     "other": "Segnati {count} luoghi"
   },
   "Matching details": "Dettagli corrispondenti",
   "Maximum event age: {days}d; undated markers are kept": {
-    "one": "Età massima degli eventi: {days} giorno; marcatori senza data mantenuti",
     "many": "Età massima degli eventi: {days} di giorni; marcatori senza data mantenuti",
+    "one": "Età massima degli eventi: {days} giorno; marcatori senza data mantenuti",
     "other": "Età massima degli eventi: {days} giorni; marcatori senza data mantenuti"
   },
   "Maximum sustained wind: {wind}": "Vento massimo sostenuto: {wind}",
@@ -2081,8 +2092,8 @@
   "News resumes tomorrow, or with a paid plan": "Le notizie riprendono domani, o con un piano a pagamento",
   "News sections": "Sezioni notizie",
   "News, last {hours} hours": {
-    "one": "Notizie dell'ultima {hours} ora",
     "many": "Notizie delle ultime {hours} di ore",
+    "one": "Notizie dell'ultima {hours} ora",
     "other": "Notizie delle ultime {hours} ore"
   },
   "Next": "Avanti",
@@ -2112,8 +2123,8 @@
   "No RTL-SDR device selected": "Nessun dispositivo RTL-SDR selezionato",
   "No active tropical cyclone warnings": "Nessun avviso attivo di ciclone tropicale",
   "No bike share here yet · {n} systems available": {
-    "one": "Ancora nessun bike sharing qui · {n} sistema disponibile",
     "many": "Ancora nessun bike sharing qui · {n} di sistemi disponibili",
+    "one": "Ancora nessun bike sharing qui · {n} sistema disponibile",
     "other": "Ancora nessun bike sharing qui · {n} sistemi disponibili"
   },
   "No box": "Nessun riquadro",
@@ -2123,8 +2134,8 @@
   "No days to show for this box": "Nessun giorno da mostrare per questo riquadro",
   "No earthquakes, tropical storms or wildfires reported within {radius}.": "Nessun terremoto, tempesta tropicale o incendio boschivo segnalato entro {radius}.",
   "No feed here yet · {n} regions available": {
-    "one": "Ancora nessun feed qui · {n} regione disponibile",
     "many": "Ancora nessun feed qui · {n} di regioni disponibili",
+    "one": "Ancora nessun feed qui · {n} regione disponibile",
     "other": "Ancora nessun feed qui · {n} regioni disponibili"
   },
   "No file chosen": "Nessun file scelto",
@@ -2147,8 +2158,8 @@
   "No matching options.": "Nessuna opzione corrispondente.",
   "No military within {radius} of the current view": "Nessun aereo militare entro {radius} dalla vista attuale",
   "No news matches these filters in the last {hours} h": {
-    "one": "Nessuna notizia dell'ultima {hours} h corrisponde a questi filtri",
     "many": "Nessuna notizia delle ultime {hours} h corrisponde a questi filtri",
+    "one": "Nessuna notizia dell'ultima {hours} h corrisponde a questi filtri",
     "other": "Nessuna notizia delle ultime {hours} h corrisponde a questi filtri"
   },
   "No other layers are on": "Nessun altro livello attivo",
@@ -2208,8 +2219,8 @@
   "Nothing is loaded or changed until you apply this file.": "Nulla viene caricato o modificato finché non applichi questo file.",
   "Nothing marked": "Nessun luogo segnato",
   "Nothing reported near here in the last {hours} h": {
-    "one": "Nessuna segnalazione qui vicino nell'ultima {hours} h",
     "many": "Nessuna segnalazione qui vicino nelle ultime {hours} h",
+    "one": "Nessuna segnalazione qui vicino nell'ultima {hours} h",
     "other": "Nessuna segnalazione qui vicino nelle ultime {hours} h"
   },
   "Nothing selected": "Nessuna selezione",
@@ -2396,8 +2407,8 @@
   "POSITIONED": "POSIZIONATI",
   "POWER UP": "ACCENDI",
   "POWER UP · {count} KEYS WAITING": {
-    "one": "ACCENDI · {count} CHIAVE IN ATTESA",
     "many": "ACCENDI · {count} DI CHIAVI IN ATTESA",
+    "one": "ACCENDI · {count} CHIAVE IN ATTESA",
     "other": "ACCENDI · {count} CHIAVI IN ATTESA"
   },
   "POWERED UP": "ACCESO",
@@ -2602,8 +2613,8 @@
   "RIGHT": "DESTRA",
   "RIGHT NOW": "IN QUESTO MOMENTO",
   "RINGS {spacing} NM": {
-    "one": "CERCHI {spacing} MN",
     "many": "CERCHI {spacing} MN",
+    "one": "CERCHI {spacing} MN",
     "other": "CERCHI {spacing} MN"
   },
   "ROUTE DATA UNAVAILABLE": "DATI ROTTA NON DISPONIBILI",
@@ -3120,24 +3131,24 @@
   "Show your own GeoJSON, KML, KMZ or GPX files on the globe (or drop them onto it). File bytes stay on this device; overlays can appear in map screenshots shared with voice.": "Mostra sul globo i tuoi file GeoJSON, KML, KMZ o GPX (o trascinali sopra). I dati dei file restano su questo dispositivo; gli overlay possono comparire negli screenshot della mappa condivisi con la voce.",
   "Show {category}": "Mostra {category}",
   "Show {count} stories": {
-    "one": "Mostra {count} storia",
     "many": "Mostra {count} di storie",
+    "one": "Mostra {count} storia",
     "other": "Mostra {count} storie"
   },
   "Show {day}": "Mostra {day}",
   "Show {name}": "Mostra {name}",
   "Show {name} sighting": "Mostra avvistamento di {name}",
   "Show {what} in {place} ({count} items)": {
-    "one": "Mostra {what} a {place} ({count} elemento)",
     "many": "Mostra {what} a {place} ({count} di elementi)",
+    "one": "Mostra {what} a {place} ({count} elemento)",
     "other": "Mostra {what} a {place} ({count} elementi)"
   },
   "Showing cached locations": "Posizioni in cache",
   "Showing cached mapped sites": "Siti mappati in cache",
   "Showing the full Starlink shell — click for the core catalog only": "Shell Starlink completo visualizzato: clic per mostrare solo il catalogo principale",
   "Showing {shown} of {total}": {
-    "one": "{shown} di {total} mostrata",
     "many": "{shown} di {total} mostrate",
+    "one": "{shown} di {total} mostrata",
     "other": "{shown} di {total} mostrate"
   },
   "Shown at street level · depth not in the feed": "Mostrato a livello stradale · profondità non presente nel feed",
@@ -3661,8 +3672,8 @@
   "Up": "In alto",
   "Up to {upper}": "Fino a {upper}",
   "Updated {count} shots: {scene}": {
-    "one": "Aggiornato {count} scatto: {scene}",
     "many": "Aggiornati {count} di scatti: {scene}",
+    "one": "Aggiornato {count} scatto: {scene}",
     "other": "Aggiornati {count} scatti: {scene}"
   },
   "Updated: {scene} / {shot}": "Aggiornato: {scene} / {shot}",
@@ -3862,6 +3873,7 @@
   "Working…": "Operazione in corso…",
   "Workplace": "Lavoro",
   "World": "World",
+  "World Architect & Sandbox (B)": "Architetto del mondo e Sandbox (B)",
   "World of Rails": "Mondo ferroviario",
   "World of Sails": "Mondo della vela",
   "World of Sails & Waterways": "Mondo a vela e vie navigabili",
@@ -4008,18 +4020,18 @@
   "feed status|unreachable": "irraggiungibile",
   "feed unavailable": "feed non disponibile",
   "feeds {names} invalid": {
-    "one": "feed {names} non valido",
     "many": "feed {names} non validi",
+    "one": "feed {names} non valido",
     "other": "feed {names} non validi"
   },
   "feeds {names} stale": {
-    "one": "feed {names} obsoleto",
     "many": "feed {names} obsoleti",
+    "one": "feed {names} obsoleto",
     "other": "feed {names} obsoleti"
   },
   "feeds {names} unreachable": {
-    "one": "feed {names} irraggiungibile",
     "many": "feed {names} irraggiungibili",
+    "one": "feed {names} irraggiungibile",
     "other": "feed {names} irraggiungibili"
   },
   "feels {n}°": "percepita {n}°",
@@ -4050,8 +4062,8 @@
   "fork direction|straight": "dritto",
   "frame {index}/{total}": "fotogramma {index}/{total}",
   "from {count} datasets": {
-    "one": "da {count} dataset",
     "many": "da {count} di dataset",
+    "one": "da {count} dataset",
     "other": "da {count} dataset"
   },
   "from {origin}": "da {origin}",
@@ -4274,8 +4286,8 @@
   "zoom in to see Panoramax coverage": "ingrandisci per vedere la copertura Panoramax",
   "{accepted} of {raw} records accepted": "Record accettati: {accepted} su {raw}",
   "{acres} ac": {
-    "one": "{acres} acro",
     "many": "{acres} di acri",
+    "one": "{acres} acro",
     "other": "{acres} acri"
   },
   "{action} {target} radio station": "{action}: stazione radio {target}",
@@ -4297,88 +4309,88 @@
   "{count} / 30D": "{count} / 30G",
   "{count} CAMERAS STANDING BY · NO CAMERA SELECTED · CLICK A CAMERA TO ACTIVATE": "TELECAMERE IN ATTESA: {count} · NESSUNA TELECAMERA SELEZIONATA · CLIC SU UNA TELECAMERA PER ATTIVARLA",
   "{count} CONTACTS": {
-    "one": "{count} CONTATTO",
     "many": "{count} DI CONTATTI",
+    "one": "{count} CONTATTO",
     "other": "{count} CONTATTI"
   },
   "{count} CelesTrak groups unavailable": {
-    "one": "{count} gruppo CelesTrak non disponibile",
     "many": "{count} di gruppi CelesTrak non disponibili",
+    "one": "{count} gruppo CelesTrak non disponibile",
     "other": "{count} gruppi CelesTrak non disponibili"
   },
   "{count} DAYS": {
-    "one": "{count} GIORNO",
     "many": "{count} DI GIORNI",
+    "one": "{count} GIORNO",
     "other": "{count} GIORNI"
   },
   "{count} GEOLOCATED SOURCE-MAP PLACEMENTS": {
-    "one": "{count} POSIZIONAMENTO GEOLOCALIZZATO SULLA MAPPA DELLE FONTI",
     "many": "{count} DI POSIZIONAMENTI GEOLOCALIZZATI SULLA MAPPA DELLE FONTI",
+    "one": "{count} POSIZIONAMENTO GEOLOCALIZZATO SULLA MAPPA DELLE FONTI",
     "other": "{count} POSIZIONAMENTI GEOLOCALIZZATI SULLA MAPPA DELLE FONTI"
   },
   "{count} HEARD": {
-    "one": "{count} RICEVUTO",
     "many": "{count} RICEVUTI",
+    "one": "{count} RICEVUTO",
     "other": "{count} RICEVUTI"
   },
   "{count} INPUTS UNKNOWN": {
-    "one": "{count} INPUT SCONOSCIUTO",
     "many": "{count} DI INPUT SCONOSCIUTI",
+    "one": "{count} INPUT SCONOSCIUTO",
     "other": "{count} INPUT SCONOSCIUTI"
   },
   "{count} INPUTS UNKNOWN · NOT AN ALL-CLEAR": {
-    "one": "{count} INPUT SCONOSCIUTO · NON È UN VIA LIBERA",
     "many": "{count} DI INPUT SCONOSCIUTI · NON È UN VIA LIBERA",
+    "one": "{count} INPUT SCONOSCIUTO · NON È UN VIA LIBERA",
     "other": "{count} INPUT SCONOSCIUTI · NON È UN VIA LIBERA"
   },
   "{count} MSGS": {
-    "one": "{count} MSG",
     "many": "{count} DI MSG",
+    "one": "{count} MSG",
     "other": "{count} MSG"
   },
   "{count} SOURCES": {
-    "one": "{count} FONTE",
     "many": "{count} DI FONTI",
+    "one": "{count} FONTE",
     "other": "{count} FONTI"
   },
   "{count} active storms": {
-    "one": "{count} tempesta attiva",
     "many": "{count} di tempeste attive",
+    "one": "{count} tempesta attiva",
     "other": "{count} tempeste attive"
   },
   "{count} aircraft in frame": {
-    "one": "{count} aereo inquadrato",
     "many": "{count} di aerei inquadrati",
+    "one": "{count} aereo inquadrato",
     "other": "{count} aerei inquadrati"
   },
   "{count} cameras loaded · click a camera to activate": {
-    "one": "{count} telecamera caricata · clic su una telecamera per attivarla",
     "many": "{count} di telecamere caricate · clic su una telecamera per attivarla",
+    "one": "{count} telecamera caricata · clic su una telecamera per attivarla",
     "other": "{count} telecamere caricate · clic su una telecamera per attivarla"
   },
   "{count} cameras loaded · enable CCTV to activate": {
-    "one": "{count} telecamera caricata · attiva CCTV per attivarla",
     "many": "{count} di telecamere caricate · attiva CCTV per attivarle",
+    "one": "{count} telecamera caricata · attiva CCTV per attivarla",
     "other": "{count} telecamere caricate · attiva CCTV per attivarle"
   },
   "{count} contacts in frame": {
-    "one": "{count} contatto inquadrato",
     "many": "{count} di contatti inquadrati",
+    "one": "{count} contatto inquadrato",
     "other": "{count} contatti inquadrati"
   },
   "{count} data layers could not be cleared": {
-    "one": "{count} livello dati non è stato disattivato",
     "many": "{count} di livelli dati non sono stati disattivati",
+    "one": "{count} livello dati non è stato disattivato",
     "other": "{count} livelli dati non sono stati disattivati"
   },
   "{count} data packs": {
-    "one": "{count} pacchetto dati",
     "many": "{count} di pacchetti dati",
+    "one": "{count} pacchetto dati",
     "other": "{count} pacchetti dati"
   },
   "{count} datasets": {
-    "one": "{count} dataset",
     "many": "{count} di dataset",
+    "one": "{count} dataset",
     "other": "{count} dataset"
   },
   "{count} duplicate mappings merged": {
@@ -4387,83 +4399,83 @@
     "other": "Duplicati uniti: {count}"
   },
   "{count} events today": {
-    "one": "{count} evento oggi",
     "many": "{count} di eventi oggi",
+    "one": "{count} evento oggi",
     "other": "{count} eventi oggi"
   },
   "{count} feeds live": {
-    "one": "{count} feed live",
     "many": "{count} di feed live",
+    "one": "{count} feed live",
     "other": "{count} feed live"
   },
   "{count} files could not be added ({name}: {error})": {
-    "one": "Impossibile aggiungere {count} file ({name}: {error})",
     "many": "Impossibile aggiungere {count} di file ({name}: {error})",
+    "one": "Impossibile aggiungere {count} file ({name}: {error})",
     "other": "Impossibile aggiungere {count} file ({name}: {error})"
   },
   "{count} files selected": {
-    "one": "{count} file selezionato",
     "many": "{count} di file selezionati",
+    "one": "{count} file selezionato",
     "other": "{count} file selezionati"
   },
   "{count} filters on": {
-    "one": "{count} filtro attivo",
     "many": "{count} di filtri attivi",
+    "one": "{count} filtro attivo",
     "other": "{count} filtri attivi"
   },
   "{count} heard": {
-    "one": "{count} ricevuto",
     "many": "{count} ricevuti",
+    "one": "{count} ricevuto",
     "other": "{count} ricevuti"
   },
   "{count} items in view": {
-    "one": "{count} elemento in vista",
     "many": "{count} di elementi in vista",
+    "one": "{count} elemento in vista",
     "other": "{count} elementi in vista"
   },
   "{count} layers": {
-    "one": "{count} livello",
     "many": "{count} di livelli",
+    "one": "{count} livello",
     "other": "{count} livelli"
   },
   "{count} map objects": {
-    "one": "{count} oggetto sulla mappa",
     "many": "{count} di oggetti sulla mappa",
+    "one": "{count} oggetto sulla mappa",
     "other": "{count} oggetti sulla mappa"
   },
   "{count} mapped sites in view": {
-    "one": "{count} sito mappato nella vista",
     "many": "{count} di siti mappati nella vista",
+    "one": "{count} sito mappato nella vista",
     "other": "{count} siti mappati nella vista"
   },
   "{count} mapped sites within {km} km of the contact": {
-    "one": "{count} sito mappato entro {km} km dal contatto",
     "many": "{count} di siti mappati entro {km} km dal contatto",
+    "one": "{count} sito mappato entro {km} km dal contatto",
     "other": "{count} siti mappati entro {km} km dal contatto"
   },
   "{count} messages": {
-    "one": "{count} messaggio",
     "many": "{count} di messaggi",
+    "one": "{count} messaggio",
     "other": "{count} messaggi"
   },
   "{count} military aircraft in frame": {
-    "one": "{count} aereo militare inquadrato",
     "many": "{count} di aerei militari inquadrati",
+    "one": "{count} aereo militare inquadrato",
     "other": "{count} aerei militari inquadrati"
   },
   "{count} more cameras outside this view · pan or zoom out": {
-    "one": "{count} altra telecamera fuori da questa vista · sposta la mappa o riduci lo zoom",
     "many": "Altre {count} di telecamere fuori da questa vista · sposta la mappa o riduci lo zoom",
+    "one": "{count} altra telecamera fuori da questa vista · sposta la mappa o riduci lo zoom",
     "other": "Altre {count} telecamere fuori da questa vista · sposta la mappa o riduci lo zoom"
   },
   "{count} nearby": {
-    "one": "{count} vicina",
     "many": "{count} vicine",
+    "one": "{count} vicina",
     "other": "{count} vicine"
   },
   "{count} nearby · {onScreen} on screen": {
-    "one": "{count} vicina · {onScreen} sullo schermo",
     "many": "{count} vicine · {onScreen} sullo schermo",
+    "one": "{count} vicina · {onScreen} sullo schermo",
     "other": "{count} vicine · {onScreen} sullo schermo"
   },
   "{count} of {total} acquisitions match": {
@@ -4472,13 +4484,13 @@
     "other": "Acquisizioni corrispondenti: {count} su {total}"
   },
   "{count} on the map": {
-    "one": "{count} sulla mappa",
     "many": "{count} sulla mappa",
+    "one": "{count} sulla mappa",
     "other": "{count} sulla mappa"
   },
   "{count} packs": {
-    "one": "{count} pacchetto",
     "many": "{count} di pacchetti",
+    "one": "{count} pacchetto",
     "other": "{count} pacchetti"
   },
   "{count} parts": {
@@ -4487,73 +4499,73 @@
     "other": "Parti: {count}"
   },
   "{count} placemarks": {
-    "one": "{count} segnaposto",
     "many": "{count} di segnaposto",
+    "one": "{count} segnaposto",
     "other": "{count} segnaposto"
   },
   "{count} reports today": {
-    "one": "{count} notizia oggi",
     "many": "{count} di notizie oggi",
+    "one": "{count} notizia oggi",
     "other": "{count} notizie oggi"
   },
   "{count} satellite fire hits": {
-    "one": "{count} rilevamento satellitare di fuoco",
     "many": "{count} di rilevamenti satellitari di fuoco",
+    "one": "{count} rilevamento satellitare di fuoco",
     "other": "{count} rilevamenti satellitari di fuoco"
   },
   "{count} satellites in frame": {
-    "one": "{count} satellite inquadrato",
     "many": "{count} di satelliti inquadrati",
+    "one": "{count} satellite inquadrato",
     "other": "{count} satelliti inquadrati"
   },
   "{count} scenes": {
-    "one": "{count} scena",
     "many": "{count} di scene",
+    "one": "{count} scena",
     "other": "{count} scene"
   },
   "{count} ships in frame": {
-    "one": "{count} nave inquadrata",
     "many": "{count} di navi inquadrate",
+    "one": "{count} nave inquadrata",
     "other": "{count} navi inquadrate"
   },
   "{count} shots": {
-    "one": "{count} scatto",
     "many": "{count} di scatti",
+    "one": "{count} scatto",
     "other": "{count} scatti"
   },
   "{count} sightings in view": {
-    "one": "{count} avvistamento nella vista",
     "many": "{count} di avvistamenti nella vista",
+    "one": "{count} avvistamento nella vista",
     "other": "{count} avvistamenti nella vista"
   },
   "{count} source links ↗ · click card to open the first": {
-    "one": "{count} link alla fonte ↗ · clic sulla scheda per aprirlo",
     "many": "{count} di link alle fonti ↗ · clic sulla scheda per aprire il primo",
+    "one": "{count} link alla fonte ↗ · clic sulla scheda per aprirlo",
     "other": "{count} link alle fonti ↗ · clic sulla scheda per aprire il primo"
   },
   "{count} sources": {
-    "one": "{count} fonte",
     "many": "{count} di fonti",
+    "one": "{count} fonte",
     "other": "{count} fonti"
   },
   "{count} stations reporting": {
-    "one": "{count} stazione attiva",
     "many": "{count} di stazioni attive",
+    "one": "{count} stazione attiva",
     "other": "{count} stazioni attive"
   },
   "{count} things": {
-    "one": "{count} elemento",
     "many": "{count} di elementi",
+    "one": "{count} elemento",
     "other": "{count} elementi"
   },
   "{count} tile layers": {
-    "one": "{count} livello di tile",
     "many": "{count} di livelli di tile",
+    "one": "{count} livello di tile",
     "other": "{count} livelli di tile"
   },
   "{count} wrecks": {
-    "one": "{count} relitto",
     "many": "{count} di relitti",
+    "one": "{count} relitto",
     "other": "{count} relitti"
   },
   "{count} {kind}": "{kind}: {count}",
@@ -4662,59 +4674,59 @@
   },
   "{n} acres": "{n} acri",
   "{n} air quality": {
-    "one": "{n} stazione qualità dell'aria",
     "many": "{n} di stazioni qualità dell'aria",
+    "one": "{n} stazione qualità dell'aria",
     "other": "{n} stazioni qualità dell'aria"
   },
   "{n} aircraft": {
-    "one": "{n} aereo",
     "many": "{n} di aerei",
+    "one": "{n} aereo",
     "other": "{n} aerei"
   },
   "{n} bike share": {
-    "one": "{n} stazione bike sharing",
     "many": "{n} di stazioni bike sharing",
+    "one": "{n} stazione bike sharing",
     "other": "{n} stazioni bike sharing"
   },
   "{n} buses": {
-    "one": "{n} autobus",
     "many": "{n} di autobus",
+    "one": "{n} autobus",
     "other": "{n} autobus"
   },
   "{n} cyclones": {
-    "one": "{n} ciclone",
     "many": "{n} di cicloni",
+    "one": "{n} ciclone",
     "other": "{n} cicloni"
   },
   "{n} d ago": "{n} g fa",
   "{n} dams": {
-    "one": "{n} diga",
     "many": "{n} di dighe",
+    "one": "{n} diga",
     "other": "{n} dighe"
   },
   "{n} datacenters": {
-    "one": "{n} data center",
     "many": "{n} di data center",
+    "one": "{n} data center",
     "other": "{n} data center"
   },
   "{n} earthquakes": {
-    "one": "{n} terremoto",
     "many": "{n} di terremoti",
+    "one": "{n} terremoto",
     "other": "{n} terremoti"
   },
   "{n} fire perimeters": {
-    "one": "{n} perimetro di incendio",
     "many": "{n} di perimetri di incendi",
+    "one": "{n} perimetro di incendio",
     "other": "{n} perimetri di incendi"
   },
   "{n} fires": {
-    "one": "{n} incendio",
     "many": "{n} di incendi",
+    "one": "{n} incendio",
     "other": "{n} incendi"
   },
   "{n} flock cameras": {
-    "one": "{n} telecamera Flock",
     "many": "{n} di telecamere Flock",
+    "one": "{n} telecamera Flock",
     "other": "{n} telecamere Flock"
   },
   "{n} ft": "{n} ft",
@@ -4722,8 +4734,8 @@
   "{n} h ago": "{n} h fa",
   "{n} hPa": "{n} hPa",
   "{n} images in this sequence · Esc clears": {
-    "one": "{n} immagine in questa sequenza · Esc cancella",
     "many": "{n} di immagini in questa sequenza · Esc cancella",
+    "one": "{n} immagine in questa sequenza · Esc cancella",
     "other": "{n} immagini in questa sequenza · Esc cancella"
   },
   "{n} in view": "{n} in vista",
@@ -4734,60 +4746,60 @@
   "{n} kt": "{n} kn",
   "{n} kt winds": "Venti a {n} nodi",
   "{n} launches": {
-    "one": "{n} lancio",
     "many": "{n} di lanci",
+    "one": "{n} lancio",
     "other": "{n} lanci"
   },
   "{n} loaded": "{n} caricati",
   "{n} m": "{n} m",
   "{n} m up": "a {n} m di quota",
   "{n} military aircraft": {
-    "one": "{n} aereo militare",
     "many": "{n} di aerei militari",
+    "one": "{n} aereo militare",
     "other": "{n} aerei militari"
   },
   "{n} military bases": {
-    "one": "{n} base militare",
     "many": "{n} di basi militari",
+    "one": "{n} base militare",
     "other": "{n} basi militari"
   },
   "{n} min": "{n} min",
   "{n} min ago": "{n} min fa",
   "{n} mm": "{n} mm",
   "{n} of {count} stories": {
-    "one": "{n} di {count} storia",
     "many": "{n} di {count} di storie",
+    "one": "{n} di {count} storia",
     "other": "{n} di {count} storie"
   },
   "{n} results": {
-    "one": "{n} risultato",
     "many": "{n} di risultati",
+    "one": "{n} risultato",
     "other": "{n} risultati"
   },
   "{n} s ago": "{n} s fa",
   "{n} satellites": {
-    "one": "{n} satellite",
     "many": "{n} di satelliti",
+    "one": "{n} satellite",
     "other": "{n} satelliti"
   },
   "{n} sequences in view · click a line for its nearest photo": {
-    "one": "{n} sequenza nella vista · clic su una linea per la foto più vicina",
     "many": "{n} di sequenze nella vista · clic su una linea per la foto più vicina",
+    "one": "{n} sequenza nella vista · clic su una linea per la foto più vicina",
     "other": "{n} sequenze nella vista · clic su una linea per la foto più vicina"
   },
   "{n} sequences in view · click a line for its photos": {
-    "one": "{n} sequenza nella vista · clic su una linea per le sue foto",
     "many": "{n} di sequenze nella vista · clic su una linea per le sue foto",
+    "one": "{n} sequenza nella vista · clic su una linea per le sue foto",
     "other": "{n} sequenze nella vista · clic su una linea per le sue foto"
   },
   "{n} ships": {
-    "one": "{n} nave",
     "many": "{n} di navi",
+    "one": "{n} nave",
     "other": "{n} navi"
   },
   "{n} streets in view · click a line for its nearest photo": {
-    "one": "{n} strada nella vista · clic su una linea per la foto più vicina",
     "many": "{n} di strade nella vista · clic su una linea per la foto più vicina",
+    "one": "{n} strada nella vista · clic su una linea per la foto più vicina",
     "other": "{n} strade nella vista · clic su una linea per la foto più vicina"
   },
   "{n}%": "{n}%",
@@ -4800,8 +4812,8 @@
   "{percent}% contained": "contenuto al {percent}%",
   "{percent}% scene cloud": "{percent}% di nuvole nella scena",
   "{personnel} personnel": {
-    "one": "{personnel} addetto",
     "many": "{personnel} di addetti",
+    "one": "{personnel} addetto",
     "other": "{personnel} addetti"
   },
   "{place} (placed by model)": "{place} (posizione stimata dal modello)",
@@ -4816,8 +4828,8 @@
   "{publisher} / OPEN": "{publisher} / APRI",
   "{radius} m around the landmark": "{radius} m intorno al punto di interesse",
   "{range} NM": {
-    "one": "{range} MN",
     "many": "{range} MN",
+    "one": "{range} MN",
     "other": "{range} MN"
   },
   "{rate} msg/s": "{rate} msg/s",
@@ -4892,8 +4904,8 @@
   "{value}°W": "{value}°O",
   "{vesselType} · {feedState} · EYE {height}": "{vesselType} · {feedState} · ALTEZZA OCCHIO {height}",
   "{what} in {place}: {count} items": {
-    "one": "{what} a {place}: {count} elemento",
     "many": "{what} a {place}: {count} di elementi",
+    "one": "{what} a {place}: {count} elemento",
     "other": "{what} a {place}: {count} elementi"
   },
   "{what} link copied": "Link di {what} copiato",

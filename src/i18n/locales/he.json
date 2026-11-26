@@ -89,6 +89,7 @@
   "AI & Controls": "בינה מלאכותית ובקרה",
   "AI AGENT": "סוכן AI",
   "AI Assistant & Dev Forge": "עוזר AI ו-Dev Forge",
+  "AI Forge": "סדנת AI",
   "AI Provider": "ספק AI",
   "AI chat": "צ׳אט AI",
   "AID TO NAVIGATION": "עזר ניווט",
@@ -159,8 +160,8 @@
   "Added": "נוספו",
   "Added {count} files.": {
     "one": "נוסף {count} קובץ.",
-    "two": "נוספו {count} קבצים.",
-    "other": "נוספו {count} קבצים."
+    "other": "נוספו {count} קבצים.",
+    "two": "נוספו {count} קבצים."
   },
   "Adjust HUD": "כוונון ה-HUD",
   "Adjust detection overlay": "כוונון שכבת הזיהוי",
@@ -221,8 +222,8 @@
   "Any severity": "כל רמות החומרה",
   "Appended {count} shots: {scene}": {
     "one": "צורף {count} שוט: {scene}",
-    "two": "צורפו {count} שוטים: {scene}",
-    "other": "צורפו {count} שוטים: {scene}"
+    "other": "צורפו {count} שוטים: {scene}",
+    "two": "צורפו {count} שוטים: {scene}"
   },
   "Apply Brake": "בלום",
   "Apply bright cel-shaded color and illustrated outlines.": "החלת צבעים עזים בסגנון אנימציה וקווי מתאר מאוירים.",
@@ -233,6 +234,7 @@
   "Apply the full cloud brightness key; 100% filter strength": "החל את מפתח בהירות העננים המלא; עוצמת סינון 100%",
   "Apron": "רחבת מטען",
   "Arachnids": "עכבישנים",
+  "Architect": "אדריכל",
   "Area": "שטח",
   "Area around landmark": "האזור סביב ציון הדרך",
   "Area around {place}": "האזור סביב {place}",
@@ -390,6 +392,8 @@
   "Browser audio is suspended; select FM again to resume it": "שמע הדפדפן מושהה; בחר FM שוב כדי לחדש אותו",
   "Browser location is unavailable": "מיקום הדפדפן אינו זמין",
   "Buffering broadcaster stream…": "אוגר את זרימת המשדר…",
+  "Build Tour": "בנה סיור",
+  "Build Tour Stop Here": "צור תחנת סיור כאן",
   "Bus": "אוטובוס",
   "Bus Fleet": "צי אוטובוסים",
   "Business jet": "מטוס מנהלים",
@@ -431,8 +435,8 @@
   "CONFIGURED": "מוגדר",
   "CONFIRM · REMOVE ALL {count}": {
     "one": "אישור · הסרה ({count})",
-    "two": "אישור · הסרת הכול ({count})",
-    "other": "אישור · הסרת הכול ({count})"
+    "other": "אישור · הסרת הכול ({count})",
+    "two": "אישור · הסרת הכול ({count})"
   },
   "CONFIRMED": "מאושר",
   "CONNECT": "חבר",
@@ -592,8 +596,8 @@
   "Clear selected data layers": "ניקוי שכבות נתונים נבחרות",
   "Cleared {count} data layers": {
     "one": "נוקתה {count} שכבת נתונים",
-    "two": "נוקו {count} שכבות נתונים",
-    "other": "נוקו {count} שכבות נתונים"
+    "other": "נוקו {count} שכבות נתונים",
+    "two": "נוקו {count} שכבות נתונים"
   },
   "Clearing all layers": "כיבוי כל השכבות",
   "Clearing selected data layers": "מנקה שכבות נתונים נבחרות",
@@ -615,8 +619,8 @@
   "Click where the pin goes.": "לחץ היכן שהסיכה תוצב.",
   "Click {count} more points.": {
     "one": "{count} נקודה נוספת ללחיצה.",
-    "two": "{count} נקודות נוספות ללחיצה.",
-    "other": "{count} נקודות נוספות ללחיצה."
+    "other": "{count} נקודות נוספות ללחיצה.",
+    "two": "{count} נקודות נוספות ללחיצה."
   },
   "Climate": "אקלים",
   "Climbing {n} ft/min": "מטפס {n} ft/min",
@@ -696,7 +700,10 @@
   "Confirm: remove every added entry from Data Layers": "אישור: הסרת כל הפריטים שנוספו משכבות נתונים",
   "Conflict": "סכסוכים",
   "Conflicts": "עימותים",
+  "Connect": "חיבור",
+  "Connect From Here": "חבר מכאן",
   "Connect Places": "חבר מקומות",
+  "Connect Places & Launch Transport": "חבר מקומות והפעל תחבורה",
   "Connect an RTL-SDR to begin.": "חבר RTL-SDR כדי להתחיל.",
   "Connecting directly to broadcaster…": "מתחבר ישירות למשדר…",
   "Connecting to Gemini": "מתחבר ל-Gemini",
@@ -839,8 +846,8 @@
   "DSP waiting": "DSP ממתין",
   "DSP {count} blocks": {
     "one": "{count} בלוק DSP",
-    "two": "{count} בלוקים DSP",
-    "other": "{count} בלוקים DSP"
+    "other": "{count} בלוקים DSP",
+    "two": "{count} בלוקים DSP"
   },
   "Daily overview": "סקירה יומית",
   "Daily overview for today may still be empty until the pass": "הסקירה היומית של היום עשויה להישאר ריקה עד המעבר",
@@ -912,6 +919,7 @@
   "Disaster": "אסון",
   "Discovered": "התגלה",
   "Dishes": "צלחות",
+  "Dismiss local quick actions": "סגור פעולות מהירות מקומיות",
   "Dismiss voice card": "הסתרת כרטיס הקול",
   "Dispatch": "שיגור",
   "Dispatcher": "משגר",
@@ -999,6 +1007,7 @@
   "Earth Sim": "סימולטור ארץ",
   "Earth Sim Active": "Earth Sim פעיל",
   "Earth Sim Experiences Explorer": "סייר חוויות Earth Sim",
+  "Earth Sim Quick Tools": "כלי Earth Sim מהירים",
   "Earth Sim Tour": "סיור Earth Sim",
   "Earth observation: optical, radar, weather and science": "תצפית כדור הארץ: אופטי, רדאר, מזג אוויר ומדע",
   "Earthquake": "רעידת אדמה",
@@ -1049,7 +1058,6 @@
   "Error": "שגיאה",
   "Error: {message}": "שגיאה: {message}",
   "Esri map unavailable · no swipe": "מפת Esri אינה זמינה · אין החלקה",
-  "Estates": "אחוזות",
   "Estimate is incomplete — a response was still in flight when the session ended, so its usage was never reported.": "ההערכה חסרה — תשובה עוד הייתה בעיצומה כשההפעלה הסתיימה, ולכן השימוש שלה לא דווח מעולם.",
   "Estimated destination direction": "הכיוון המוערך אל היעד",
   "Estimated flight plan": "תוכנית הטיסה המשוערת",
@@ -1062,8 +1070,8 @@
   "Event age": "גיל האירוע",
   "Event age: {days}d · undated kept": {
     "one": "גיל האירוע: {days} יום · ללא תאריך נשמרים",
-    "two": "גיל האירוע: {days} ימים · ללא תאריך נשמרים",
-    "other": "גיל האירוע: {days} ימים · ללא תאריך נשמרים"
+    "other": "גיל האירוע: {days} ימים · ללא תאריך נשמרים",
+    "two": "גיל האירוע: {days} ימים · ללא תאריך נשמרים"
   },
   "Event reconstruction": "שחזור האירוע",
   "Events": "אירועים",
@@ -1127,6 +1135,7 @@
   "Expand map": "הרחבת המפה",
   "Expand panel": "הרחבת הפאנל",
   "Expand {name}": "הרחבת {name}",
+  "Experience Living City Here": "חווה עיר חיה כאן",
   "Experiences": "חוויות",
   "Experiences & Tours": "חוויות וסיורים",
   "Explore & Play": "גלה ושחק",
@@ -1414,7 +1423,7 @@
   "Ground stations / obstacles": "תחנות קרקעיות / מכשולים",
   "Guide": "מדריך",
   "Guide · {topic}": "מדריך · {topic}",
-  "Guided tours, theme parks, resorts, living cities, estates & wilderness trails.": "סיורים מודרכים, פארקים, אתרי נופש, ערים חיות, אחוזות ושבילי טבע.",
+  "Guided tours, theme parks, resorts, living cities, domiciles & wilderness trails.": "סיורים מודרכים, פארקי שעשועים, אתרי נופש, ערים חיות, מעונות ושבילי טבע.",
   "Gyirong border gate": "מעבר הגבול Gyirong",
   "H145": "H145",
   "HARMONY · PORT SIDE": "הרמוני · צד שמאל",
@@ -1628,8 +1637,8 @@
   "LAST YEAR": "השנה האחרונה",
   "LAST {count} DAYS": {
     "one": "היום האחרון ({count})",
-    "two": "{count} הימים האחרונים",
-    "other": "{count} הימים האחרונים"
+    "other": "{count} הימים האחרונים",
+    "two": "{count} הימים האחרונים"
   },
   "LATEST LOCATION-MATCHED REPORTING": "הדיווחים תואמי המיקום האחרונים",
   "LAUNCH SITE": "אתר שיגור",
@@ -1697,8 +1706,8 @@
   "Last year of the shipwreck period": "השנה האחרונה בתקופת הטביעות",
   "Last {hours} h": {
     "one": "השעה האחרונה ({hours})",
-    "two": "{hours} שע׳ אחרונות",
-    "other": "{hours} שע׳ אחרונות"
+    "other": "{hours} שע׳ אחרונות",
+    "two": "{hours} שע׳ אחרונות"
   },
   "Last {n} min": "{n} הדקות האחרונות",
   "Latch Traffic": "היצמד לתנועה",
@@ -1788,6 +1797,8 @@
   "Loading {feeds}": "טוען {feeds}",
   "Local": "מקומי",
   "Local ADS-B": "ADS-B מקומי",
+  "Local Area": "אזור מקומי",
+  "Local Area Actions": "פעולות באזור המקומי",
   "Local FM stopped: internet radio started": "FM מקומי נעצר: רדיו אינטרנט החל",
   "Local Play Mode": "מצב משחק מקומי",
   "Local RTL-SDR receiver": "מקלט RTL-SDR מקומי",
@@ -1898,14 +1909,14 @@
   "Mark {targets} +{more}": "סימון {targets} +{more}",
   "Marked {count} places": {
     "one": "סומן {count} מקום",
-    "two": "סומנו {count} מקומות",
-    "other": "סומנו {count} מקומות"
+    "other": "סומנו {count} מקומות",
+    "two": "סומנו {count} מקומות"
   },
   "Matching details": "פרטים תואמים",
   "Maximum event age: {days}d; undated markers are kept": {
     "one": "גיל אירוע מרבי: {days} יום; סמנים ללא תאריך נשמרים",
-    "two": "גיל אירוע מרבי: {days} ימים; סמנים ללא תאריך נשמרים",
-    "other": "גיל אירוע מרבי: {days} ימים; סמנים ללא תאריך נשמרים"
+    "other": "גיל אירוע מרבי: {days} ימים; סמנים ללא תאריך נשמרים",
+    "two": "גיל אירוע מרבי: {days} ימים; סמנים ללא תאריך נשמרים"
   },
   "Maximum sustained wind: {wind}": "רוח מתמשכת מרבית: {wind}",
   "Maximum sustained wind: {wind} · Pressure: {pressure}": "רוח מתמשכת מרבית: {wind} · לחץ: {pressure}",
@@ -2082,8 +2093,8 @@
   "News sections": "מדורי חדשות",
   "News, last {hours} hours": {
     "one": "חדשות, השעה האחרונה ({hours})",
-    "two": "חדשות, {hours} השעות האחרונות",
-    "other": "חדשות, {hours} השעות האחרונות"
+    "other": "חדשות, {hours} השעות האחרונות",
+    "two": "חדשות, {hours} השעות האחרונות"
   },
   "Next": "הבא",
   "Next ISS pass": "המעבר הבא של ISS",
@@ -2113,8 +2124,8 @@
   "No active tropical cyclone warnings": "אין אזהרות פעילות מפני ציקלונים טרופיים",
   "No bike share here yet · {n} systems available": {
     "one": "אין עדיין שיתוף אופניים כאן · {n} מערכת זמינה",
-    "two": "אין עדיין שיתוף אופניים כאן · {n} מערכות זמינות",
-    "other": "אין עדיין שיתוף אופניים כאן · {n} מערכות זמינות"
+    "other": "אין עדיין שיתוף אופניים כאן · {n} מערכות זמינות",
+    "two": "אין עדיין שיתוף אופניים כאן · {n} מערכות זמינות"
   },
   "No box": "אין תיבה",
   "No cameras available in catalog.": "אין מצלמות זמינות בקטלוג.",
@@ -2124,8 +2135,8 @@
   "No earthquakes, tropical storms or wildfires reported within {radius}.": "לא דווחו רעידות אדמה, סופות טרופיות או שריפות יער בטווח {radius}.",
   "No feed here yet · {n} regions available": {
     "one": "אין עדיין פיד כאן · {n} אזור זמין",
-    "two": "אין עדיין פיד כאן · {n} אזורים זמינים",
-    "other": "אין עדיין פיד כאן · {n} אזורים זמינים"
+    "other": "אין עדיין פיד כאן · {n} אזורים זמינים",
+    "two": "אין עדיין פיד כאן · {n} אזורים זמינים"
   },
   "No file chosen": "לא נבחר קובץ",
   "No flights within {radius} from the layers that are on.": "אין טיסות בטווח {radius} מהשכבות הפעילות.",
@@ -2148,8 +2159,8 @@
   "No military within {radius} of the current view": "אין טיסות צבאיות בטווח {radius} מהתצוגה הנוכחית",
   "No news matches these filters in the last {hours} h": {
     "one": "אין חדשות התואמות למסננים אלה בשעה האחרונה ({hours})",
-    "two": "אין חדשות התואמות למסננים אלה ב־{hours} השעות האחרונות",
-    "other": "אין חדשות התואמות למסננים אלה ב־{hours} השעות האחרונות"
+    "other": "אין חדשות התואמות למסננים אלה ב־{hours} השעות האחרונות",
+    "two": "אין חדשות התואמות למסננים אלה ב־{hours} השעות האחרונות"
   },
   "No other layers are on": "אין שכבות אחרות פעילות",
   "No physical event": "ללא אירוע פיזי",
@@ -2209,8 +2220,8 @@
   "Nothing marked": "לא סומן דבר",
   "Nothing reported near here in the last {hours} h": {
     "one": "לא דווח דבר בסביבה בשעה האחרונה ({hours})",
-    "two": "לא דווח דבר בסביבה ב־{hours} השעות האחרונות",
-    "other": "לא דווח דבר בסביבה ב־{hours} השעות האחרונות"
+    "other": "לא דווח דבר בסביבה ב־{hours} השעות האחרונות",
+    "two": "לא דווח דבר בסביבה ב־{hours} השעות האחרונות"
   },
   "Nothing selected": "לא נבחר דבר",
   "Nothing to import.": "אין מה לייבא.",
@@ -2397,8 +2408,8 @@
   "POWER UP": "שדרוג",
   "POWER UP · {count} KEYS WAITING": {
     "one": "שדרוג · {count} מפתח בהמתנה",
-    "two": "שדרוג · {count} מפתחות בהמתנה",
-    "other": "שדרוג · {count} מפתחות בהמתנה"
+    "other": "שדרוג · {count} מפתחות בהמתנה",
+    "two": "שדרוג · {count} מפתחות בהמתנה"
   },
   "POWERED UP": "שודרג",
   "PRECIP": "משקעים",
@@ -2603,8 +2614,8 @@
   "RIGHT NOW": "ברגע זה",
   "RINGS {spacing} NM": {
     "one": "טבעות {spacing} NM",
-    "two": "טבעות {spacing} NM",
-    "other": "טבעות {spacing} NM"
+    "other": "טבעות {spacing} NM",
+    "two": "טבעות {spacing} NM"
   },
   "ROUTE DATA UNAVAILABLE": "נתוני המסלול אינם זמינים",
   "RTL-SDR access failed; close other SDR apps and check USB permissions": "הגישה ל-RTL-SDR נכשלה; סגור אפליקציות SDR אחרות ובדוק הרשאות USB",
@@ -3121,24 +3132,24 @@
   "Show {category}": "הצגת {category}",
   "Show {count} stories": {
     "one": "הצגת סיפור {count}",
-    "two": "הצגת {count} סיפורים",
-    "other": "הצגת {count} סיפורים"
+    "other": "הצגת {count} סיפורים",
+    "two": "הצגת {count} סיפורים"
   },
   "Show {day}": "הצגת {day}",
   "Show {name}": "הצגת {name}",
   "Show {name} sighting": "הצג תצפית {name}",
   "Show {what} in {place} ({count} items)": {
     "one": "הצגת {what} ב{place} ({count} פריט)",
-    "two": "הצגת {what} ב{place} ({count} פריטים)",
-    "other": "הצגת {what} ב{place} ({count} פריטים)"
+    "other": "הצגת {what} ב{place} ({count} פריטים)",
+    "two": "הצגת {what} ב{place} ({count} פריטים)"
   },
   "Showing cached locations": "מציג מיקומים מהמטמון",
   "Showing cached mapped sites": "מציג אתרים ממופים מהמטמון",
   "Showing the full Starlink shell — click for the core catalog only": "מציג את מעטפת Starlink המלאה — לחץ לקטלוג הליבה בלבד",
   "Showing {shown} of {total}": {
     "one": "מוצג {shown} מתוך {total}",
-    "two": "מוצגים {shown} מתוך {total}",
-    "other": "מוצגים {shown} מתוך {total}"
+    "other": "מוצגים {shown} מתוך {total}",
+    "two": "מוצגים {shown} מתוך {total}"
   },
   "Shown at street level · depth not in the feed": "מוצג בגובה הרחוב · המפלס אינו כלול בפיד",
   "Shrink": "כיווץ",
@@ -3662,8 +3673,8 @@
   "Up to {upper}": "עד {upper}",
   "Updated {count} shots: {scene}": {
     "one": "עודכן {count} שוט: {scene}",
-    "two": "עודכנו {count} שוטים: {scene}",
-    "other": "עודכנו {count} שוטים: {scene}"
+    "other": "עודכנו {count} שוטים: {scene}",
+    "two": "עודכנו {count} שוטים: {scene}"
   },
   "Updated: {scene} / {shot}": "עודכן: {scene} / {shot}",
   "Updates": "עדכונים",
@@ -3862,6 +3873,7 @@
   "Working…": "מבצע…",
   "Workplace": "מקום עבודה",
   "World": "עולמית",
+  "World Architect & Sandbox (B)": "אדריכל עולם וארגז חול (B)",
   "World of Rails": "עולם הרכבות",
   "World of Sails": "עולם השיט",
   "World of Sails & Waterways": "עולם המפרשים ונתיבי המים",
@@ -4009,18 +4021,18 @@
   "feed unavailable": "פיד אינו זמין",
   "feeds {names} invalid": {
     "one": "הפיד {names} אינו תקין",
-    "two": "הפידים {names} בלתי תקינים",
-    "other": "הפידים {names} בלתי תקינים"
+    "other": "הפידים {names} בלתי תקינים",
+    "two": "הפידים {names} בלתי תקינים"
   },
   "feeds {names} stale": {
     "one": "הפיד {names} מיושן",
-    "two": "הפידים {names} מיושנים",
-    "other": "הפידים {names} מיושנים"
+    "other": "הפידים {names} מיושנים",
+    "two": "הפידים {names} מיושנים"
   },
   "feeds {names} unreachable": {
     "one": "הפיד {names} בלתי נגיש",
-    "two": "הפידים {names} בלתי נגישים",
-    "other": "הפידים {names} בלתי נגישים"
+    "other": "הפידים {names} בלתי נגישים",
+    "two": "הפידים {names} בלתי נגישים"
   },
   "feels {n}°": "מורגש {n}°",
   "fire": "שריפה",
@@ -4051,8 +4063,8 @@
   "frame {index}/{total}": "שקופית {index} מתוך {total}",
   "from {count} datasets": {
     "one": "מ-{count} מערך נתונים",
-    "two": "מ-{count} מערכי נתונים",
-    "other": "מ-{count} מערכי נתונים"
+    "other": "מ-{count} מערכי נתונים",
+    "two": "מ-{count} מערכי נתונים"
   },
   "from {origin}": "מ-{origin}",
   "ft": "ft",
@@ -4275,8 +4287,8 @@
   "{accepted} of {raw} records accepted": "התקבלו {accepted} מתוך {raw} רשומות",
   "{acres} ac": {
     "one": "{acres} אקר",
-    "two": "{acres} אקר",
-    "other": "{acres} אקר"
+    "other": "{acres} אקר",
+    "two": "{acres} אקר"
   },
   "{action} {target} radio station": "{action} את תחנת הרדיו {target}",
   "{aircraftClass} · CURRENT": "{aircraftClass} · נוכחי",
@@ -4298,263 +4310,263 @@
   "{count} CAMERAS STANDING BY · NO CAMERA SELECTED · CLICK A CAMERA TO ACTIVATE": "{count} מצלמות במצב המתנה · לא נבחרה מצלמה · לחץ על מצלמה להפעלה",
   "{count} CONTACTS": {
     "one": "{count} מגע",
-    "two": "{count} מגעים",
-    "other": "{count} מגעים"
+    "other": "{count} מגעים",
+    "two": "{count} מגעים"
   },
   "{count} CelesTrak groups unavailable": {
     "one": "{count} קבוצת CelesTrak אינה זמינה",
-    "two": "{count} קבוצות CelesTrak אינן זמינות",
-    "other": "{count} קבוצות CelesTrak אינן זמינות"
+    "other": "{count} קבוצות CelesTrak אינן זמינות",
+    "two": "{count} קבוצות CelesTrak אינן זמינות"
   },
   "{count} DAYS": {
     "one": "{count} יום",
-    "two": "{count} ימים",
-    "other": "{count} ימים"
+    "other": "{count} ימים",
+    "two": "{count} ימים"
   },
   "{count} GEOLOCATED SOURCE-MAP PLACEMENTS": {
     "one": "{count} מיקום מאוכן במפת המקורות",
-    "two": "{count} מיקומים מאוכנים במפת המקורות",
-    "other": "{count} מיקומים מאוכנים במפת המקורות"
+    "other": "{count} מיקומים מאוכנים במפת המקורות",
+    "two": "{count} מיקומים מאוכנים במפת המקורות"
   },
   "{count} HEARD": {
     "one": "{count} נשמע",
-    "two": "{count} נשמעו",
-    "other": "{count} נשמעו"
+    "other": "{count} נשמעו",
+    "two": "{count} נשמעו"
   },
   "{count} INPUTS UNKNOWN": {
     "one": "{count} קלט לא ידוע",
-    "two": "{count} קלטים לא ידועים",
-    "other": "{count} קלטים לא ידועים"
+    "other": "{count} קלטים לא ידועים",
+    "two": "{count} קלטים לא ידועים"
   },
   "{count} INPUTS UNKNOWN · NOT AN ALL-CLEAR": {
     "one": "{count} קלט לא ידוע · לא אות הרגעה",
-    "two": "{count} קלטים לא ידועים · לא אות הרגעה",
-    "other": "{count} קלטים לא ידועים · לא אות הרגעה"
+    "other": "{count} קלטים לא ידועים · לא אות הרגעה",
+    "two": "{count} קלטים לא ידועים · לא אות הרגעה"
   },
   "{count} MSGS": {
     "one": "{count} הודעה",
-    "two": "{count} הודעות",
-    "other": "{count} הודעות"
+    "other": "{count} הודעות",
+    "two": "{count} הודעות"
   },
   "{count} SOURCES": {
     "one": "{count} מקור",
-    "two": "{count} מקורות",
-    "other": "{count} מקורות"
+    "other": "{count} מקורות",
+    "two": "{count} מקורות"
   },
   "{count} active storms": {
     "one": "{count} סערה פעילה",
-    "two": "{count} סערות פעילות",
-    "other": "{count} סערות פעילות"
+    "other": "{count} סערות פעילות",
+    "two": "{count} סערות פעילות"
   },
   "{count} aircraft in frame": {
     "one": "{count} מטוס במסגרת",
-    "two": "{count} מטוסים במסגרת",
-    "other": "{count} מטוסים במסגרת"
+    "other": "{count} מטוסים במסגרת",
+    "two": "{count} מטוסים במסגרת"
   },
   "{count} cameras loaded · click a camera to activate": {
     "one": "{count} מצלמה נטענה · לחץ על מצלמה להפעלה",
-    "two": "{count} מצלמות נטענו · לחץ על מצלמה להפעלה",
-    "other": "{count} מצלמות נטענו · לחץ על מצלמה להפעלה"
+    "other": "{count} מצלמות נטענו · לחץ על מצלמה להפעלה",
+    "two": "{count} מצלמות נטענו · לחץ על מצלמה להפעלה"
   },
   "{count} cameras loaded · enable CCTV to activate": {
     "one": "{count} מצלמה נטענה · הפעל CCTV להפעלה",
-    "two": "{count} מצלמות נטענו · הפעל CCTV להפעלה",
-    "other": "{count} מצלמות נטענו · הפעל CCTV להפעלה"
+    "other": "{count} מצלמות נטענו · הפעל CCTV להפעלה",
+    "two": "{count} מצלמות נטענו · הפעל CCTV להפעלה"
   },
   "{count} contacts in frame": {
     "one": "{count} מגעים במסגרת",
-    "two": "{count} מגעים במסגרת",
-    "other": "{count} מגעים במסגרת"
+    "other": "{count} מגעים במסגרת",
+    "two": "{count} מגעים במסגרת"
   },
   "{count} data layers could not be cleared": {
     "one": "{count} שכבת נתונים לא נוקתה",
-    "two": "{count} שכבות נתונים לא נוקו",
-    "other": "{count} שכבות נתונים לא נוקו"
+    "other": "{count} שכבות נתונים לא נוקו",
+    "two": "{count} שכבות נתונים לא נוקו"
   },
   "{count} data packs": {
     "one": "{count} חבילת נתונים",
-    "two": "{count} חבילות נתונים",
-    "other": "{count} חבילות נתונים"
+    "other": "{count} חבילות נתונים",
+    "two": "{count} חבילות נתונים"
   },
   "{count} datasets": {
     "one": "{count} מערך נתונים",
-    "two": "{count} מערכי נתונים",
-    "other": "{count} מערכי נתונים"
+    "other": "{count} מערכי נתונים",
+    "two": "{count} מערכי נתונים"
   },
   "{count} duplicate mappings merged": {
     "one": "מוזג {count} מיפוי כפול",
-    "two": "מוזגו {count} מיפויים כפולים",
-    "other": "מוזגו {count} מיפויים כפולים"
+    "other": "מוזגו {count} מיפויים כפולים",
+    "two": "מוזגו {count} מיפויים כפולים"
   },
   "{count} events today": {
     "one": "{count} אירוע היום",
-    "two": "{count} אירועים היום",
-    "other": "{count} אירועים היום"
+    "other": "{count} אירועים היום",
+    "two": "{count} אירועים היום"
   },
   "{count} feeds live": {
     "one": "{count} פיד חי",
-    "two": "{count} פידים חיים",
-    "other": "{count} פידים חיים"
+    "other": "{count} פידים חיים",
+    "two": "{count} פידים חיים"
   },
   "{count} files could not be added ({name}: {error})": {
     "one": "{count} קובץ לא התווסף ({name}: {error})",
-    "two": "{count} קבצים לא התווספו ({name}: {error})",
-    "other": "{count} קבצים לא התווספו ({name}: {error})"
+    "other": "{count} קבצים לא התווספו ({name}: {error})",
+    "two": "{count} קבצים לא התווספו ({name}: {error})"
   },
   "{count} files selected": {
     "one": "נבחר {count} קובץ",
-    "two": "נבחרו {count} קבצים",
-    "other": "נבחרו {count} קבצים"
+    "other": "נבחרו {count} קבצים",
+    "two": "נבחרו {count} קבצים"
   },
   "{count} filters on": {
     "one": "מסנן {count} פעיל",
-    "two": "{count} מסננים פעילים",
-    "other": "{count} מסננים פעילים"
+    "other": "{count} מסננים פעילים",
+    "two": "{count} מסננים פעילים"
   },
   "{count} heard": {
     "one": "{count} נשמע",
-    "two": "{count} נשמעו",
-    "other": "{count} נשמעו"
+    "other": "{count} נשמעו",
+    "two": "{count} נשמעו"
   },
   "{count} items in view": {
     "one": "{count} פריט בתצוגה",
-    "two": "{count} פריטים בתצוגה",
-    "other": "{count} פריטים בתצוגה"
+    "other": "{count} פריטים בתצוגה",
+    "two": "{count} פריטים בתצוגה"
   },
   "{count} layers": {
     "one": "{count} שכבה",
-    "two": "{count} שכבות",
-    "other": "{count} שכבות"
+    "other": "{count} שכבות",
+    "two": "{count} שכבות"
   },
   "{count} map objects": {
     "one": "{count} אובייקט מפה",
-    "two": "{count} אובייקטי מפה",
-    "other": "{count} אובייקטי מפה"
+    "other": "{count} אובייקטי מפה",
+    "two": "{count} אובייקטי מפה"
   },
   "{count} mapped sites in view": {
     "one": "{count} אתר ממופה בתצוגה",
-    "two": "{count} אתרים ממופים בתצוגה",
-    "other": "{count} אתרים ממופים בתצוגה"
+    "other": "{count} אתרים ממופים בתצוגה",
+    "two": "{count} אתרים ממופים בתצוגה"
   },
   "{count} mapped sites within {km} km of the contact": {
     "one": "{count} אתר ממופה בטווח {km} ק\"מ מהמגע",
-    "two": "{count} אתרים ממופים בטווח {km} ק\"מ מהמגע",
-    "other": "{count} אתרים ממופים בטווח {km} ק\"מ מהמגע"
+    "other": "{count} אתרים ממופים בטווח {km} ק\"מ מהמגע",
+    "two": "{count} אתרים ממופים בטווח {km} ק\"מ מהמגע"
   },
   "{count} messages": {
     "one": "{count} הודעה",
-    "two": "{count} הודעות",
-    "other": "{count} הודעות"
+    "other": "{count} הודעות",
+    "two": "{count} הודעות"
   },
   "{count} military aircraft in frame": {
     "one": "{count} מטוס צבאי במסגרת",
-    "two": "{count} מטוסים צבאיים במסגרת",
-    "other": "{count} מטוסים צבאיים במסגרת"
+    "other": "{count} מטוסים צבאיים במסגרת",
+    "two": "{count} מטוסים צבאיים במסגרת"
   },
   "{count} more cameras outside this view · pan or zoom out": {
     "one": "{count} מצלמה נוספת מחוץ לתצוגה הזאת · הזז או זום החוצה",
-    "two": "{count} מצלמות נוספות מחוץ לתצוגה הזאת · הזז או זום החוצה",
-    "other": "{count} מצלמות נוספות מחוץ לתצוגה הזאת · הזז או זום החוצה"
+    "other": "{count} מצלמות נוספות מחוץ לתצוגה הזאת · הזז או זום החוצה",
+    "two": "{count} מצלמות נוספות מחוץ לתצוגה הזאת · הזז או זום החוצה"
   },
   "{count} nearby": {
     "one": "{count} בקרבה",
-    "two": "{count} בקרבה",
-    "other": "{count} בקרבה"
+    "other": "{count} בקרבה",
+    "two": "{count} בקרבה"
   },
   "{count} nearby · {onScreen} on screen": {
     "one": "{count} בקרבה · {onScreen} על המסך",
-    "two": "{count} בקרבה · {onScreen} על המסך",
-    "other": "{count} בקרבה · {onScreen} על המסך"
+    "other": "{count} בקרבה · {onScreen} על המסך",
+    "two": "{count} בקרבה · {onScreen} על המסך"
   },
   "{count} of {total} acquisitions match": {
     "one": "{count} מתוך {total} אחזורים תואמים",
-    "two": "{count} מתוך {total} אחזורים תואמים",
-    "other": "{count} מתוך {total} אחזורים תואמים"
+    "other": "{count} מתוך {total} אחזורים תואמים",
+    "two": "{count} מתוך {total} אחזורים תואמים"
   },
   "{count} on the map": {
     "one": "{count} על המפה",
-    "two": "{count} על המפה",
-    "other": "{count} על המפה"
+    "other": "{count} על המפה",
+    "two": "{count} על המפה"
   },
   "{count} packs": {
     "one": "{count} חבילה",
-    "two": "{count} חבילות",
-    "other": "{count} חבילות"
+    "other": "{count} חבילות",
+    "two": "{count} חבילות"
   },
   "{count} parts": {
     "one": "{count} חלק",
-    "two": "{count} חלקים",
-    "other": "{count} חלקים"
+    "other": "{count} חלקים",
+    "two": "{count} חלקים"
   },
   "{count} placemarks": {
     "one": "{count} סימן מקום",
-    "two": "{count} סימני מקום",
-    "other": "{count} סימני מקום"
+    "other": "{count} סימני מקום",
+    "two": "{count} סימני מקום"
   },
   "{count} reports today": {
     "one": "{count} דיווח היום",
-    "two": "{count} דיווחים היום",
-    "other": "{count} דיווחים היום"
+    "other": "{count} דיווחים היום",
+    "two": "{count} דיווחים היום"
   },
   "{count} satellite fire hits": {
     "one": "{count} זיהוי שריפה לווייני",
-    "two": "{count} זיהויי שריפה לווייניים",
-    "other": "{count} זיהויי שריפה לווייניים"
+    "other": "{count} זיהויי שריפה לווייניים",
+    "two": "{count} זיהויי שריפה לווייניים"
   },
   "{count} satellites in frame": {
     "one": "{count} לוויינים במסגרת",
-    "two": "{count} לוויינים במסגרת",
-    "other": "{count} לוויינים במסגרת"
+    "other": "{count} לוויינים במסגרת",
+    "two": "{count} לוויינים במסגרת"
   },
   "{count} scenes": {
     "one": "{count} סצנה",
-    "two": "{count} סצנות",
-    "other": "{count} סצנות"
+    "other": "{count} סצנות",
+    "two": "{count} סצנות"
   },
   "{count} ships in frame": {
     "one": "{count} אוניות במסגרת",
-    "two": "{count} אוניות במסגרת",
-    "other": "{count} אוניות במסגרת"
+    "other": "{count} אוניות במסגרת",
+    "two": "{count} אוניות במסגרת"
   },
   "{count} shots": {
     "one": "{count} שוט",
-    "two": "{count} שוטים",
-    "other": "{count} שוטים"
+    "other": "{count} שוטים",
+    "two": "{count} שוטים"
   },
   "{count} sightings in view": {
     "one": "{count} תצפית בתצוגה",
-    "two": "{count} תצפיות בתצוגה",
-    "other": "{count} תצפיות בתצוגה"
+    "other": "{count} תצפיות בתצוגה",
+    "two": "{count} תצפיות בתצוגה"
   },
   "{count} source links ↗ · click card to open the first": {
     "one": "{count} קישור מקור ↗ · לחץ על הכרטיס לפתיחת הראשון",
-    "two": "{count} קישורי מקור ↗ · לחץ על הכרטיס לפתיחת הראשון",
-    "other": "{count} קישורי מקור ↗ · לחץ על הכרטיס לפתיחת הראשון"
+    "other": "{count} קישורי מקור ↗ · לחץ על הכרטיס לפתיחת הראשון",
+    "two": "{count} קישורי מקור ↗ · לחץ על הכרטיס לפתיחת הראשון"
   },
   "{count} sources": {
     "one": "{count} מקור",
-    "two": "{count} מקורות",
-    "other": "{count} מקורות"
+    "other": "{count} מקורות",
+    "two": "{count} מקורות"
   },
   "{count} stations reporting": {
     "one": "{count} תחנה מדווחת",
-    "two": "{count} תחנות מדווחות",
-    "other": "{count} תחנות מדווחות"
+    "other": "{count} תחנות מדווחות",
+    "two": "{count} תחנות מדווחות"
   },
   "{count} things": {
     "one": "{count} פריט",
-    "two": "{count} פריטים",
-    "other": "{count} פריטים"
+    "other": "{count} פריטים",
+    "two": "{count} פריטים"
   },
   "{count} tile layers": {
     "one": "{count} שכבת אריחים",
-    "two": "{count} שכבות אריחים",
-    "other": "{count} שכבות אריחים"
+    "other": "{count} שכבות אריחים",
+    "two": "{count} שכבות אריחים"
   },
   "{count} wrecks": {
     "one": "{count} ספינה טרופה",
-    "two": "{count} ספינות טרופות",
-    "other": "{count} ספינות טרופות"
+    "other": "{count} ספינות טרופות",
+    "two": "{count} ספינות טרופות"
   },
   "{count} {kind}": "{count} {kind}",
   "{count}D AGO": "לפני {count} ימ׳",
@@ -4578,8 +4590,8 @@
   "{domain} · {age}": "{domain} · {age}",
   "{drawn} of {total} parts drawn": {
     "one": "שורטט {drawn} מתוך {total} חלק",
-    "two": "חלקים ששורטטו: {drawn} מתוך {total}",
-    "other": "חלקים ששורטטו: {drawn} מתוך {total}"
+    "other": "חלקים ששורטטו: {drawn} מתוך {total}",
+    "two": "חלקים ששורטטו: {drawn} מתוך {total}"
   },
   "{duration}s + {hold}s": "{duration} שנ׳ + {hold} שנ׳",
   "{envVar} saved — paste to replace": "נשמר {envVar} — הדבק כדי להחליף",
@@ -4657,65 +4669,65 @@
   "{n} MW": "{n} MW",
   "{n} acquisitions searched": {
     "one": "נסרקו {n} אחזורים",
-    "two": "נסרקו {n} אחזורים",
-    "other": "נסרקו {n} אחזורים"
+    "other": "נסרקו {n} אחזורים",
+    "two": "נסרקו {n} אחזורים"
   },
   "{n} acres": "{n} אקר",
   "{n} air quality": {
     "one": "{n} תחנת איכות אוויר",
-    "two": "{n} תחנות איכות אוויר",
-    "other": "{n} תחנות איכות אוויר"
+    "other": "{n} תחנות איכות אוויר",
+    "two": "{n} תחנות איכות אוויר"
   },
   "{n} aircraft": {
     "one": "{n} מטוס",
-    "two": "{n} מטוסים",
-    "other": "{n} מטוסים"
+    "other": "{n} מטוסים",
+    "two": "{n} מטוסים"
   },
   "{n} bike share": {
     "one": "{n} אופניים שיתופיים",
-    "two": "{n} אופניים שיתופיים",
-    "other": "{n} אופניים שיתופיים"
+    "other": "{n} אופניים שיתופיים",
+    "two": "{n} אופניים שיתופיים"
   },
   "{n} buses": {
     "one": "{n} אוטובוסים",
-    "two": "{n} אוטובוסים",
-    "other": "{n} אוטובוסים"
+    "other": "{n} אוטובוסים",
+    "two": "{n} אוטובוסים"
   },
   "{n} cyclones": {
     "one": "{n} ציקלונים",
-    "two": "{n} ציקלונים",
-    "other": "{n} ציקלונים"
+    "other": "{n} ציקלונים",
+    "two": "{n} ציקלונים"
   },
   "{n} d ago": "לפני {n} ימים",
   "{n} dams": {
     "one": "{n} סכרים",
-    "two": "{n} סכרים",
-    "other": "{n} סכרים"
+    "other": "{n} סכרים",
+    "two": "{n} סכרים"
   },
   "{n} datacenters": {
     "one": "{n} מרכזי נתונים",
-    "two": "{n} מרכזי נתונים",
-    "other": "{n} מרכזי נתונים"
+    "other": "{n} מרכזי נתונים",
+    "two": "{n} מרכזי נתונים"
   },
   "{n} earthquakes": {
     "one": "{n} רעידות אדמה",
-    "two": "{n} רעידות אדמה",
-    "other": "{n} רעידות אדמה"
+    "other": "{n} רעידות אדמה",
+    "two": "{n} רעידות אדמה"
   },
   "{n} fire perimeters": {
     "one": "{n} היקף שריפה",
-    "two": "{n} היקפי שריפות",
-    "other": "{n} היקפי שריפות"
+    "other": "{n} היקפי שריפות",
+    "two": "{n} היקפי שריפות"
   },
   "{n} fires": {
     "one": "{n} שריפה",
-    "two": "{n} שריפות",
-    "other": "{n} שריפות"
+    "other": "{n} שריפות",
+    "two": "{n} שריפות"
   },
   "{n} flock cameras": {
     "one": "{n} מצלמות Flock",
-    "two": "{n} מצלמות Flock",
-    "other": "{n} מצלמות Flock"
+    "other": "{n} מצלמות Flock",
+    "two": "{n} מצלמות Flock"
   },
   "{n} ft": "{n} ft",
   "{n} ft/min": "{n} ft/min",
@@ -4723,8 +4735,8 @@
   "{n} hPa": "{n} hPa",
   "{n} images in this sequence · Esc clears": {
     "one": "{n} תמונה ברצף הזה · Esc מנקה",
-    "two": "{n} תמונות ברצף הזה · Esc מנקה",
-    "other": "{n} תמונות ברצף הזה · Esc מנקה"
+    "other": "{n} תמונות ברצף הזה · Esc מנקה",
+    "two": "{n} תמונות ברצף הזה · Esc מנקה"
   },
   "{n} in view": "{n} בתצוגה",
   "{n} km": "{n} km",
@@ -4735,60 +4747,60 @@
   "{n} kt winds": "רוחות של {n} קשר",
   "{n} launches": {
     "one": "{n} שיגורים",
-    "two": "{n} שיגורים",
-    "other": "{n} שיגורים"
+    "other": "{n} שיגורים",
+    "two": "{n} שיגורים"
   },
   "{n} loaded": "{n} נטענו",
   "{n} m": "{n} m",
   "{n} m up": "בגובה {n} מ׳",
   "{n} military aircraft": {
     "one": "{n} מטוס צבאי",
-    "two": "{n} מטוסים צבאיים",
-    "other": "{n} מטוסים צבאיים"
+    "other": "{n} מטוסים צבאיים",
+    "two": "{n} מטוסים צבאיים"
   },
   "{n} military bases": {
     "one": "{n} בסיסים צבאיים",
-    "two": "{n} בסיסים צבאיים",
-    "other": "{n} בסיסים צבאיים"
+    "other": "{n} בסיסים צבאיים",
+    "two": "{n} בסיסים צבאיים"
   },
   "{n} min": "{n} דק׳",
   "{n} min ago": "לפני {n} דק׳",
   "{n} mm": "{n} מ״מ",
   "{n} of {count} stories": {
     "one": "{n} מתוך סיפור {count}",
-    "two": "{n} מתוך {count} סיפורים",
-    "other": "{n} מתוך {count} סיפורים"
+    "other": "{n} מתוך {count} סיפורים",
+    "two": "{n} מתוך {count} סיפורים"
   },
   "{n} results": {
     "one": "{n} תוצאות",
-    "two": "{n} תוצאות",
-    "other": "{n} תוצאות"
+    "other": "{n} תוצאות",
+    "two": "{n} תוצאות"
   },
   "{n} s ago": "לפני {n} שנ׳",
   "{n} satellites": {
     "one": "{n} לוויינים",
-    "two": "{n} לוויינים",
-    "other": "{n} לוויינים"
+    "other": "{n} לוויינים",
+    "two": "{n} לוויינים"
   },
   "{n} sequences in view · click a line for its nearest photo": {
     "one": "{n} רצף בתצוגה · לחץ על קו לתמונתו הקרובה",
-    "two": "{n} רצפים בתצוגה · לחץ על קו לתמונתו הקרובה",
-    "other": "{n} רצפים בתצוגה · לחץ על קו לתמונתו הקרובה"
+    "other": "{n} רצפים בתצוגה · לחץ על קו לתמונתו הקרובה",
+    "two": "{n} רצפים בתצוגה · לחץ על קו לתמונתו הקרובה"
   },
   "{n} sequences in view · click a line for its photos": {
     "one": "{n} רצף בתצוגה · לחץ על קו לתמונותיו",
-    "two": "{n} רצפים בתצוגה · לחץ על קו לתמונותיו",
-    "other": "{n} רצפים בתצוגה · לחץ על קו לתמונותיו"
+    "other": "{n} רצפים בתצוגה · לחץ על קו לתמונותיו",
+    "two": "{n} רצפים בתצוגה · לחץ על קו לתמונותיו"
   },
   "{n} ships": {
     "one": "{n} אוניות",
-    "two": "{n} אוניות",
-    "other": "{n} אוניות"
+    "other": "{n} אוניות",
+    "two": "{n} אוניות"
   },
   "{n} streets in view · click a line for its nearest photo": {
     "one": "{n} רחוב בתצוגה · לחץ על קו לתמונתו הקרובה",
-    "two": "{n} רחובות בתצוגה · לחץ על קו לתמונתו הקרובה",
-    "other": "{n} רחובות בתצוגה · לחץ על קו לתמונתו הקרובה"
+    "other": "{n} רחובות בתצוגה · לחץ על קו לתמונתו הקרובה",
+    "two": "{n} רחובות בתצוגה · לחץ על קו לתמונתו הקרובה"
   },
   "{n}%": "{n}%",
   "{n}% contained": "{n}% בשליטה",
@@ -4801,8 +4813,8 @@
   "{percent}% scene cloud": "{percent}% עננות בסצנה",
   "{personnel} personnel": {
     "one": "{personnel} אנשי צוות",
-    "two": "{personnel} אנשי צוות",
-    "other": "{personnel} אנשי צוות"
+    "other": "{personnel} אנשי צוות",
+    "two": "{personnel} אנשי צוות"
   },
   "{place} (placed by model)": "{place} (מיקום לפי המודל)",
   "{place} has no position to look for imagery at": "ל-{place} אין מיקום לחיפוש צילומים",
@@ -4817,8 +4829,8 @@
   "{radius} m around the landmark": "{radius} מ׳ סביב ציון הדרך",
   "{range} NM": {
     "one": "{range} NM",
-    "two": "{range} NM",
-    "other": "{range} NM"
+    "other": "{range} NM",
+    "two": "{range} NM"
   },
   "{rate} msg/s": "{rate} הודעות/שנ׳",
   "{reason} (filters on: {filters})": "{reason} (מסננים פעילים: {filters})",
@@ -4893,8 +4905,8 @@
   "{vesselType} · {feedState} · EYE {height}": "{vesselType} · {feedState} · גובה עין {height}",
   "{what} in {place}: {count} items": {
     "one": "{what} ב{place}: ‏{count} פריט",
-    "two": "{what} ב{place}: ‏{count} פריטים",
-    "other": "{what} ב{place}: ‏{count} פריטים"
+    "other": "{what} ב{place}: ‏{count} פריטים",
+    "two": "{what} ב{place}: ‏{count} פריטים"
   },
   "{what} link copied": "הקישור ל{what} הועתק",
   "{window} · SINCE {date}": "{window} · מאז {date}",

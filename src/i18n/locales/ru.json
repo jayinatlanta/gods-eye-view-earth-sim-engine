@@ -89,6 +89,7 @@
   "AI & Controls": "ИИ и управление",
   "AI AGENT": "ИИ-АГЕНТ",
   "AI Assistant & Dev Forge": "ИИ-ассистент и Dev Forge",
+  "AI Forge": "ИИ-кузница",
   "AI Provider": "Провайдер ИИ",
   "AI chat": "Чат с ИИ",
   "AID TO NAVIGATION": "СРЕДСТВО НАВИГАЦИИ",
@@ -158,9 +159,9 @@
   "Add {name} to Data Layers": "Добавить {name} в «Слои данных»",
   "Added": "Добавлено",
   "Added {count} files.": {
-    "one": "Добавлен {count} файл.",
     "few": "Добавлено {count} файла.",
     "many": "Добавлено {count} файлов.",
+    "one": "Добавлен {count} файл.",
     "other": "Добавлено {count} файла."
   },
   "Adjust HUD": "Настроить HUD",
@@ -221,9 +222,9 @@
   "Anime": "Аниме",
   "Any severity": "Любая тяжесть",
   "Appended {count} shots: {scene}": {
-    "one": "Добавлен {count} кадр: {scene}",
     "few": "Добавлено {count} кадра: {scene}",
     "many": "Добавлено {count} кадров: {scene}",
+    "one": "Добавлен {count} кадр: {scene}",
     "other": "Добавлено {count} кадра: {scene}"
   },
   "Apply Brake": "Тормоз",
@@ -235,6 +236,7 @@
   "Apply the full cloud brightness key; 100% filter strength": "Применить полный фильтр яркости облаков; сила фильтра 100%",
   "Apron": "Перрон",
   "Arachnids": "Паукообразные",
+  "Architect": "Архитектор",
   "Area": "Зона",
   "Area around landmark": "Окрестности ориентира",
   "Area around {place}": "Окрестности: {place}",
@@ -392,6 +394,8 @@
   "Browser audio is suspended; select FM again to resume it": "Звук в браузере приостановлен; выберите FM ещё раз, чтобы возобновить его",
   "Browser location is unavailable": "Местоположение браузера недоступно",
   "Buffering broadcaster stream…": "Буферизация потока вещателя…",
+  "Build Tour": "Создать тур",
+  "Build Tour Stop Here": "Создать остановку тура здесь",
   "Bus": "Автобус",
   "Bus Fleet": "Автобусы",
   "Business jet": "Бизнес-джет",
@@ -432,9 +436,9 @@
   "CONDITIONS UNKNOWN": "УСЛОВИЯ НЕИЗВЕСТНЫ",
   "CONFIGURED": "НАСТРОЕН",
   "CONFIRM · REMOVE ALL {count}": {
-    "one": "ПОДТВЕРДИТЬ · УБРАТЬ {count}",
     "few": "ПОДТВЕРДИТЬ · УБРАТЬ ВСЕ {count}",
     "many": "ПОДТВЕРДИТЬ · УБРАТЬ ВСЕ {count}",
+    "one": "ПОДТВЕРДИТЬ · УБРАТЬ {count}",
     "other": "ПОДТВЕРДИТЬ · УБРАТЬ ВСЕ {count}"
   },
   "CONFIRMED": "ПОДТВЕРЖДЕНО",
@@ -594,9 +598,9 @@
   "Clear search": "Очистить поиск",
   "Clear selected data layers": "Очистить выбранные слои данных",
   "Cleared {count} data layers": {
-    "one": "Очищен {count} слой данных",
     "few": "Очищено {count} слоя данных",
     "many": "Очищено {count} слоёв данных",
+    "one": "Очищен {count} слой данных",
     "other": "Очищено {count} слоя данных"
   },
   "Clearing all layers": "Отключение всех слоёв",
@@ -618,9 +622,9 @@
   "Click to preview": "Нажмите для предпросмотра",
   "Click where the pin goes.": "Щёлкните там, где нужно поставить метку.",
   "Click {count} more points.": {
-    "one": "Отметьте ещё {count} точку.",
     "few": "Отметьте ещё {count} точки.",
     "many": "Отметьте ещё {count} точек.",
+    "one": "Отметьте ещё {count} точку.",
     "other": "Отметьте ещё {count} точки."
   },
   "Climate": "Климат",
@@ -701,7 +705,10 @@
   "Confirm: remove every added entry from Data Layers": "Подтвердите: убрать все добавленные записи из «Слоёв данных»",
   "Conflict": "Конфликты",
   "Conflicts": "Конфликты",
+  "Connect": "Соединить",
+  "Connect From Here": "Соединить отсюда",
   "Connect Places": "Связать места",
+  "Connect Places & Launch Transport": "Соединить места и запустить транспорт",
   "Connect an RTL-SDR to begin.": "Подключите RTL-SDR, чтобы начать.",
   "Connecting directly to broadcaster…": "Прямое подключение к вещателю…",
   "Connecting to Gemini": "Подключение к Gemini",
@@ -843,9 +850,9 @@
   "DRIZZLE": "МОРОСЬ",
   "DSP waiting": "DSP ожидает",
   "DSP {count} blocks": {
-    "one": "DSP {count} блок",
     "few": "DSP {count} блока",
     "many": "DSP {count} блоков",
+    "one": "DSP {count} блок",
     "other": "DSP {count} блока"
   },
   "Daily overview": "Ежедневный обзор",
@@ -918,6 +925,7 @@
   "Disaster": "Бедствие",
   "Discovered": "Обнаружен",
   "Dishes": "Антенны",
+  "Dismiss local quick actions": "Скрыть местные быстрые действия",
   "Dismiss voice card": "Закрыть карточку голоса",
   "Dispatch": "Диспетчер",
   "Dispatcher": "Диспетчер",
@@ -1005,6 +1013,7 @@
   "Earth Sim": "Симулятор Земли",
   "Earth Sim Active": "Earth Sim активен",
   "Earth Sim Experiences Explorer": "Обозреватель впечатлений Earth Sim",
+  "Earth Sim Quick Tools": "Быстрые инструменты Earth Sim",
   "Earth Sim Tour": "Тур Earth Sim",
   "Earth observation: optical, radar, weather and science": "Наблюдение Земли: оптика, радар, погода и наука",
   "Earthquake": "Землетрясение",
@@ -1055,7 +1064,6 @@
   "Error": "Ошибка",
   "Error: {message}": "Ошибка: {message}",
   "Esri map unavailable · no swipe": "Карта Esri недоступна · без сравнения",
-  "Estates": "Владения",
   "Estimate is incomplete — a response was still in flight when the session ended, so its usage was never reported.": "Оценка неполная: к моменту завершения сессии один из ответов ещё не был получен, поэтому его использование не учтено.",
   "Estimated destination direction": "Расчётное направление на пункт назначения",
   "Estimated flight plan": "Расчётный план полёта",
@@ -1067,9 +1075,9 @@
   "European heritage wrecks come from EMODnet Human Activities; notable wrecks worldwide come from Wikidata. Colour shows when the ship sank; marker size grows with deaths. Click a marker for its card.": "Исторические затонувшие суда Европы — из EMODnet Human Activities, известные кораблекрушения по всему миру — из Wikidata. Цвет показывает, когда судно затонуло; маркер растёт с числом погибших. Нажмите на маркер, чтобы открыть карточку.",
   "Event age": "Возраст события",
   "Event age: {days}d · undated kept": {
-    "one": "Возраст события: {days} дн. · метки без даты остаются",
     "few": "Возраст события: {days} дн. · метки без даты остаются",
     "many": "Возраст события: {days} дн. · метки без даты остаются",
+    "one": "Возраст события: {days} дн. · метки без даты остаются",
     "other": "Возраст события: {days} дн. · метки без даты остаются"
   },
   "Event reconstruction": "Реконструкция события",
@@ -1134,6 +1142,7 @@
   "Expand map": "Развернуть карту",
   "Expand panel": "Развернуть панель",
   "Expand {name}": "Развернуть {name}",
+  "Experience Living City Here": "Открыть живой город здесь",
   "Experiences": "Впечатления",
   "Experiences & Tours": "Впечатления и туры",
   "Explore & Play": "Обзор и игра",
@@ -1421,7 +1430,7 @@
   "Ground stations / obstacles": "Наземные станции / препятствия",
   "Guide": "Инструкция",
   "Guide · {topic}": "Руководство · {topic}",
-  "Guided tours, theme parks, resorts, living cities, estates & wilderness trails.": "Экскурсии, парки, курорты, живые города, владения и лесные тропы.",
+  "Guided tours, theme parks, resorts, living cities, domiciles & wilderness trails.": "Экскурсии, тематические парки, курорты, живые города, резиденции и дикие тропы.",
   "Gyirong border gate": "Погранпереход Gyirong",
   "H145": "H145",
   "HARMONY · PORT SIDE": "HARMONY · ЛЕВЫЙ БОРТ",
@@ -1634,9 +1643,9 @@
   "LAST MONTH": "ЗА МЕСЯЦ",
   "LAST YEAR": "ЗА ГОД",
   "LAST {count} DAYS": {
-    "one": "ЗА {count} ДЕНЬ",
     "few": "ЗА {count} ДНЯ",
     "many": "ЗА {count} ДНЕЙ",
+    "one": "ЗА {count} ДЕНЬ",
     "other": "ЗА {count} ДНЯ"
   },
   "LATEST LOCATION-MATCHED REPORTING": "СВЕЖИЕ НОВОСТИ ПО МЕСТУ",
@@ -1704,9 +1713,9 @@
   "Last reported": "Последний отчёт",
   "Last year of the shipwreck period": "Последний год периода кораблекрушений",
   "Last {hours} h": {
-    "one": "За {hours} ч",
     "few": "За {hours} ч",
     "many": "За {hours} ч",
+    "one": "За {hours} ч",
     "other": "За {hours} ч"
   },
   "Last {n} min": "За {n} мин",
@@ -1797,6 +1806,8 @@
   "Loading {feeds}": "Загрузка: {feeds}",
   "Local": "Местные",
   "Local ADS-B": "Локальный ADS-B",
+  "Local Area": "Местная область",
+  "Local Area Actions": "Действия в этой области",
   "Local FM stopped: internet radio started": "Локальный FM остановлен: запущено интернет-радио",
   "Local Play Mode": "Местный досуг",
   "Local RTL-SDR receiver": "Локальный приёмник RTL-SDR",
@@ -1906,16 +1917,16 @@
   "Mark {targets}": "Отметить {targets}",
   "Mark {targets} +{more}": "Отметить {targets} +{more}",
   "Marked {count} places": {
-    "one": "Отмечено {count} место",
     "few": "Отмечено {count} места",
     "many": "Отмечено {count} мест",
+    "one": "Отмечено {count} место",
     "other": "Отмечено {count} места"
   },
   "Matching details": "Совпадающие сведения",
   "Maximum event age: {days}d; undated markers are kept": {
-    "one": "Максимальный возраст события: {days} дн.; метки без даты остаются",
     "few": "Максимальный возраст события: {days} дн.; метки без даты остаются",
     "many": "Максимальный возраст события: {days} дн.; метки без даты остаются",
+    "one": "Максимальный возраст события: {days} дн.; метки без даты остаются",
     "other": "Максимальный возраст события: {days} дн.; метки без даты остаются"
   },
   "Maximum sustained wind: {wind}": "Макс. устойчивый ветер: {wind}",
@@ -2092,9 +2103,9 @@
   "News resumes tomorrow, or with a paid plan": "Новости вернутся завтра или с платным тарифом",
   "News sections": "Разделы новостей",
   "News, last {hours} hours": {
-    "one": "Новости за последний {hours} час",
     "few": "Новости за последние {hours} часа",
     "many": "Новости за последние {hours} часов",
+    "one": "Новости за последний {hours} час",
     "other": "Новости за последние {hours} часа"
   },
   "Next": "Далее",
@@ -2124,9 +2135,9 @@
   "No RTL-SDR device selected": "Устройство RTL-SDR не выбрано",
   "No active tropical cyclone warnings": "Нет действующих предупреждений о тропических циклонах",
   "No bike share here yet · {n} systems available": {
-    "one": "Здесь пока нет проката велосипедов · доступна {n} система",
     "few": "Здесь пока нет проката велосипедов · доступны {n} системы",
     "many": "Здесь пока нет проката велосипедов · доступно {n} систем",
+    "one": "Здесь пока нет проката велосипедов · доступна {n} система",
     "other": "Здесь пока нет проката велосипедов · доступно {n} системы"
   },
   "No box": "Нет области",
@@ -2136,9 +2147,9 @@
   "No days to show for this box": "Для этой области нечего показать",
   "No earthquakes, tropical storms or wildfires reported within {radius}.": "В радиусе {radius} нет сообщений о землетрясениях, тропических штормах или лесных пожарах.",
   "No feed here yet · {n} regions available": {
-    "one": "Здесь пока нет потока данных · доступен {n} регион",
     "few": "Здесь пока нет потока данных · доступно {n} региона",
     "many": "Здесь пока нет потока данных · доступно {n} регионов",
+    "one": "Здесь пока нет потока данных · доступен {n} регион",
     "other": "Здесь пока нет потока данных · доступно {n} региона"
   },
   "No file chosen": "Файлы не выбраны",
@@ -2161,9 +2172,9 @@
   "No matching options.": "Совпадений не найдено.",
   "No military within {radius} of the current view": "В радиусе {radius} от текущего вида нет военных рейсов",
   "No news matches these filters in the last {hours} h": {
-    "one": "За последний {hours} ч нет новостей по этим фильтрам",
     "few": "За последние {hours} ч нет новостей по этим фильтрам",
     "many": "За последние {hours} ч нет новостей по этим фильтрам",
+    "one": "За последний {hours} ч нет новостей по этим фильтрам",
     "other": "За последние {hours} ч нет новостей по этим фильтрам"
   },
   "No other layers are on": "Других включённых слоёв нет",
@@ -2223,9 +2234,9 @@
   "Nothing is loaded or changed until you apply this file.": "Ничего не загружается и не меняется, пока вы не примените этот файл.",
   "Nothing marked": "Ничего не отмечено",
   "Nothing reported near here in the last {hours} h": {
-    "one": "За последний {hours} ч поблизости ничего не сообщалось",
     "few": "За последние {hours} ч поблизости ничего не сообщалось",
     "many": "За последние {hours} ч поблизости ничего не сообщалось",
+    "one": "За последний {hours} ч поблизости ничего не сообщалось",
     "other": "За последние {hours} ч поблизости ничего не сообщалось"
   },
   "Nothing selected": "Ничего не выбрано",
@@ -2412,9 +2423,9 @@
   "POSITIONED": "С КООРД.",
   "POWER UP": "ЗАПУСК",
   "POWER UP · {count} KEYS WAITING": {
-    "one": "ЗАПУСК · {count} КЛЮЧ В ОЖИДАНИИ",
     "few": "ЗАПУСК · {count} КЛЮЧА В ОЖИДАНИИ",
     "many": "ЗАПУСК · {count} КЛЮЧЕЙ В ОЖИДАНИИ",
+    "one": "ЗАПУСК · {count} КЛЮЧ В ОЖИДАНИИ",
     "other": "ЗАПУСК · {count} КЛЮЧА В ОЖИДАНИИ"
   },
   "POWERED UP": "ЗАПУЩЕНО",
@@ -2619,9 +2630,9 @@
   "RIGHT": "ВПРАВО",
   "RIGHT NOW": "ПРЯМО СЕЙЧАС",
   "RINGS {spacing} NM": {
-    "one": "КОЛЬЦА {spacing} МОР. МИЛЯ",
     "few": "КОЛЬЦА {spacing} МОР. МИЛИ",
     "many": "КОЛЬЦА {spacing} МОР. МИЛЬ",
+    "one": "КОЛЬЦА {spacing} МОР. МИЛЯ",
     "other": "КОЛЬЦА {spacing} МОР. МИЛИ"
   },
   "ROUTE DATA UNAVAILABLE": "ДАННЫЕ МАРШРУТА НЕДОСТУПНЫ",
@@ -3138,27 +3149,27 @@
   "Show your own GeoJSON, KML, KMZ or GPX files on the globe (or drop them onto it). File bytes stay on this device; overlays can appear in map screenshots shared with voice.": "Показать на глобусе свои файлы GeoJSON, KML, KMZ или GPX (или перетащите их на глобус). Содержимое файлов остаётся на этом устройстве; наложения могут попасть в снимки карты, которые передаются голосовому ассистенту.",
   "Show {category}": "Показать: {category}",
   "Show {count} stories": {
-    "one": "Показать {count} историю",
     "few": "Показать {count} истории",
     "many": "Показать {count} историй",
+    "one": "Показать {count} историю",
     "other": "Показать {count} истории"
   },
   "Show {day}": "Показать {day}",
   "Show {name}": "Показать: {name}",
   "Show {name} sighting": "Показать наблюдение: {name}",
   "Show {what} in {place} ({count} items)": {
-    "one": "Показать {what} · {place} ({count} объект)",
     "few": "Показать {what} · {place} ({count} объекта)",
     "many": "Показать {what} · {place} ({count} объектов)",
+    "one": "Показать {what} · {place} ({count} объект)",
     "other": "Показать {what} · {place} ({count} объекта)"
   },
   "Showing cached locations": "Показаны места из кэша",
   "Showing cached mapped sites": "Показаны объекты из кэша",
   "Showing the full Starlink shell — click for the core catalog only": "Показана полная оболочка Starlink — нажмите, чтобы оставить только основной каталог",
   "Showing {shown} of {total}": {
-    "one": "Показано {shown} из {total}",
     "few": "Показано {shown} из {total}",
     "many": "Показано {shown} из {total}",
+    "one": "Показано {shown} из {total}",
     "other": "Показано {shown} из {total}"
   },
   "Shown at street level · depth not in the feed": "Показан на уровне улицы · глубины в потоке нет",
@@ -3682,9 +3693,9 @@
   "Up": "Вверх",
   "Up to {upper}": "До {upper}",
   "Updated {count} shots: {scene}": {
-    "one": "Обновлён {count} кадр: {scene}",
     "few": "Обновлено {count} кадра: {scene}",
     "many": "Обновлено {count} кадров: {scene}",
+    "one": "Обновлён {count} кадр: {scene}",
     "other": "Обновлено {count} кадра: {scene}"
   },
   "Updated: {scene} / {shot}": "Обновлено: {scene} / {shot}",
@@ -3884,6 +3895,7 @@
   "Working…": "Работаем…",
   "Workplace": "Офис",
   "World": "Музыка мира",
+  "World Architect & Sandbox (B)": "Архитектор мира и песочница (B)",
   "World of Rails": "Мир железных дорог",
   "World of Sails": "Мир парусов",
   "World of Sails & Waterways": "Мир парусов и водных путей",
@@ -4030,21 +4042,21 @@
   "feed status|unreachable": "недоступен",
   "feed unavailable": "поток данных недоступен",
   "feeds {names} invalid": {
-    "one": "поток {names} некорректен",
     "few": "потоки {names} некорректны",
     "many": "потоки {names} некорректны",
+    "one": "поток {names} некорректен",
     "other": "потоки {names} некорректны"
   },
   "feeds {names} stale": {
-    "one": "поток {names} устарел",
     "few": "потоки {names} устарели",
     "many": "потоки {names} устарели",
+    "one": "поток {names} устарел",
     "other": "потоки {names} устарели"
   },
   "feeds {names} unreachable": {
-    "one": "поток {names} недоступен",
     "few": "потоки {names} недоступны",
     "many": "потоки {names} недоступны",
+    "one": "поток {names} недоступен",
     "other": "потоки {names} недоступны"
   },
   "feels {n}°": "ощущается как {n}°",
@@ -4075,9 +4087,9 @@
   "fork direction|straight": "прямо",
   "frame {index}/{total}": "кадр {index}/{total}",
   "from {count} datasets": {
-    "one": "из {count} набора данных",
     "few": "из {count} наборов данных",
     "many": "из {count} наборов данных",
+    "one": "из {count} набора данных",
     "other": "из {count} набора данных"
   },
   "from {origin}": "откуда: {origin}",
@@ -4300,9 +4312,9 @@
   "zoom in to see Panoramax coverage": "приблизьтесь, чтобы увидеть покрытие Panoramax",
   "{accepted} of {raw} records accepted": "принято записей: {accepted} из {raw}",
   "{acres} ac": {
-    "one": "{acres} акр",
     "few": "{acres} акра",
     "many": "{acres} акров",
+    "one": "{acres} акр",
     "other": "{acres} акра"
   },
   "{action} {target} radio station": "{action} {target} радиостанцию",
@@ -4324,105 +4336,105 @@
   "{count} / 30D": "{count} / 30 ДН.",
   "{count} CAMERAS STANDING BY · NO CAMERA SELECTED · CLICK A CAMERA TO ACTIVATE": "КАМЕР В ГОТОВНОСТИ: {count} · КАМЕРА НЕ ВЫБРАНА · НАЖМИТЕ КАМЕРУ ДЛЯ АКТИВАЦИИ",
   "{count} CONTACTS": {
-    "one": "{count} КОНТАКТ",
     "few": "{count} КОНТАКТА",
     "many": "{count} КОНТАКТОВ",
+    "one": "{count} КОНТАКТ",
     "other": "{count} КОНТАКТА"
   },
   "{count} CelesTrak groups unavailable": {
-    "one": "{count} группа CelesTrak недоступна",
     "few": "{count} группы CelesTrak недоступны",
     "many": "{count} групп CelesTrak недоступны",
+    "one": "{count} группа CelesTrak недоступна",
     "other": "{count} группы CelesTrak недоступны"
   },
   "{count} DAYS": {
-    "one": "{count} ДЕНЬ",
     "few": "{count} ДНЯ",
     "many": "{count} ДНЕЙ",
+    "one": "{count} ДЕНЬ",
     "other": "{count} ДНЯ"
   },
   "{count} GEOLOCATED SOURCE-MAP PLACEMENTS": {
-    "one": "{count} ГЕОПРИВЯЗАННАЯ МЕТКА НА КАРТЕ ИСТОЧНИКОВ",
     "few": "{count} ГЕОПРИВЯЗАННЫЕ МЕТКИ НА КАРТЕ ИСТОЧНИКОВ",
     "many": "{count} ГЕОПРИВЯЗАННЫХ МЕТОК НА КАРТЕ ИСТОЧНИКОВ",
+    "one": "{count} ГЕОПРИВЯЗАННАЯ МЕТКА НА КАРТЕ ИСТОЧНИКОВ",
     "other": "{count} ГЕОПРИВЯЗАННОЙ МЕТКИ НА КАРТЕ ИСТОЧНИКОВ"
   },
   "{count} HEARD": {
-    "one": "СЛЫШНО: {count}",
     "few": "СЛЫШНО: {count}",
     "many": "СЛЫШНО: {count}",
+    "one": "СЛЫШНО: {count}",
     "other": "СЛЫШНО: {count}"
   },
   "{count} INPUTS UNKNOWN": {
-    "one": "{count} ИСТОЧНИК ДАННЫХ НЕИЗВЕСТЕН",
     "few": "{count} ИСТОЧНИКА ДАННЫХ НЕИЗВЕСТНЫ",
     "many": "{count} ИСТОЧНИКОВ ДАННЫХ НЕИЗВЕСТНО",
+    "one": "{count} ИСТОЧНИК ДАННЫХ НЕИЗВЕСТЕН",
     "other": "{count} ИСТОЧНИКА ДАННЫХ НЕИЗВЕСТНО"
   },
   "{count} INPUTS UNKNOWN · NOT AN ALL-CLEAR": {
-    "one": "{count} ИСТОЧНИК ДАННЫХ НЕИЗВЕСТЕН · ОТСУТСТВИЕ УГРОЗ НЕ ПОДТВЕРЖДЕНО",
     "few": "{count} ИСТОЧНИКА ДАННЫХ НЕИЗВЕСТНЫ · ОТСУТСТВИЕ УГРОЗ НЕ ПОДТВЕРЖДЕНО",
     "many": "{count} ИСТОЧНИКОВ ДАННЫХ НЕИЗВЕСТНО · ОТСУТСТВИЕ УГРОЗ НЕ ПОДТВЕРЖДЕНО",
+    "one": "{count} ИСТОЧНИК ДАННЫХ НЕИЗВЕСТЕН · ОТСУТСТВИЕ УГРОЗ НЕ ПОДТВЕРЖДЕНО",
     "other": "{count} ИСТОЧНИКА ДАННЫХ НЕИЗВЕСТНО · ОТСУТСТВИЕ УГРОЗ НЕ ПОДТВЕРЖДЕНО"
   },
   "{count} MSGS": {
-    "one": "{count} СООБЩЕНИЕ",
     "few": "{count} СООБЩЕНИЯ",
     "many": "{count} СООБЩЕНИЙ",
+    "one": "{count} СООБЩЕНИЕ",
     "other": "{count} СООБЩЕНИЯ"
   },
   "{count} SOURCES": {
-    "one": "{count} ИСТОЧНИК",
     "few": "{count} ИСТОЧНИКА",
     "many": "{count} ИСТОЧНИКОВ",
+    "one": "{count} ИСТОЧНИК",
     "other": "{count} ИСТОЧНИКА"
   },
   "{count} active storms": {
-    "one": "{count} активный шторм",
     "few": "{count} активных шторма",
     "many": "{count} активных штормов",
+    "one": "{count} активный шторм",
     "other": "{count} активного шторма"
   },
   "{count} aircraft in frame": {
-    "one": "{count} самолёт в кадре",
     "few": "{count} самолёта в кадре",
     "many": "{count} самолётов в кадре",
+    "one": "{count} самолёт в кадре",
     "other": "{count} самолёта в кадре"
   },
   "{count} cameras loaded · click a camera to activate": {
-    "one": "Загружена {count} камера · щёлкните по камере, чтобы активировать",
     "few": "Загружено {count} камеры · щёлкните по камере, чтобы активировать",
     "many": "Загружено {count} камер · щёлкните по камере, чтобы активировать",
+    "one": "Загружена {count} камера · щёлкните по камере, чтобы активировать",
     "other": "Загружено {count} камеры · щёлкните по камере, чтобы активировать"
   },
   "{count} cameras loaded · enable CCTV to activate": {
-    "one": "Загружена {count} камера · включите CCTV, чтобы активировать",
     "few": "Загружено {count} камеры · включите CCTV, чтобы активировать",
     "many": "Загружено {count} камер · включите CCTV, чтобы активировать",
+    "one": "Загружена {count} камера · включите CCTV, чтобы активировать",
     "other": "Загружено {count} камеры · включите CCTV, чтобы активировать"
   },
   "{count} contacts in frame": {
-    "one": "{count} контакт в кадре",
     "few": "{count} контакта в кадре",
     "many": "{count} контактов в кадре",
+    "one": "{count} контакт в кадре",
     "other": "{count} контакта в кадре"
   },
   "{count} data layers could not be cleared": {
-    "one": "Не удалось очистить {count} слой данных",
     "few": "Не удалось очистить {count} слоя данных",
     "many": "Не удалось очистить {count} слоёв данных",
+    "one": "Не удалось очистить {count} слой данных",
     "other": "Не удалось очистить {count} слоя данных"
   },
   "{count} data packs": {
-    "one": "{count} пакет данных",
     "few": "{count} пакета данных",
     "many": "{count} пакетов данных",
+    "one": "{count} пакет данных",
     "other": "{count} пакета данных"
   },
   "{count} datasets": {
-    "one": "{count} набор данных",
     "few": "{count} набора данных",
     "many": "{count} наборов данных",
+    "one": "{count} набор данных",
     "other": "{count} набора данных"
   },
   "{count} duplicate mappings merged": {
@@ -4432,99 +4444,99 @@
     "other": "Объединено дублей: {count}"
   },
   "{count} events today": {
-    "one": "{count} событие сегодня",
     "few": "{count} события сегодня",
     "many": "{count} событий сегодня",
+    "one": "{count} событие сегодня",
     "other": "{count} события сегодня"
   },
   "{count} feeds live": {
-    "one": "{count} поток онлайн",
     "few": "{count} потока онлайн",
     "many": "{count} потоков онлайн",
+    "one": "{count} поток онлайн",
     "other": "{count} потока онлайн"
   },
   "{count} files could not be added ({name}: {error})": {
-    "one": "Не удалось добавить {count} файл ({name}: {error})",
     "few": "Не удалось добавить {count} файла ({name}: {error})",
     "many": "Не удалось добавить {count} файлов ({name}: {error})",
+    "one": "Не удалось добавить {count} файл ({name}: {error})",
     "other": "Не удалось добавить {count} файла ({name}: {error})"
   },
   "{count} files selected": {
-    "one": "Выбрано файлов: {count}",
     "few": "Выбрано файлов: {count}",
     "many": "Выбрано файлов: {count}",
+    "one": "Выбрано файлов: {count}",
     "other": "Выбрано файлов: {count}"
   },
   "{count} filters on": {
-    "one": "{count} фильтр включён",
     "few": "{count} фильтра включено",
     "many": "{count} фильтров включено",
+    "one": "{count} фильтр включён",
     "other": "{count} фильтра включено"
   },
   "{count} heard": {
-    "one": "слышно бортов: {count}",
     "few": "слышно бортов: {count}",
     "many": "слышно бортов: {count}",
+    "one": "слышно бортов: {count}",
     "other": "слышно бортов: {count}"
   },
   "{count} items in view": {
-    "one": "{count} объект в поле зрения",
     "few": "{count} объекта в поле зрения",
     "many": "{count} объектов в поле зрения",
+    "one": "{count} объект в поле зрения",
     "other": "{count} объекта в поле зрения"
   },
   "{count} layers": {
-    "one": "{count} слоя",
     "few": "{count} слоёв",
     "many": "{count} слоёв",
+    "one": "{count} слоя",
     "other": "{count} слоя"
   },
   "{count} map objects": {
-    "one": "{count} объект на карте",
     "few": "{count} объекта на карте",
     "many": "{count} объектов на карте",
+    "one": "{count} объект на карте",
     "other": "{count} объекта на карте"
   },
   "{count} mapped sites in view": {
-    "one": "{count} объект в кадре",
     "few": "{count} объекта в кадре",
     "many": "{count} объектов в кадре",
+    "one": "{count} объект в кадре",
     "other": "{count} объекта в кадре"
   },
   "{count} mapped sites within {km} km of the contact": {
-    "one": "{count} объект в радиусе {km} км от контакта",
     "few": "{count} объекта в радиусе {km} км от контакта",
     "many": "{count} объектов в радиусе {km} км от контакта",
+    "one": "{count} объект в радиусе {km} км от контакта",
     "other": "{count} объекта в радиусе {km} км от контакта"
   },
   "{count} messages": {
-    "one": "{count} сообщение",
     "few": "{count} сообщения",
     "many": "{count} сообщений",
+    "one": "{count} сообщение",
     "other": "{count} сообщения"
   },
   "{count} military aircraft in frame": {
-    "one": "{count} военный самолёт в кадре",
     "few": "{count} военных самолёта в кадре",
     "many": "{count} военных самолётов в кадре",
+    "one": "{count} военный самолёт в кадре",
     "other": "{count} военного самолёта в кадре"
   },
   "{count} more cameras outside this view · pan or zoom out": {
-    "one": "Ещё {count} камера вне поля зрения · сдвиньте или отдалите карту",
     "few": "Ещё {count} камеры вне поля зрения · сдвиньте или отдалите карту",
     "many": "Ещё {count} камер вне поля зрения · сдвиньте или отдалите карту",
+    "one": "Ещё {count} камера вне поля зрения · сдвиньте или отдалите карту",
     "other": "Ещё {count} камеры вне поля зрения · сдвиньте или отдалите карту"
   },
   "{count} nearby": {
-    "one": "рядом: {count}",
     "few": "рядом: {count}",
     "many": "рядом: {count}",
+    "one": "рядом: {count}",
     "other": "рядом: {count}"
   },
   "{count} nearby · {onScreen} on screen": {
-    "one": "{count} рядом · {onScreen} видно",
     "few": "{count} рядом · {onScreen} видно",
     "many": "{count} рядом · {onScreen} видно",
+    "one": "{count} рядом · {onScreen} видно",
     "other": "{count} рядом · {onScreen} видно"
   },
   "{count} of {total} acquisitions match": {
@@ -4534,15 +4546,15 @@
     "other": "Подходящие снимки: {count} из {total}"
   },
   "{count} on the map": {
-    "one": "{count} на карте",
     "few": "{count} на карте",
     "many": "{count} на карте",
+    "one": "{count} на карте",
     "other": "{count} на карте"
   },
   "{count} packs": {
-    "one": "{count} пакет",
     "few": "{count} пакета",
     "many": "{count} пакетов",
+    "one": "{count} пакет",
     "other": "{count} пакета"
   },
   "{count} parts": {
@@ -4552,87 +4564,87 @@
     "other": "Частей: {count}"
   },
   "{count} placemarks": {
-    "one": "{count} метка",
     "few": "{count} метки",
     "many": "{count} меток",
+    "one": "{count} метка",
     "other": "{count} метки"
   },
   "{count} reports today": {
-    "one": "{count} сообщение сегодня",
     "few": "{count} сообщения сегодня",
     "many": "{count} сообщений сегодня",
+    "one": "{count} сообщение сегодня",
     "other": "{count} сообщения сегодня"
   },
   "{count} satellite fire hits": {
-    "one": "{count} спутниковое обнаружение пожара",
     "few": "{count} спутниковых обнаружения пожара",
     "many": "{count} спутниковых обнаружений пожара",
+    "one": "{count} спутниковое обнаружение пожара",
     "other": "{count} спутникового обнаружения пожара"
   },
   "{count} satellites in frame": {
-    "one": "{count} спутник в кадре",
     "few": "{count} спутника в кадре",
     "many": "{count} спутников в кадре",
+    "one": "{count} спутник в кадре",
     "other": "{count} спутника в кадре"
   },
   "{count} scenes": {
-    "one": "{count} сцена",
     "few": "{count} сцены",
     "many": "{count} сцен",
+    "one": "{count} сцена",
     "other": "{count} сцены"
   },
   "{count} ships in frame": {
-    "one": "{count} судно в кадре",
     "few": "{count} судна в кадре",
     "many": "{count} судов в кадре",
+    "one": "{count} судно в кадре",
     "other": "{count} судна в кадре"
   },
   "{count} shots": {
-    "one": "{count} кадр",
     "few": "{count} кадра",
     "many": "{count} кадров",
+    "one": "{count} кадр",
     "other": "{count} кадра"
   },
   "{count} sightings in view": {
-    "one": "{count} наблюдение в кадре",
     "few": "{count} наблюдения в кадре",
     "many": "{count} наблюдений в кадре",
+    "one": "{count} наблюдение в кадре",
     "other": "{count} наблюдения в кадре"
   },
   "{count} source links ↗ · click card to open the first": {
-    "one": "{count} ссылка на источник ↗ · нажмите на карточку, чтобы открыть",
     "few": "{count} ссылки на источники ↗ · нажмите на карточку, чтобы открыть первую",
     "many": "{count} ссылок на источники ↗ · нажмите на карточку, чтобы открыть первую",
+    "one": "{count} ссылка на источник ↗ · нажмите на карточку, чтобы открыть",
     "other": "{count} ссылки на источники ↗ · нажмите на карточку, чтобы открыть первую"
   },
   "{count} sources": {
-    "one": "{count} источник",
     "few": "{count} источника",
     "many": "{count} источников",
+    "one": "{count} источник",
     "other": "{count} источника"
   },
   "{count} stations reporting": {
-    "one": "{count} станция передаёт данные",
     "few": "{count} станции передают данные",
     "many": "{count} станций передают данные",
+    "one": "{count} станция передаёт данные",
     "other": "{count} станции передают данные"
   },
   "{count} things": {
-    "one": "{count} объект",
     "few": "{count} объекта",
     "many": "{count} объектов",
+    "one": "{count} объект",
     "other": "{count} объекта"
   },
   "{count} tile layers": {
-    "one": "{count} слой тайлов",
     "few": "{count} слоя тайлов",
     "many": "{count} слоёв тайлов",
+    "one": "{count} слой тайлов",
     "other": "{count} слоя тайлов"
   },
   "{count} wrecks": {
-    "one": "{count} затонувшее судно",
     "few": "{count} затонувших судна",
     "many": "{count} затонувших судов",
+    "one": "{count} затонувшее судно",
     "other": "{count} затонувшего судна"
   },
   "{count} {kind}": "{kind}: {count}",
@@ -4743,70 +4755,70 @@
   },
   "{n} acres": "{n} акров",
   "{n} air quality": {
-    "one": "{n} станция качества воздуха",
     "few": "{n} станции качества воздуха",
     "many": "{n} станций качества воздуха",
+    "one": "{n} станция качества воздуха",
     "other": "{n} станции качества воздуха"
   },
   "{n} aircraft": {
-    "one": "{n} самолёт",
     "few": "{n} самолёта",
     "many": "{n} самолётов",
+    "one": "{n} самолёт",
     "other": "{n} самолёта"
   },
   "{n} bike share": {
-    "one": "{n} станция проката велосипедов",
     "few": "{n} станции проката велосипедов",
     "many": "{n} станций проката велосипедов",
+    "one": "{n} станция проката велосипедов",
     "other": "{n} станции проката велосипедов"
   },
   "{n} buses": {
-    "one": "{n} автобус",
     "few": "{n} автобуса",
     "many": "{n} автобусов",
+    "one": "{n} автобус",
     "other": "{n} автобуса"
   },
   "{n} cyclones": {
-    "one": "{n} циклон",
     "few": "{n} циклона",
     "many": "{n} циклонов",
+    "one": "{n} циклон",
     "other": "{n} циклона"
   },
   "{n} d ago": "{n} дн. назад",
   "{n} dams": {
-    "one": "{n} плотина",
     "few": "{n} плотины",
     "many": "{n} плотин",
+    "one": "{n} плотина",
     "other": "{n} плотины"
   },
   "{n} datacenters": {
-    "one": "{n} дата-центр",
     "few": "{n} дата-центра",
     "many": "{n} дата-центров",
+    "one": "{n} дата-центр",
     "other": "{n} дата-центра"
   },
   "{n} earthquakes": {
-    "one": "{n} землетрясение",
     "few": "{n} землетрясения",
     "many": "{n} землетрясений",
+    "one": "{n} землетрясение",
     "other": "{n} землетрясения"
   },
   "{n} fire perimeters": {
-    "one": "{n} контур пожара",
     "few": "{n} контура пожаров",
     "many": "{n} контуров пожаров",
+    "one": "{n} контур пожара",
     "other": "{n} контура пожаров"
   },
   "{n} fires": {
-    "one": "{n} пожар",
     "few": "{n} пожара",
     "many": "{n} пожаров",
+    "one": "{n} пожар",
     "other": "{n} пожара"
   },
   "{n} flock cameras": {
-    "one": "{n} камера ALPR",
     "few": "{n} камеры ALPR",
     "many": "{n} камер ALPR",
+    "one": "{n} камера ALPR",
     "other": "{n} камеры ALPR"
   },
   "{n} ft": "{n} фт",
@@ -4814,9 +4826,9 @@
   "{n} h ago": "{n} ч назад",
   "{n} hPa": "{n} гПа",
   "{n} images in this sequence · Esc clears": {
-    "one": "{n} снимок в последовательности · Esc — сбросить",
     "few": "{n} снимка в последовательности · Esc — сбросить",
     "many": "{n} снимков в последовательности · Esc — сбросить",
+    "one": "{n} снимок в последовательности · Esc — сбросить",
     "other": "{n} снимка в последовательности · Esc — сбросить"
   },
   "{n} in view": "{n} в поле зрения",
@@ -4827,70 +4839,70 @@
   "{n} kt": "{n} уз",
   "{n} kt winds": "Ветер {n} уз.",
   "{n} launches": {
-    "one": "{n} пуск",
     "few": "{n} пуска",
     "many": "{n} пусков",
+    "one": "{n} пуск",
     "other": "{n} пуска"
   },
   "{n} loaded": "загружено {n}",
   "{n} m": "{n} м",
   "{n} m up": "на высоте {n} м",
   "{n} military aircraft": {
-    "one": "{n} военный самолёт",
     "few": "{n} военных самолёта",
     "many": "{n} военных самолётов",
+    "one": "{n} военный самолёт",
     "other": "{n} военного самолёта"
   },
   "{n} military bases": {
-    "one": "{n} военная база",
     "few": "{n} военные базы",
     "many": "{n} военных баз",
+    "one": "{n} военная база",
     "other": "{n} военной базы"
   },
   "{n} min": "{n} мин",
   "{n} min ago": "{n} мин назад",
   "{n} mm": "{n} мм",
   "{n} of {count} stories": {
-    "one": "{n} из {count} истории",
     "few": "{n} из {count} историй",
     "many": "{n} из {count} историй",
+    "one": "{n} из {count} истории",
     "other": "{n} из {count} истории"
   },
   "{n} results": {
-    "one": "{n} результат",
     "few": "{n} результата",
     "many": "{n} результатов",
+    "one": "{n} результат",
     "other": "{n} результата"
   },
   "{n} s ago": "{n} с назад",
   "{n} satellites": {
-    "one": "{n} спутник",
     "few": "{n} спутника",
     "many": "{n} спутников",
+    "one": "{n} спутник",
     "other": "{n} спутника"
   },
   "{n} sequences in view · click a line for its nearest photo": {
-    "one": "{n} съёмка в кадре · щёлкните линию, чтобы открыть ближайшую фотографию",
     "few": "{n} съёмки в кадре · щёлкните линию, чтобы открыть ближайшую фотографию",
     "many": "{n} съёмок в кадре · щёлкните линию, чтобы открыть ближайшую фотографию",
+    "one": "{n} съёмка в кадре · щёлкните линию, чтобы открыть ближайшую фотографию",
     "other": "{n} съёмки в кадре · щёлкните линию, чтобы открыть ближайшую фотографию"
   },
   "{n} sequences in view · click a line for its photos": {
-    "one": "{n} последовательность в кадре · щёлкните по линии, чтобы открыть снимки",
     "few": "{n} последовательности в кадре · щёлкните по линии, чтобы открыть снимки",
     "many": "{n} последовательностей в кадре · щёлкните по линии, чтобы открыть снимки",
+    "one": "{n} последовательность в кадре · щёлкните по линии, чтобы открыть снимки",
     "other": "{n} последовательности в кадре · щёлкните по линии, чтобы открыть снимки"
   },
   "{n} ships": {
-    "one": "{n} судно",
     "few": "{n} судна",
     "many": "{n} судов",
+    "one": "{n} судно",
     "other": "{n} судна"
   },
   "{n} streets in view · click a line for its nearest photo": {
-    "one": "{n} улица в кадре · щёлкните линию, чтобы открыть ближайшую фотографию",
     "few": "{n} улицы в кадре · щёлкните линию, чтобы открыть ближайшую фотографию",
     "many": "{n} улиц в кадре · щёлкните линию, чтобы открыть ближайшую фотографию",
+    "one": "{n} улица в кадре · щёлкните линию, чтобы открыть ближайшую фотографию",
     "other": "{n} улицы в кадре · щёлкните линию, чтобы открыть ближайшую фотографию"
   },
   "{n}%": "{n}%",
@@ -4903,9 +4915,9 @@
   "{percent}% contained": "локализован на {percent}%",
   "{percent}% scene cloud": "облачность сцены {percent}%",
   "{personnel} personnel": {
-    "one": "{personnel} человек",
     "few": "{personnel} человека",
     "many": "{personnel} человек",
+    "one": "{personnel} человек",
     "other": "{personnel} человека"
   },
   "{place} (placed by model)": "{place} (место определила модель)",
@@ -4920,9 +4932,9 @@
   "{publisher} / OPEN": "{publisher} / ОТКРЫТЬ",
   "{radius} m around the landmark": "{radius} м вокруг ориентира",
   "{range} NM": {
-    "one": "{range} МОР. МИЛЯ",
     "few": "{range} МОР. МИЛИ",
     "many": "{range} МОР. МИЛЬ",
+    "one": "{range} МОР. МИЛЯ",
     "other": "{range} МОР. МИЛИ"
   },
   "{rate} msg/s": "{rate} сообщ./с",
@@ -4997,9 +5009,9 @@
   "{value}°W": "{value}° з. д.",
   "{vesselType} · {feedState} · EYE {height}": "{vesselType} · {feedState} · ВЫСОТА ГЛАЗА {height}",
   "{what} in {place}: {count} items": {
-    "one": "{what} · {place}: {count} объект",
     "few": "{what} · {place}: {count} объекта",
     "many": "{what} · {place}: {count} объектов",
+    "one": "{what} · {place}: {count} объект",
     "other": "{what} · {place}: {count} объекта"
   },
   "{what} link copied": "Ссылка скопирована: {what}",

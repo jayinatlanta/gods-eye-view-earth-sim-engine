@@ -89,6 +89,7 @@
   "AI & Controls": "الذكاء الاصطناعي والتحكم",
   "AI AGENT": "وكيل ذكاء اصطناعي",
   "AI Assistant & Dev Forge": "مساعد الذكاء الاصطناعي ومسبك التطوير",
+  "AI Forge": "ورشة الذكاء الاصطناعي",
   "AI Provider": "مزوّد الذكاء الاصطناعي",
   "AI chat": "دردشة الذكاء الاصطناعي",
   "AID TO NAVIGATION": "مساعدة ملاحية",
@@ -158,12 +159,12 @@
   "Add {name} to Data Layers": "إضافة {name} إلى طبقات البيانات",
   "Added": "المُضافة",
   "Added {count} files.": {
-    "zero": "أُضيف {count} ملف.",
-    "one": "أُضيف ملف واحد ({count}).",
-    "two": "أُضيف ملفان ({count}).",
     "few": "أُضيفت {count} ملفات.",
     "many": "أُضيف {count} ملفًا.",
-    "other": "أُضيف {count} ملف."
+    "one": "أُضيف ملف واحد ({count}).",
+    "other": "أُضيف {count} ملف.",
+    "two": "أُضيف ملفان ({count}).",
+    "zero": "أُضيف {count} ملف."
   },
   "Adjust HUD": "ضبط HUD",
   "Adjust detection overlay": "ضبط طبقة الكشف",
@@ -223,12 +224,12 @@
   "Anime": "أنمي",
   "Any severity": "أي درجة خطورة",
   "Appended {count} shots: {scene}": {
-    "zero": "أُضيفت {count} لقطة: {scene}",
-    "one": "أُضيفت لقطة واحدة ({count}): {scene}",
-    "two": "أُضيفت لقطتان ({count}): {scene}",
     "few": "أُضيفت {count} لقطات: {scene}",
     "many": "أُضيفت {count} لقطة: {scene}",
-    "other": "أُضيفت {count} لقطة: {scene}"
+    "one": "أُضيفت لقطة واحدة ({count}): {scene}",
+    "other": "أُضيفت {count} لقطة: {scene}",
+    "two": "أُضيفت لقطتان ({count}): {scene}",
+    "zero": "أُضيفت {count} لقطة: {scene}"
   },
   "Apply Brake": "تطبيق المكابح",
   "Apply bright cel-shaded color and illustrated outlines.": "تطبيق ألوان زاهية بتظليل كرتوني وخطوط خارجية مرسومة.",
@@ -239,6 +240,7 @@
   "Apply the full cloud brightness key; 100% filter strength": "تطبيق مرشح سطوع الغيوم بكامل شدته؛ قوة المرشح 100%",
   "Apron": "ساحة الشحن",
   "Arachnids": "العنكبوتيات",
+  "Architect": "مهندس",
   "Area": "مساحة",
   "Area around landmark": "المنطقة حول المعلم",
   "Area around {place}": "المنطقة حول {place}",
@@ -396,6 +398,8 @@
   "Browser audio is suspended; select FM again to resume it": "صوت المتصفح معلّق؛ اختر FM مجددًا لاستئنافه",
   "Browser location is unavailable": "موقع المتصفح غير متاح",
   "Buffering broadcaster stream…": "جارٍ تخزين بث المحطة مؤقتًا…",
+  "Build Tour": "إنشاء جولة",
+  "Build Tour Stop Here": "أنشئ محطة جولة هنا",
   "Bus": "حافلة",
   "Bus Fleet": "أسطول الحافلات",
   "Business jet": "طائرة رجال أعمال",
@@ -436,12 +440,12 @@
   "CONDITIONS UNKNOWN": "الأحوال غير معروفة",
   "CONFIGURED": "مُعَدّ",
   "CONFIRM · REMOVE ALL {count}": {
-    "zero": "تأكيد · إزالة الكل ({count})",
-    "one": "تأكيد · إزالة {count}",
-    "two": "تأكيد · إزالة الكل ({count})",
     "few": "تأكيد · إزالة الكل ({count})",
     "many": "تأكيد · إزالة الكل ({count})",
-    "other": "تأكيد · إزالة الكل ({count})"
+    "one": "تأكيد · إزالة {count}",
+    "other": "تأكيد · إزالة الكل ({count})",
+    "two": "تأكيد · إزالة الكل ({count})",
+    "zero": "تأكيد · إزالة الكل ({count})"
   },
   "CONFIRMED": "مؤكَّد",
   "CONNECT": "اتصال",
@@ -600,12 +604,12 @@
   "Clear search": "مسح البحث",
   "Clear selected data layers": "مسح طبقات البيانات المحددة",
   "Cleared {count} data layers": {
-    "zero": "لم تُمسح أي طبقة بيانات ({count})",
-    "one": "تم مسح طبقة بيانات واحدة ({count})",
-    "two": "تم مسح طبقتَي بيانات ({count})",
     "few": "تم مسح {count} طبقات بيانات",
     "many": "تم مسح {count} طبقة بيانات",
-    "other": "تم مسح {count} طبقة بيانات"
+    "one": "تم مسح طبقة بيانات واحدة ({count})",
+    "other": "تم مسح {count} طبقة بيانات",
+    "two": "تم مسح طبقتَي بيانات ({count})",
+    "zero": "لم تُمسح أي طبقة بيانات ({count})"
   },
   "Clearing all layers": "إيقاف جميع الطبقات",
   "Clearing selected data layers": "جارٍ مسح طبقات البيانات المحددة",
@@ -626,12 +630,12 @@
   "Click to preview": "انقر للمعاينة",
   "Click where the pin goes.": "انقر حيث تريد وضع الدبوس.",
   "Click {count} more points.": {
-    "zero": "انقر على {count} نقطة أخرى.",
-    "one": "انقر على نقطة واحدة أخرى ({count}).",
-    "two": "انقر على نقطتين أخريين ({count}).",
     "few": "انقر على {count} نقاط أخرى.",
     "many": "انقر على {count} نقطة أخرى.",
-    "other": "انقر على {count} نقطة أخرى."
+    "one": "انقر على نقطة واحدة أخرى ({count}).",
+    "other": "انقر على {count} نقطة أخرى.",
+    "two": "انقر على نقطتين أخريين ({count}).",
+    "zero": "انقر على {count} نقطة أخرى."
   },
   "Climate": "المناخ",
   "Climbing {n} ft/min": "يصعد {n} قدم/د",
@@ -711,7 +715,10 @@
   "Confirm: remove every added entry from Data Layers": "تأكيد: إزالة كل الإدخالات المُضافة من طبقات البيانات",
   "Conflict": "نزاعات",
   "Conflicts": "النزاعات",
+  "Connect": "ربط",
+  "Connect From Here": "الربط من هنا",
   "Connect Places": "ربط الأماكن",
+  "Connect Places & Launch Transport": "ربط الأماكن وتشغيل النقل",
   "Connect an RTL-SDR to begin.": "وصّل جهاز RTL-SDR للبدء.",
   "Connecting directly to broadcaster…": "جارٍ الاتصال مباشرة بالمحطة…",
   "Connecting to Gemini": "جارٍ الاتصال بـ Gemini",
@@ -853,12 +860,12 @@
   "DRIZZLE": "رذاذ",
   "DSP waiting": "DSP بالانتظار",
   "DSP {count} blocks": {
-    "zero": "DSP: {count} كتلة",
-    "one": "DSP: كتلة واحدة ({count})",
-    "two": "DSP: كتلتان ({count})",
     "few": "DSP: {count} كتل",
     "many": "DSP: {count} كتلة",
-    "other": "DSP: {count} كتلة"
+    "one": "DSP: كتلة واحدة ({count})",
+    "other": "DSP: {count} كتلة",
+    "two": "DSP: كتلتان ({count})",
+    "zero": "DSP: {count} كتلة"
   },
   "Daily overview": "نظرة عامة يومية",
   "Daily overview for today may still be empty until the pass": "قد تبقى النظرة العامة اليومية لهذا اليوم فارغة حتى مرور القمر الصناعي",
@@ -930,6 +937,7 @@
   "Disaster": "كارثة",
   "Discovered": "اكتُشف",
   "Dishes": "الأطباق",
+  "Dismiss local quick actions": "إغلاق الإجراءات السريعة المحلية",
   "Dismiss voice card": "إغلاق بطاقة الصوت",
   "Dispatch": "الإرسال",
   "Dispatcher": "المراقب",
@@ -1017,6 +1025,7 @@
   "Earth Sim": "محاكاة الأرض",
   "Earth Sim Active": "محاكاة الأرض نشطة",
   "Earth Sim Experiences Explorer": "مستكشف تجارب محاكاة الأرض",
+  "Earth Sim Quick Tools": "أدوات Earth Sim السريعة",
   "Earth Sim Tour": "جولة محاكاة الأرض",
   "Earth observation: optical, radar, weather and science": "رصد الأرض: بصري ورادار وطقس وعلوم",
   "Earthquake": "زلزال",
@@ -1067,7 +1076,6 @@
   "Error": "خطأ",
   "Error: {message}": "خطأ: {message}",
   "Esri map unavailable · no swipe": "خريطة Esri غير متاحة · لا مقارنة بالسحب",
-  "Estates": "المساكن",
   "Estimate is incomplete — a response was still in flight when the session ended, so its usage was never reported.": "التقدير غير مكتمل — كانت استجابة ما تزال قيد الإرسال عند انتهاء الجلسة، فلم يُبلَّغ عن استخدامها.",
   "Estimated destination direction": "اتجاه الوجهة التقديري",
   "Estimated flight plan": "خطة الرحلة التقديرية",
@@ -1079,12 +1087,12 @@
   "European heritage wrecks come from EMODnet Human Activities; notable wrecks worldwide come from Wikidata. Colour shows when the ship sank; marker size grows with deaths. Click a marker for its card.": "يأتي حطام السفن التراثي الأوروبي من EMODnet Human Activities، ويأتي الحطام البارز في العالم من Wikidata. يبيّن اللون متى غرقت السفينة، ويكبر حجم العلامة مع عدد الوفيات. انقر على علامة لعرض بطاقتها.",
   "Event age": "عمر الحدث",
   "Event age: {days}d · undated kept": {
-    "zero": "عمر الحدث: {days} يوم · غير المؤرخة تبقى ظاهرة",
-    "one": "عمر الحدث: يوم واحد ({days}) · غير المؤرخة تبقى ظاهرة",
-    "two": "عمر الحدث: يومان ({days}) · غير المؤرخة تبقى ظاهرة",
     "few": "عمر الحدث: {days} أيام · غير المؤرخة تبقى ظاهرة",
     "many": "عمر الحدث: {days} يومًا · غير المؤرخة تبقى ظاهرة",
-    "other": "عمر الحدث: {days} يوم · غير المؤرخة تبقى ظاهرة"
+    "one": "عمر الحدث: يوم واحد ({days}) · غير المؤرخة تبقى ظاهرة",
+    "other": "عمر الحدث: {days} يوم · غير المؤرخة تبقى ظاهرة",
+    "two": "عمر الحدث: يومان ({days}) · غير المؤرخة تبقى ظاهرة",
+    "zero": "عمر الحدث: {days} يوم · غير المؤرخة تبقى ظاهرة"
   },
   "Event reconstruction": "إعادة بناء الحدث",
   "Events": "الأحداث",
@@ -1148,6 +1156,7 @@
   "Expand map": "توسيع الخريطة",
   "Expand panel": "توسيع اللوحة",
   "Expand {name}": "توسيع {name}",
+  "Experience Living City Here": "استكشف المدينة الحية هنا",
   "Experiences": "التجارب",
   "Experiences & Tours": "التجارب والجولات",
   "Explore & Play": "استكشاف ولعب",
@@ -1435,7 +1444,7 @@
   "Ground stations / obstacles": "محطات أرضية / عوائق",
   "Guide": "دليل",
   "Guide · {topic}": "الدليل · {topic}",
-  "Guided tours, theme parks, resorts, living cities, estates & wilderness trails.": "جولات إرشادية ومدن ملاهي ومنتجعات ومدن حية ومساكن ومسارات برية.",
+  "Guided tours, theme parks, resorts, living cities, domiciles & wilderness trails.": "جولات مرشدة ومتنزهات ترفيهية ومنتجعات ومدن حية ومساكن ومسارات برية.",
   "Gyirong border gate": "المعبر الحدودي في Gyirong",
   "H145": "H145",
   "HARMONY · PORT SIDE": "هارموني · الجانب الأيسر",
@@ -1648,12 +1657,12 @@
   "LAST MONTH": "آخر شهر",
   "LAST YEAR": "آخر سنة",
   "LAST {count} DAYS": {
-    "zero": "آخر {count} يوم",
-    "one": "آخر يوم ({count})",
-    "two": "آخر يومين ({count})",
     "few": "آخر {count} أيام",
     "many": "آخر {count} يومًا",
-    "other": "آخر {count} يوم"
+    "one": "آخر يوم ({count})",
+    "other": "آخر {count} يوم",
+    "two": "آخر يومين ({count})",
+    "zero": "آخر {count} يوم"
   },
   "LATEST LOCATION-MATCHED REPORTING": "أحدث التقارير المطابقة للموقع",
   "LAUNCH SITE": "موقع الإطلاق",
@@ -1720,12 +1729,12 @@
   "Last reported": "آخر تقرير",
   "Last year of the shipwreck period": "السنة الأخيرة من فترة الغرق",
   "Last {hours} h": {
-    "zero": "آخر {hours} ساعة",
-    "one": "آخر ساعة ({hours})",
-    "two": "آخر ساعتين ({hours})",
     "few": "آخر {hours} ساعات",
     "many": "آخر {hours} ساعة",
-    "other": "آخر {hours} ساعة"
+    "one": "آخر ساعة ({hours})",
+    "other": "آخر {hours} ساعة",
+    "two": "آخر ساعتين ({hours})",
+    "zero": "آخر {hours} ساعة"
   },
   "Last {n} min": "آخر {n} د",
   "Latch Traffic": "تتبع حركة المرور",
@@ -1815,6 +1824,8 @@
   "Loading {feeds}": "جارٍ تحميل {feeds}",
   "Local": "محلي",
   "Local ADS-B": "ADS-B المحلي",
+  "Local Area": "المنطقة المحلية",
+  "Local Area Actions": "إجراءات المنطقة المحلية",
   "Local FM stopped: internet radio started": "توقف FM المحلي: بدأ راديو الإنترنت",
   "Local Play Mode": "وضع اللعب المحلي",
   "Local RTL-SDR receiver": "جهاز استقبال RTL-SDR المحلي",
@@ -1924,21 +1935,21 @@
   "Mark {targets}": "تعليم {targets}",
   "Mark {targets} +{more}": "تعليم {targets} +{more}",
   "Marked {count} places": {
-    "zero": "عُلِّم {count} مكان",
-    "one": "عُلِّم مكان واحد ({count})",
-    "two": "عُلِّم مكانان ({count})",
     "few": "عُلِّمت {count} أماكن",
     "many": "عُلِّم {count} مكانًا",
-    "other": "عُلِّم {count} مكان"
+    "one": "عُلِّم مكان واحد ({count})",
+    "other": "عُلِّم {count} مكان",
+    "two": "عُلِّم مكانان ({count})",
+    "zero": "عُلِّم {count} مكان"
   },
   "Matching details": "التفاصيل المطابقة",
   "Maximum event age: {days}d; undated markers are kept": {
-    "zero": "الحد الأقصى لعمر الحدث: {days} يوم؛ تبقى العلامات غير المؤرخة ظاهرة",
-    "one": "الحد الأقصى لعمر الحدث: يوم واحد ({days})؛ تبقى العلامات غير المؤرخة ظاهرة",
-    "two": "الحد الأقصى لعمر الحدث: يومان ({days})؛ تبقى العلامات غير المؤرخة ظاهرة",
     "few": "الحد الأقصى لعمر الحدث: {days} أيام؛ تبقى العلامات غير المؤرخة ظاهرة",
     "many": "الحد الأقصى لعمر الحدث: {days} يومًا؛ تبقى العلامات غير المؤرخة ظاهرة",
-    "other": "الحد الأقصى لعمر الحدث: {days} يوم؛ تبقى العلامات غير المؤرخة ظاهرة"
+    "one": "الحد الأقصى لعمر الحدث: يوم واحد ({days})؛ تبقى العلامات غير المؤرخة ظاهرة",
+    "other": "الحد الأقصى لعمر الحدث: {days} يوم؛ تبقى العلامات غير المؤرخة ظاهرة",
+    "two": "الحد الأقصى لعمر الحدث: يومان ({days})؛ تبقى العلامات غير المؤرخة ظاهرة",
+    "zero": "الحد الأقصى لعمر الحدث: {days} يوم؛ تبقى العلامات غير المؤرخة ظاهرة"
   },
   "Maximum sustained wind: {wind}": "أقصى سرعة للرياح المستمرة: {wind}",
   "Maximum sustained wind: {wind} · Pressure: {pressure}": "أقصى سرعة للرياح المستمرة: {wind} · الضغط: {pressure}",
@@ -2114,12 +2125,12 @@
   "News resumes tomorrow, or with a paid plan": "تُستأنف الأخبار غدًا، أو مع خطة مدفوعة",
   "News sections": "أقسام الأخبار",
   "News, last {hours} hours": {
-    "zero": "الأخبار، آخر {hours} ساعة",
-    "one": "الأخبار، آخر ساعة ({hours})",
-    "two": "الأخبار، آخر ساعتين ({hours})",
     "few": "الأخبار، آخر {hours} ساعات",
     "many": "الأخبار، آخر {hours} ساعة",
-    "other": "الأخبار، آخر {hours} ساعة"
+    "one": "الأخبار، آخر ساعة ({hours})",
+    "other": "الأخبار، آخر {hours} ساعة",
+    "two": "الأخبار، آخر ساعتين ({hours})",
+    "zero": "الأخبار، آخر {hours} ساعة"
   },
   "Next": "التالي",
   "Next ISS pass": "المرور التالي لمحطة الفضاء الدولية",
@@ -2148,12 +2159,12 @@
   "No RTL-SDR device selected": "لم يُحدَّد جهاز RTL-SDR",
   "No active tropical cyclone warnings": "لا توجد تحذيرات نشطة من الأعاصير المدارية",
   "No bike share here yet · {n} systems available": {
-    "zero": "لا دراجات مشتركة هنا بعد · {n} نظام متاح",
-    "one": "لا دراجات مشتركة هنا بعد · نظام واحد متاح ({n})",
-    "two": "لا دراجات مشتركة هنا بعد · نظامان متاحان ({n})",
     "few": "لا دراجات مشتركة هنا بعد · {n} أنظمة متاحة",
     "many": "لا دراجات مشتركة هنا بعد · {n} نظامًا متاحًا",
-    "other": "لا دراجات مشتركة هنا بعد · {n} نظام متاح"
+    "one": "لا دراجات مشتركة هنا بعد · نظام واحد متاح ({n})",
+    "other": "لا دراجات مشتركة هنا بعد · {n} نظام متاح",
+    "two": "لا دراجات مشتركة هنا بعد · نظامان متاحان ({n})",
+    "zero": "لا دراجات مشتركة هنا بعد · {n} نظام متاح"
   },
   "No box": "لا منطقة",
   "No cameras available in catalog.": "لا توجد كاميرات متاحة في الفهرس.",
@@ -2162,12 +2173,12 @@
   "No days to show for this box": "لا أيام لعرضها لهذه المنطقة",
   "No earthquakes, tropical storms or wildfires reported within {radius}.": "لا زلازل أو عواصف استوائية أو حرائق غابات مُبلَّغ عنها ضمن {radius}.",
   "No feed here yet · {n} regions available": {
-    "zero": "لا مصدر بيانات هنا بعد · {n} منطقة متاحة",
-    "one": "لا مصدر بيانات هنا بعد · منطقة واحدة متاحة ({n})",
-    "two": "لا مصدر بيانات هنا بعد · منطقتان متاحتان ({n})",
     "few": "لا مصدر بيانات هنا بعد · {n} مناطق متاحة",
     "many": "لا مصدر بيانات هنا بعد · {n} منطقة متاحة",
-    "other": "لا مصدر بيانات هنا بعد · {n} منطقة متاحة"
+    "one": "لا مصدر بيانات هنا بعد · منطقة واحدة متاحة ({n})",
+    "other": "لا مصدر بيانات هنا بعد · {n} منطقة متاحة",
+    "two": "لا مصدر بيانات هنا بعد · منطقتان متاحتان ({n})",
+    "zero": "لا مصدر بيانات هنا بعد · {n} منطقة متاحة"
   },
   "No file chosen": "لم يُختر أي ملف",
   "No flights within {radius} from the layers that are on.": "لا رحلات ضمن {radius} من الطبقات المفعّلة.",
@@ -2189,12 +2200,12 @@
   "No matching options.": "لا توجد خيارات مطابقة.",
   "No military within {radius} of the current view": "لا توجد رحلات عسكرية ضمن {radius} من العرض الحالي",
   "No news matches these filters in the last {hours} h": {
-    "zero": "لا أخبار تطابق هذه المرشحات في آخر {hours} ساعة",
-    "one": "لا أخبار تطابق هذه المرشحات في آخر ساعة ({hours})",
-    "two": "لا أخبار تطابق هذه المرشحات في آخر ساعتين ({hours})",
     "few": "لا أخبار تطابق هذه المرشحات في آخر {hours} ساعات",
     "many": "لا أخبار تطابق هذه المرشحات في آخر {hours} ساعة",
-    "other": "لا أخبار تطابق هذه المرشحات في آخر {hours} ساعة"
+    "one": "لا أخبار تطابق هذه المرشحات في آخر ساعة ({hours})",
+    "other": "لا أخبار تطابق هذه المرشحات في آخر {hours} ساعة",
+    "two": "لا أخبار تطابق هذه المرشحات في آخر ساعتين ({hours})",
+    "zero": "لا أخبار تطابق هذه المرشحات في آخر {hours} ساعة"
   },
   "No other layers are on": "لا توجد طبقات أخرى مفعّلة",
   "No physical event": "لا حدث ميداني",
@@ -2253,12 +2264,12 @@
   "Nothing is loaded or changed until you apply this file.": "لا يُحمَّل أو يتغيّر شيء حتى تطبّق هذا الملف.",
   "Nothing marked": "لم يُعلَّم شيء",
   "Nothing reported near here in the last {hours} h": {
-    "zero": "لم يُبلَّغ عن شيء قريب من هنا في آخر {hours} ساعة",
-    "one": "لم يُبلَّغ عن شيء قريب من هنا في آخر ساعة ({hours})",
-    "two": "لم يُبلَّغ عن شيء قريب من هنا في آخر ساعتين ({hours})",
     "few": "لم يُبلَّغ عن شيء قريب من هنا في آخر {hours} ساعات",
     "many": "لم يُبلَّغ عن شيء قريب من هنا في آخر {hours} ساعة",
-    "other": "لم يُبلَّغ عن شيء قريب من هنا في آخر {hours} ساعة"
+    "one": "لم يُبلَّغ عن شيء قريب من هنا في آخر ساعة ({hours})",
+    "other": "لم يُبلَّغ عن شيء قريب من هنا في آخر {hours} ساعة",
+    "two": "لم يُبلَّغ عن شيء قريب من هنا في آخر ساعتين ({hours})",
+    "zero": "لم يُبلَّغ عن شيء قريب من هنا في آخر {hours} ساعة"
   },
   "Nothing selected": "لا شيء محدد",
   "Nothing to import.": "لا يوجد ما يُستورد.",
@@ -2444,12 +2455,12 @@
   "POSITIONED": "محددة الموضع",
   "POWER UP": "تشغيل",
   "POWER UP · {count} KEYS WAITING": {
-    "zero": "تشغيل · لا مفاتيح في الانتظار ({count})",
-    "one": "تشغيل · مفتاح واحد في الانتظار ({count})",
-    "two": "تشغيل · مفتاحان في الانتظار ({count})",
     "few": "تشغيل · {count} مفاتيح في الانتظار",
     "many": "تشغيل · {count} مفتاحًا في الانتظار",
-    "other": "تشغيل · {count} مفتاح في الانتظار"
+    "one": "تشغيل · مفتاح واحد في الانتظار ({count})",
+    "other": "تشغيل · {count} مفتاح في الانتظار",
+    "two": "تشغيل · مفتاحان في الانتظار ({count})",
+    "zero": "تشغيل · لا مفاتيح في الانتظار ({count})"
   },
   "POWERED UP": "تم التشغيل",
   "PRECIP": "الهطول",
@@ -2653,12 +2664,12 @@
   "RIGHT": "يمين",
   "RIGHT NOW": "الآن",
   "RINGS {spacing} NM": {
-    "zero": "الحلقات كل {spacing} ميل بحري",
-    "one": "الحلقات كل ميل بحري ({spacing})",
-    "two": "الحلقات كل ميلين بحريين ({spacing})",
     "few": "الحلقات كل {spacing} أميال بحرية",
     "many": "الحلقات كل {spacing} ميلًا بحريًا",
-    "other": "الحلقات كل {spacing} ميل بحري"
+    "one": "الحلقات كل ميل بحري ({spacing})",
+    "other": "الحلقات كل {spacing} ميل بحري",
+    "two": "الحلقات كل ميلين بحريين ({spacing})",
+    "zero": "الحلقات كل {spacing} ميل بحري"
   },
   "ROUTE DATA UNAVAILABLE": "بيانات المسار غير متاحة",
   "RTL-SDR access failed; close other SDR apps and check USB permissions": "فشل الوصول إلى RTL-SDR؛ أغلق تطبيقات SDR الأخرى وتحقّق من أذونات USB",
@@ -3174,34 +3185,34 @@
   "Show your own GeoJSON, KML, KMZ or GPX files on the globe (or drop them onto it). File bytes stay on this device; overlays can appear in map screenshots shared with voice.": "اعرض ملفات GeoJSON أو KML أو KMZ أو GPX الخاصة بك على الكرة الأرضية (أو أفلتها عليها). تبقى بيانات الملفات على هذا الجهاز؛ وقد تظهر الطبقات في لقطات الخريطة التي تُشارك مع المساعد الصوتي.",
   "Show {category}": "إظهار {category}",
   "Show {count} stories": {
-    "zero": "عرض {count} قصة",
-    "one": "عرض قصة واحدة ({count})",
-    "two": "عرض قصتين ({count})",
     "few": "عرض {count} قصص",
     "many": "عرض {count} قصة",
-    "other": "عرض {count} قصة"
+    "one": "عرض قصة واحدة ({count})",
+    "other": "عرض {count} قصة",
+    "two": "عرض قصتين ({count})",
+    "zero": "عرض {count} قصة"
   },
   "Show {day}": "عرض {day}",
   "Show {name}": "إظهار {name}",
   "Show {name} sighting": "إظهار مشاهدة {name}",
   "Show {what} in {place} ({count} items)": {
-    "zero": "عرض {what} في {place} ({count} عنصر)",
-    "one": "عرض {what} في {place} ({count} عنصر)",
-    "two": "عرض {what} في {place} ({count} عنصران)",
     "few": "عرض {what} في {place} ({count} عناصر)",
     "many": "عرض {what} في {place} ({count} عنصرًا)",
-    "other": "عرض {what} في {place} ({count} عنصر)"
+    "one": "عرض {what} في {place} ({count} عنصر)",
+    "other": "عرض {what} في {place} ({count} عنصر)",
+    "two": "عرض {what} في {place} ({count} عنصران)",
+    "zero": "عرض {what} في {place} ({count} عنصر)"
   },
   "Showing cached locations": "عرض المواقع المخزّنة",
   "Showing cached mapped sites": "عرض المواقع المرسومة المخزّنة",
   "Showing the full Starlink shell — click for the core catalog only": "يُعرض غلاف Starlink كاملًا — انقر للعودة إلى الفهرس الأساسي فقط",
   "Showing {shown} of {total}": {
-    "zero": "عرض {shown} من {total}",
-    "one": "عرض {shown} من {total}",
-    "two": "عرض {shown} من {total}",
     "few": "عرض {shown} من {total}",
     "many": "عرض {shown} من {total}",
-    "other": "عرض {shown} من {total}"
+    "one": "عرض {shown} من {total}",
+    "other": "عرض {shown} من {total}",
+    "two": "عرض {shown} من {total}",
+    "zero": "عرض {shown} من {total}"
   },
   "Shown at street level · depth not in the feed": "معروضة على مستوى الشارع · العمق غير متوفر في المصدر",
   "Shrink": "تصغير",
@@ -3724,12 +3735,12 @@
   "Up": "أعلى",
   "Up to {upper}": "حتى {upper}",
   "Updated {count} shots: {scene}": {
-    "zero": "حُدِّثت {count} لقطة: {scene}",
-    "one": "حُدِّثت لقطة واحدة ({count}): {scene}",
-    "two": "حُدِّثت لقطتان ({count}): {scene}",
     "few": "حُدِّثت {count} لقطات: {scene}",
     "many": "حُدِّثت {count} لقطة: {scene}",
-    "other": "حُدِّثت {count} لقطة: {scene}"
+    "one": "حُدِّثت لقطة واحدة ({count}): {scene}",
+    "other": "حُدِّثت {count} لقطة: {scene}",
+    "two": "حُدِّثت لقطتان ({count}): {scene}",
+    "zero": "حُدِّثت {count} لقطة: {scene}"
   },
   "Updated: {scene} / {shot}": "تم التحديث: {scene} / {shot}",
   "Updates": "التحديث",
@@ -3928,6 +3939,7 @@
   "Working…": "جارٍ العمل…",
   "Workplace": "مقر عمل",
   "World": "موسيقى العالم",
+  "World Architect & Sandbox (B)": "مهندس العالم ووضع الحماية (B)",
   "World of Rails": "عالم السكك الحديدية",
   "World of Sails": "عالم الإبحار",
   "World of Sails & Waterways": "عالم الأشرعة والممرات المائية",
@@ -4074,28 +4086,28 @@
   "feed status|unreachable": "يتعذّر الوصول إليه",
   "feed unavailable": "المصدر غير متاح",
   "feeds {names} invalid": {
-    "zero": "المصادر {names} غير صالحة",
-    "one": "المصدر {names} غير صالح",
-    "two": "المصدران {names} غير صالحين",
     "few": "المصادر {names} غير صالحة",
     "many": "المصادر {names} غير صالحة",
-    "other": "المصادر {names} غير صالحة"
+    "one": "المصدر {names} غير صالح",
+    "other": "المصادر {names} غير صالحة",
+    "two": "المصدران {names} غير صالحين",
+    "zero": "المصادر {names} غير صالحة"
   },
   "feeds {names} stale": {
-    "zero": "المصادر {names} متقادمة",
-    "one": "المصدر {names} متقادم",
-    "two": "المصدران {names} متقادمان",
     "few": "المصادر {names} متقادمة",
     "many": "المصادر {names} متقادمة",
-    "other": "المصادر {names} متقادمة"
+    "one": "المصدر {names} متقادم",
+    "other": "المصادر {names} متقادمة",
+    "two": "المصدران {names} متقادمان",
+    "zero": "المصادر {names} متقادمة"
   },
   "feeds {names} unreachable": {
-    "zero": "يتعذّر الوصول إلى المصادر {names}",
-    "one": "يتعذّر الوصول إلى المصدر {names}",
-    "two": "يتعذّر الوصول إلى المصدرين {names}",
     "few": "يتعذّر الوصول إلى المصادر {names}",
     "many": "يتعذّر الوصول إلى المصادر {names}",
-    "other": "يتعذّر الوصول إلى المصادر {names}"
+    "one": "يتعذّر الوصول إلى المصدر {names}",
+    "other": "يتعذّر الوصول إلى المصادر {names}",
+    "two": "يتعذّر الوصول إلى المصدرين {names}",
+    "zero": "يتعذّر الوصول إلى المصادر {names}"
   },
   "feels {n}°": "المحسوسة {n}°",
   "fire": "حريق",
@@ -4125,12 +4137,12 @@
   "fork direction|straight": "الاتجاه المستقيم",
   "frame {index}/{total}": "الإطار {index} من {total}",
   "from {count} datasets": {
-    "zero": "من {count} مجموعة بيانات",
-    "one": "من مجموعة بيانات واحدة ({count})",
-    "two": "من مجموعتَي بيانات ({count})",
     "few": "من {count} مجموعات بيانات",
     "many": "من {count} مجموعة بيانات",
-    "other": "من {count} مجموعة بيانات"
+    "one": "من مجموعة بيانات واحدة ({count})",
+    "other": "من {count} مجموعة بيانات",
+    "two": "من مجموعتَي بيانات ({count})",
+    "zero": "من {count} مجموعة بيانات"
   },
   "from {origin}": "من {origin}",
   "ft": "قدم",
@@ -4352,12 +4364,12 @@
   "zoom in to see Panoramax coverage": "قرّب لرؤية تغطية Panoramax",
   "{accepted} of {raw} records accepted": "السجلات المقبولة: {accepted} من {raw}",
   "{acres} ac": {
-    "zero": "{acres} آكر",
-    "one": "{acres} آكر",
-    "two": "{acres} آكر",
     "few": "{acres} آكر",
     "many": "{acres} آكر",
-    "other": "{acres} آكر"
+    "one": "{acres} آكر",
+    "other": "{acres} آكر",
+    "two": "{acres} آكر",
+    "zero": "{acres} آكر"
   },
   "{action} {target} radio station": "{action}: محطة الراديو {target}",
   "{aircraftClass} · CURRENT": "{aircraftClass} · الحالية",
@@ -4378,140 +4390,140 @@
   "{count} / 30D": "{count} / 30 يومًا",
   "{count} CAMERAS STANDING BY · NO CAMERA SELECTED · CLICK A CAMERA TO ACTIVATE": "الكاميرات في وضع الاستعداد: {count} · لم تُحدَّد كاميرا · انقر على كاميرا لتفعيلها",
   "{count} CONTACTS": {
-    "zero": "لا أهداف ({count})",
-    "one": "هدف واحد ({count})",
-    "two": "هدفان ({count})",
     "few": "{count} أهداف",
     "many": "{count} هدفًا",
-    "other": "{count} هدف"
+    "one": "هدف واحد ({count})",
+    "other": "{count} هدف",
+    "two": "هدفان ({count})",
+    "zero": "لا أهداف ({count})"
   },
   "{count} CelesTrak groups unavailable": {
-    "zero": "{count} مجموعة CelesTrak غير متاحة",
-    "one": "مجموعة CelesTrak واحدة غير متاحة ({count})",
-    "two": "مجموعتا CelesTrak غير متاحتين ({count})",
     "few": "{count} مجموعات CelesTrak غير متاحة",
     "many": "{count} مجموعة CelesTrak غير متاحة",
-    "other": "{count} مجموعة CelesTrak غير متاحة"
+    "one": "مجموعة CelesTrak واحدة غير متاحة ({count})",
+    "other": "{count} مجموعة CelesTrak غير متاحة",
+    "two": "مجموعتا CelesTrak غير متاحتين ({count})",
+    "zero": "{count} مجموعة CelesTrak غير متاحة"
   },
   "{count} DAYS": {
-    "zero": "{count} يوم",
-    "one": "يوم واحد ({count})",
-    "two": "يومان ({count})",
     "few": "{count} أيام",
     "many": "{count} يومًا",
-    "other": "{count} يوم"
+    "one": "يوم واحد ({count})",
+    "other": "{count} يوم",
+    "two": "يومان ({count})",
+    "zero": "{count} يوم"
   },
   "{count} GEOLOCATED SOURCE-MAP PLACEMENTS": {
-    "zero": "{count} موضع محدَّد جغرافيًا على خريطة المصادر",
-    "one": "موضع واحد محدَّد جغرافيًا على خريطة المصادر ({count})",
-    "two": "موضعان محدَّدان جغرافيًا على خريطة المصادر ({count})",
     "few": "{count} مواضع محدَّدة جغرافيًا على خريطة المصادر",
     "many": "{count} موضعًا محدَّدًا جغرافيًا على خريطة المصادر",
-    "other": "{count} موضع محدَّد جغرافيًا على خريطة المصادر"
+    "one": "موضع واحد محدَّد جغرافيًا على خريطة المصادر ({count})",
+    "other": "{count} موضع محدَّد جغرافيًا على خريطة المصادر",
+    "two": "موضعان محدَّدان جغرافيًا على خريطة المصادر ({count})",
+    "zero": "{count} موضع محدَّد جغرافيًا على خريطة المصادر"
   },
   "{count} HEARD": {
-    "zero": "الملتقطة: {count}",
-    "one": "الملتقطة: {count}",
-    "two": "الملتقطة: {count}",
     "few": "الملتقطة: {count}",
     "many": "الملتقطة: {count}",
-    "other": "الملتقطة: {count}"
+    "one": "الملتقطة: {count}",
+    "other": "الملتقطة: {count}",
+    "two": "الملتقطة: {count}",
+    "zero": "الملتقطة: {count}"
   },
   "{count} INPUTS UNKNOWN": {
-    "zero": "لا مدخلات مجهولة ({count})",
-    "one": "مدخل واحد مجهول ({count})",
-    "two": "مدخلان مجهولان ({count})",
     "few": "{count} مدخلات مجهولة",
     "many": "{count} مدخلًا مجهولًا",
-    "other": "{count} مدخل مجهول"
+    "one": "مدخل واحد مجهول ({count})",
+    "other": "{count} مدخل مجهول",
+    "two": "مدخلان مجهولان ({count})",
+    "zero": "لا مدخلات مجهولة ({count})"
   },
   "{count} INPUTS UNKNOWN · NOT AN ALL-CLEAR": {
-    "zero": "لا مدخلات مجهولة ({count}) · لا يعني أن الوضع آمن",
-    "one": "مدخل واحد مجهول ({count}) · لا يعني أن الوضع آمن",
-    "two": "مدخلان مجهولان ({count}) · لا يعني أن الوضع آمن",
     "few": "{count} مدخلات مجهولة · لا يعني أن الوضع آمن",
     "many": "{count} مدخلًا مجهولًا · لا يعني أن الوضع آمن",
-    "other": "{count} مدخل مجهول · لا يعني أن الوضع آمن"
+    "one": "مدخل واحد مجهول ({count}) · لا يعني أن الوضع آمن",
+    "other": "{count} مدخل مجهول · لا يعني أن الوضع آمن",
+    "two": "مدخلان مجهولان ({count}) · لا يعني أن الوضع آمن",
+    "zero": "لا مدخلات مجهولة ({count}) · لا يعني أن الوضع آمن"
   },
   "{count} MSGS": {
-    "zero": "{count} رسالة",
-    "one": "رسالة واحدة ({count})",
-    "two": "رسالتان ({count})",
     "few": "{count} رسائل",
     "many": "{count} رسالة",
-    "other": "{count} رسالة"
+    "one": "رسالة واحدة ({count})",
+    "other": "{count} رسالة",
+    "two": "رسالتان ({count})",
+    "zero": "{count} رسالة"
   },
   "{count} SOURCES": {
-    "zero": "{count} مصدر",
-    "one": "مصدر واحد ({count})",
-    "two": "مصدران ({count})",
     "few": "{count} مصادر",
     "many": "{count} مصدرًا",
-    "other": "{count} مصدر"
+    "one": "مصدر واحد ({count})",
+    "other": "{count} مصدر",
+    "two": "مصدران ({count})",
+    "zero": "{count} مصدر"
   },
   "{count} active storms": {
-    "zero": "{count} عاصفة نشطة",
-    "one": "عاصفة نشطة واحدة ({count})",
-    "two": "عاصفتان نشطتان ({count})",
     "few": "{count} عواصف نشطة",
     "many": "{count} عاصفة نشطة",
-    "other": "{count} عاصفة نشطة"
+    "one": "عاصفة نشطة واحدة ({count})",
+    "other": "{count} عاصفة نشطة",
+    "two": "عاصفتان نشطتان ({count})",
+    "zero": "{count} عاصفة نشطة"
   },
   "{count} aircraft in frame": {
-    "zero": "{count} طائرة في الإطار",
-    "one": "طائرة واحدة ({count}) في الإطار",
-    "two": "طائرتان ({count}) في الإطار",
     "few": "{count} طائرات في الإطار",
     "many": "{count} طائرة في الإطار",
-    "other": "{count} طائرة في الإطار"
+    "one": "طائرة واحدة ({count}) في الإطار",
+    "other": "{count} طائرة في الإطار",
+    "two": "طائرتان ({count}) في الإطار",
+    "zero": "{count} طائرة في الإطار"
   },
   "{count} cameras loaded · click a camera to activate": {
-    "zero": "لا كاميرات محمّلة ({count}) · انقر على كاميرا لتفعيلها",
-    "one": "كاميرا واحدة محمّلة ({count}) · انقر عليها لتفعيلها",
-    "two": "كاميرتان محمّلتان ({count}) · انقر على كاميرا لتفعيلها",
     "few": "{count} كاميرات محمّلة · انقر على كاميرا لتفعيلها",
     "many": "{count} كاميرا محمّلة · انقر على كاميرا لتفعيلها",
-    "other": "{count} كاميرا محمّلة · انقر على كاميرا لتفعيلها"
+    "one": "كاميرا واحدة محمّلة ({count}) · انقر عليها لتفعيلها",
+    "other": "{count} كاميرا محمّلة · انقر على كاميرا لتفعيلها",
+    "two": "كاميرتان محمّلتان ({count}) · انقر على كاميرا لتفعيلها",
+    "zero": "لا كاميرات محمّلة ({count}) · انقر على كاميرا لتفعيلها"
   },
   "{count} cameras loaded · enable CCTV to activate": {
-    "zero": "لا كاميرات محمّلة ({count}) · فعّل CCTV للتفعيل",
-    "one": "كاميرا واحدة محمّلة ({count}) · فعّل CCTV للتفعيل",
-    "two": "كاميرتان محمّلتان ({count}) · فعّل CCTV للتفعيل",
     "few": "{count} كاميرات محمّلة · فعّل CCTV للتفعيل",
     "many": "{count} كاميرا محمّلة · فعّل CCTV للتفعيل",
-    "other": "{count} كاميرا محمّلة · فعّل CCTV للتفعيل"
+    "one": "كاميرا واحدة محمّلة ({count}) · فعّل CCTV للتفعيل",
+    "other": "{count} كاميرا محمّلة · فعّل CCTV للتفعيل",
+    "two": "كاميرتان محمّلتان ({count}) · فعّل CCTV للتفعيل",
+    "zero": "لا كاميرات محمّلة ({count}) · فعّل CCTV للتفعيل"
   },
   "{count} contacts in frame": {
-    "zero": "{count} هدف في الإطار",
-    "one": "هدف واحد ({count}) في الإطار",
-    "two": "هدفان ({count}) في الإطار",
     "few": "{count} أهداف في الإطار",
     "many": "{count} هدفًا في الإطار",
-    "other": "{count} هدف في الإطار"
+    "one": "هدف واحد ({count}) في الإطار",
+    "other": "{count} هدف في الإطار",
+    "two": "هدفان ({count}) في الإطار",
+    "zero": "{count} هدف في الإطار"
   },
   "{count} data layers could not be cleared": {
-    "zero": "لا طبقات بيانات تعذّر مسحها ({count})",
-    "one": "تعذّر مسح طبقة بيانات واحدة ({count})",
-    "two": "تعذّر مسح طبقتَي بيانات ({count})",
     "few": "تعذّر مسح {count} طبقات بيانات",
     "many": "تعذّر مسح {count} طبقة بيانات",
-    "other": "تعذّر مسح {count} طبقة بيانات"
+    "one": "تعذّر مسح طبقة بيانات واحدة ({count})",
+    "other": "تعذّر مسح {count} طبقة بيانات",
+    "two": "تعذّر مسح طبقتَي بيانات ({count})",
+    "zero": "لا طبقات بيانات تعذّر مسحها ({count})"
   },
   "{count} data packs": {
-    "zero": "{count} حزمة بيانات",
-    "one": "حزمة بيانات واحدة ({count})",
-    "two": "حزمتا بيانات ({count})",
     "few": "{count} حزم بيانات",
     "many": "{count} حزمة بيانات",
-    "other": "{count} حزمة بيانات"
+    "one": "حزمة بيانات واحدة ({count})",
+    "other": "{count} حزمة بيانات",
+    "two": "حزمتا بيانات ({count})",
+    "zero": "{count} حزمة بيانات"
   },
   "{count} datasets": {
-    "zero": "{count} مجموعة بيانات",
-    "one": "مجموعة بيانات واحدة ({count})",
-    "two": "مجموعتا بيانات ({count})",
     "few": "{count} مجموعات بيانات",
     "many": "{count} مجموعة بيانات",
-    "other": "{count} مجموعة بيانات"
+    "one": "مجموعة بيانات واحدة ({count})",
+    "other": "{count} مجموعة بيانات",
+    "two": "مجموعتا بيانات ({count})",
+    "zero": "{count} مجموعة بيانات"
   },
   "{count} duplicate mappings merged": {
     "few": "التكرارات المدمجة: {count}",
@@ -4522,156 +4534,156 @@
     "zero": "التكرارات المدمجة: {count}"
   },
   "{count} events today": {
-    "zero": "{count} حدث اليوم",
-    "one": "حدث واحد اليوم ({count})",
-    "two": "حدثان اليوم ({count})",
     "few": "{count} أحداث اليوم",
     "many": "{count} حدثًا اليوم",
-    "other": "{count} حدث اليوم"
+    "one": "حدث واحد اليوم ({count})",
+    "other": "{count} حدث اليوم",
+    "two": "حدثان اليوم ({count})",
+    "zero": "{count} حدث اليوم"
   },
   "{count} feeds live": {
-    "zero": "المصادر المباشرة: {count}",
-    "one": "المصادر المباشرة: {count}",
-    "two": "المصادر المباشرة: {count}",
     "few": "المصادر المباشرة: {count}",
     "many": "المصادر المباشرة: {count}",
-    "other": "المصادر المباشرة: {count}"
+    "one": "المصادر المباشرة: {count}",
+    "other": "المصادر المباشرة: {count}",
+    "two": "المصادر المباشرة: {count}",
+    "zero": "المصادر المباشرة: {count}"
   },
   "{count} files could not be added ({name}: {error})": {
-    "zero": "تعذّرت إضافة {count} ملف ({name}: {error})",
-    "one": "تعذّرت إضافة ملف واحد ({count}) ({name}: {error})",
-    "two": "تعذّرت إضافة ملفين ({count}) ({name}: {error})",
     "few": "تعذّرت إضافة {count} ملفات ({name}: {error})",
     "many": "تعذّرت إضافة {count} ملفًا ({name}: {error})",
-    "other": "تعذّرت إضافة {count} ملف ({name}: {error})"
+    "one": "تعذّرت إضافة ملف واحد ({count}) ({name}: {error})",
+    "other": "تعذّرت إضافة {count} ملف ({name}: {error})",
+    "two": "تعذّرت إضافة ملفين ({count}) ({name}: {error})",
+    "zero": "تعذّرت إضافة {count} ملف ({name}: {error})"
   },
   "{count} files selected": {
-    "zero": "الملفات المحددة: {count}",
-    "one": "الملفات المحددة: {count}",
-    "two": "الملفات المحددة: {count}",
     "few": "الملفات المحددة: {count}",
     "many": "الملفات المحددة: {count}",
-    "other": "الملفات المحددة: {count}"
+    "one": "الملفات المحددة: {count}",
+    "other": "الملفات المحددة: {count}",
+    "two": "الملفات المحددة: {count}",
+    "zero": "الملفات المحددة: {count}"
   },
   "{count} filters on": {
-    "zero": "{count} مرشح مفعّل",
-    "one": "مرشح واحد مفعّل ({count})",
-    "two": "مرشحان مفعّلان ({count})",
     "few": "{count} مرشحات مفعّلة",
     "many": "{count} مرشحًا مفعّلًا",
-    "other": "{count} مرشح مفعّل"
+    "one": "مرشح واحد مفعّل ({count})",
+    "other": "{count} مرشح مفعّل",
+    "two": "مرشحان مفعّلان ({count})",
+    "zero": "{count} مرشح مفعّل"
   },
   "{count} heard": {
-    "zero": "الملتقطة: {count}",
-    "one": "الملتقطة: {count}",
-    "two": "الملتقطة: {count}",
     "few": "الملتقطة: {count}",
     "many": "الملتقطة: {count}",
-    "other": "الملتقطة: {count}"
+    "one": "الملتقطة: {count}",
+    "other": "الملتقطة: {count}",
+    "two": "الملتقطة: {count}",
+    "zero": "الملتقطة: {count}"
   },
   "{count} items in view": {
-    "zero": "{count} عنصر في العرض",
-    "one": "{count} عنصر في العرض",
-    "two": "{count} عنصران في العرض",
     "few": "{count} عناصر في العرض",
     "many": "{count} عنصرًا في العرض",
-    "other": "{count} عنصر في العرض"
+    "one": "{count} عنصر في العرض",
+    "other": "{count} عنصر في العرض",
+    "two": "{count} عنصران في العرض",
+    "zero": "{count} عنصر في العرض"
   },
   "{count} layers": {
-    "zero": "{count} طبقة",
-    "one": "طبقة واحدة ({count})",
-    "two": "طبقتين ({count})",
     "few": "{count} طبقات",
     "many": "{count} طبقة",
-    "other": "{count} طبقة"
+    "one": "طبقة واحدة ({count})",
+    "other": "{count} طبقة",
+    "two": "طبقتين ({count})",
+    "zero": "{count} طبقة"
   },
   "{count} map objects": {
-    "zero": "{count} عنصر على الخريطة",
-    "one": "عنصر واحد على الخريطة ({count})",
-    "two": "عنصران على الخريطة ({count})",
     "few": "{count} عناصر على الخريطة",
     "many": "{count} عنصرًا على الخريطة",
-    "other": "{count} عنصر على الخريطة"
+    "one": "عنصر واحد على الخريطة ({count})",
+    "other": "{count} عنصر على الخريطة",
+    "two": "عنصران على الخريطة ({count})",
+    "zero": "{count} عنصر على الخريطة"
   },
   "{count} mapped sites in view": {
-    "zero": "{count} موقع مرسوم في نطاق العرض",
-    "one": "موقع مرسوم واحد ({count}) في نطاق العرض",
-    "two": "موقعان مرسومان ({count}) في نطاق العرض",
     "few": "{count} مواقع مرسومة في نطاق العرض",
     "many": "{count} موقعًا مرسومًا في نطاق العرض",
-    "other": "{count} موقع مرسوم في نطاق العرض"
+    "one": "موقع مرسوم واحد ({count}) في نطاق العرض",
+    "other": "{count} موقع مرسوم في نطاق العرض",
+    "two": "موقعان مرسومان ({count}) في نطاق العرض",
+    "zero": "{count} موقع مرسوم في نطاق العرض"
   },
   "{count} mapped sites within {km} km of the contact": {
-    "zero": "{count} موقع مرسوم ضمن {km} كم من الهدف",
-    "one": "موقع مرسوم واحد ({count}) ضمن {km} كم من الهدف",
-    "two": "موقعان مرسومان ({count}) ضمن {km} كم من الهدف",
     "few": "{count} مواقع مرسومة ضمن {km} كم من الهدف",
     "many": "{count} موقعًا مرسومًا ضمن {km} كم من الهدف",
-    "other": "{count} موقع مرسوم ضمن {km} كم من الهدف"
+    "one": "موقع مرسوم واحد ({count}) ضمن {km} كم من الهدف",
+    "other": "{count} موقع مرسوم ضمن {km} كم من الهدف",
+    "two": "موقعان مرسومان ({count}) ضمن {km} كم من الهدف",
+    "zero": "{count} موقع مرسوم ضمن {km} كم من الهدف"
   },
   "{count} messages": {
-    "zero": "{count} رسالة",
-    "one": "رسالة واحدة ({count})",
-    "two": "رسالتان ({count})",
     "few": "{count} رسائل",
     "many": "{count} رسالة",
-    "other": "{count} رسالة"
+    "one": "رسالة واحدة ({count})",
+    "other": "{count} رسالة",
+    "two": "رسالتان ({count})",
+    "zero": "{count} رسالة"
   },
   "{count} military aircraft in frame": {
-    "zero": "{count} طائرة عسكرية في الإطار",
-    "one": "طائرة عسكرية واحدة ({count}) في الإطار",
-    "two": "طائرتان عسكريتان ({count}) في الإطار",
     "few": "{count} طائرات عسكرية في الإطار",
     "many": "{count} طائرة عسكرية في الإطار",
-    "other": "{count} طائرة عسكرية في الإطار"
+    "one": "طائرة عسكرية واحدة ({count}) في الإطار",
+    "other": "{count} طائرة عسكرية في الإطار",
+    "two": "طائرتان عسكريتان ({count}) في الإطار",
+    "zero": "{count} طائرة عسكرية في الإطار"
   },
   "{count} more cameras outside this view · pan or zoom out": {
-    "zero": "كاميرات خارج العرض الحالي: {count} · حرّك الخريطة أو صغّر العرض",
-    "one": "كاميرات خارج العرض الحالي: {count} · حرّك الخريطة أو صغّر العرض",
-    "two": "كاميرات خارج العرض الحالي: {count} · حرّك الخريطة أو صغّر العرض",
     "few": "كاميرات خارج العرض الحالي: {count} · حرّك الخريطة أو صغّر العرض",
     "many": "كاميرات خارج العرض الحالي: {count} · حرّك الخريطة أو صغّر العرض",
-    "other": "كاميرات خارج العرض الحالي: {count} · حرّك الخريطة أو صغّر العرض"
+    "one": "كاميرات خارج العرض الحالي: {count} · حرّك الخريطة أو صغّر العرض",
+    "other": "كاميرات خارج العرض الحالي: {count} · حرّك الخريطة أو صغّر العرض",
+    "two": "كاميرات خارج العرض الحالي: {count} · حرّك الخريطة أو صغّر العرض",
+    "zero": "كاميرات خارج العرض الحالي: {count} · حرّك الخريطة أو صغّر العرض"
   },
   "{count} nearby": {
-    "zero": "القريبة: {count}",
-    "one": "القريبة: {count}",
-    "two": "القريبة: {count}",
     "few": "القريبة: {count}",
     "many": "القريبة: {count}",
-    "other": "القريبة: {count}"
+    "one": "القريبة: {count}",
+    "other": "القريبة: {count}",
+    "two": "القريبة: {count}",
+    "zero": "القريبة: {count}"
   },
   "{count} nearby · {onScreen} on screen": {
-    "zero": "القريبة: {count} · على الشاشة: {onScreen}",
-    "one": "القريبة: {count} · على الشاشة: {onScreen}",
-    "two": "القريبة: {count} · على الشاشة: {onScreen}",
     "few": "القريبة: {count} · على الشاشة: {onScreen}",
     "many": "القريبة: {count} · على الشاشة: {onScreen}",
-    "other": "القريبة: {count} · على الشاشة: {onScreen}"
+    "one": "القريبة: {count} · على الشاشة: {onScreen}",
+    "other": "القريبة: {count} · على الشاشة: {onScreen}",
+    "two": "القريبة: {count} · على الشاشة: {onScreen}",
+    "zero": "القريبة: {count} · على الشاشة: {onScreen}"
   },
   "{count} of {total} acquisitions match": {
     "few": "الصور المطابقة: {count} من {total}",
     "many": "الصور المطابقة: {count} من {total}",
     "one": "الصور المطابقة: {count} من {total}",
+    "other": "الصور المطابقة: {count} من {total}",
     "two": "الصور المطابقة: {count} من {total}",
-    "zero": "الصور المطابقة: {count} من {total}",
-    "other": "الصور المطابقة: {count} من {total}"
+    "zero": "الصور المطابقة: {count} من {total}"
   },
   "{count} on the map": {
-    "zero": "{count} على الخريطة",
-    "one": "{count} على الخريطة",
-    "two": "{count} على الخريطة",
     "few": "{count} على الخريطة",
     "many": "{count} على الخريطة",
-    "other": "{count} على الخريطة"
+    "one": "{count} على الخريطة",
+    "other": "{count} على الخريطة",
+    "two": "{count} على الخريطة",
+    "zero": "{count} على الخريطة"
   },
   "{count} packs": {
-    "zero": "{count} حزمة",
-    "one": "حزمة واحدة ({count})",
-    "two": "حزمتان ({count})",
     "few": "{count} حزم",
     "many": "{count} حزمة",
-    "other": "{count} حزمة"
+    "one": "حزمة واحدة ({count})",
+    "other": "{count} حزمة",
+    "two": "حزمتان ({count})",
+    "zero": "{count} حزمة"
   },
   "{count} parts": {
     "few": "الأجزاء: {count}",
@@ -4682,116 +4694,116 @@
     "zero": "الأجزاء: {count}"
   },
   "{count} placemarks": {
-    "zero": "{count} علامة",
-    "one": "علامة واحدة ({count})",
-    "two": "علامتان ({count})",
     "few": "{count} علامات",
     "many": "{count} علامة",
-    "other": "{count} علامة"
+    "one": "علامة واحدة ({count})",
+    "other": "{count} علامة",
+    "two": "علامتان ({count})",
+    "zero": "{count} علامة"
   },
   "{count} reports today": {
-    "zero": "{count} تقرير اليوم",
-    "one": "تقرير واحد اليوم ({count})",
-    "two": "تقريران اليوم ({count})",
     "few": "{count} تقارير اليوم",
     "many": "{count} تقريرًا اليوم",
-    "other": "{count} تقرير اليوم"
+    "one": "تقرير واحد اليوم ({count})",
+    "other": "{count} تقرير اليوم",
+    "two": "تقريران اليوم ({count})",
+    "zero": "{count} تقرير اليوم"
   },
   "{count} satellite fire hits": {
-    "zero": "{count} رصد حرائق بالأقمار الصناعية",
-    "one": "رصد واحد لحريق بالأقمار الصناعية ({count})",
-    "two": "رصدان لحرائق بالأقمار الصناعية ({count})",
     "few": "{count} رصدات لحرائق بالأقمار الصناعية",
     "many": "{count} رصدًا لحرائق بالأقمار الصناعية",
-    "other": "{count} رصد لحرائق بالأقمار الصناعية"
+    "one": "رصد واحد لحريق بالأقمار الصناعية ({count})",
+    "other": "{count} رصد لحرائق بالأقمار الصناعية",
+    "two": "رصدان لحرائق بالأقمار الصناعية ({count})",
+    "zero": "{count} رصد حرائق بالأقمار الصناعية"
   },
   "{count} satellites in frame": {
-    "zero": "{count} قمر صناعي في الإطار",
-    "one": "قمر صناعي واحد ({count}) في الإطار",
-    "two": "قمران صناعيان ({count}) في الإطار",
     "few": "{count} أقمار صناعية في الإطار",
     "many": "{count} قمرًا صناعيًا في الإطار",
-    "other": "{count} قمر صناعي في الإطار"
+    "one": "قمر صناعي واحد ({count}) في الإطار",
+    "other": "{count} قمر صناعي في الإطار",
+    "two": "قمران صناعيان ({count}) في الإطار",
+    "zero": "{count} قمر صناعي في الإطار"
   },
   "{count} scenes": {
-    "zero": "{count} مشهد",
-    "one": "مشهد واحد ({count})",
-    "two": "مشهدان ({count})",
     "few": "{count} مشاهد",
     "many": "{count} مشهدًا",
-    "other": "{count} مشهد"
+    "one": "مشهد واحد ({count})",
+    "other": "{count} مشهد",
+    "two": "مشهدان ({count})",
+    "zero": "{count} مشهد"
   },
   "{count} ships in frame": {
-    "zero": "{count} سفينة في الإطار",
-    "one": "سفينة واحدة ({count}) في الإطار",
-    "two": "سفينتان ({count}) في الإطار",
     "few": "{count} سفن في الإطار",
     "many": "{count} سفينة في الإطار",
-    "other": "{count} سفينة في الإطار"
+    "one": "سفينة واحدة ({count}) في الإطار",
+    "other": "{count} سفينة في الإطار",
+    "two": "سفينتان ({count}) في الإطار",
+    "zero": "{count} سفينة في الإطار"
   },
   "{count} shots": {
-    "zero": "{count} لقطة",
-    "one": "لقطة واحدة ({count})",
-    "two": "لقطتان ({count})",
     "few": "{count} لقطات",
     "many": "{count} لقطة",
-    "other": "{count} لقطة"
+    "one": "لقطة واحدة ({count})",
+    "other": "{count} لقطة",
+    "two": "لقطتان ({count})",
+    "zero": "{count} لقطة"
   },
   "{count} sightings in view": {
-    "zero": "{count} مشاهدة في نطاق العرض",
-    "one": "مشاهدة واحدة ({count}) في نطاق العرض",
-    "two": "مشاهدتان ({count}) في نطاق العرض",
     "few": "{count} مشاهدات في نطاق العرض",
     "many": "{count} مشاهدة في نطاق العرض",
-    "other": "{count} مشاهدة في نطاق العرض"
+    "one": "مشاهدة واحدة ({count}) في نطاق العرض",
+    "other": "{count} مشاهدة في نطاق العرض",
+    "two": "مشاهدتان ({count}) في نطاق العرض",
+    "zero": "{count} مشاهدة في نطاق العرض"
   },
   "{count} source links ↗ · click card to open the first": {
-    "zero": "{count} رابط مصدر ↗ · انقر على البطاقة لفتح الأول",
-    "one": "رابط مصدر واحد ({count}) ↗ · انقر على البطاقة لفتحه",
-    "two": "رابطا مصدر ({count}) ↗ · انقر على البطاقة لفتح الأول",
     "few": "{count} روابط مصادر ↗ · انقر على البطاقة لفتح الأول",
     "many": "{count} رابط مصدر ↗ · انقر على البطاقة لفتح الأول",
-    "other": "{count} رابط مصدر ↗ · انقر على البطاقة لفتح الأول"
+    "one": "رابط مصدر واحد ({count}) ↗ · انقر على البطاقة لفتحه",
+    "other": "{count} رابط مصدر ↗ · انقر على البطاقة لفتح الأول",
+    "two": "رابطا مصدر ({count}) ↗ · انقر على البطاقة لفتح الأول",
+    "zero": "{count} رابط مصدر ↗ · انقر على البطاقة لفتح الأول"
   },
   "{count} sources": {
-    "zero": "{count} مصدر",
-    "one": "مصدر واحد ({count})",
-    "two": "مصدران ({count})",
     "few": "{count} مصادر",
     "many": "{count} مصدرًا",
-    "other": "{count} مصدر"
+    "one": "مصدر واحد ({count})",
+    "other": "{count} مصدر",
+    "two": "مصدران ({count})",
+    "zero": "{count} مصدر"
   },
   "{count} stations reporting": {
-    "zero": "{count} محطة تُرسل بيانات",
-    "one": "محطة واحدة تُرسل بيانات ({count})",
-    "two": "محطتان تُرسلان بيانات ({count})",
     "few": "{count} محطات تُرسل بيانات",
     "many": "{count} محطة تُرسل بيانات",
-    "other": "{count} محطة تُرسل بيانات"
+    "one": "محطة واحدة تُرسل بيانات ({count})",
+    "other": "{count} محطة تُرسل بيانات",
+    "two": "محطتان تُرسلان بيانات ({count})",
+    "zero": "{count} محطة تُرسل بيانات"
   },
   "{count} things": {
-    "zero": "{count} عنصر",
-    "one": "عنصر واحد ({count})",
-    "two": "عنصران ({count})",
     "few": "{count} عناصر",
     "many": "{count} عنصرًا",
-    "other": "{count} عنصر"
+    "one": "عنصر واحد ({count})",
+    "other": "{count} عنصر",
+    "two": "عنصران ({count})",
+    "zero": "{count} عنصر"
   },
   "{count} tile layers": {
-    "zero": "{count} طبقة بلاطات",
-    "one": "طبقة بلاطات واحدة ({count})",
-    "two": "طبقتا بلاطات ({count})",
     "few": "{count} طبقات بلاطات",
     "many": "{count} طبقة بلاطات",
-    "other": "{count} طبقة بلاطات"
+    "one": "طبقة بلاطات واحدة ({count})",
+    "other": "{count} طبقة بلاطات",
+    "two": "طبقتا بلاطات ({count})",
+    "zero": "{count} طبقة بلاطات"
   },
   "{count} wrecks": {
-    "zero": "{count} سفينة غارقة",
-    "one": "سفينة غارقة واحدة ({count})",
-    "two": "سفينتان غارقتان ({count})",
     "few": "{count} سفن غارقة",
     "many": "{count} سفينة غارقة",
-    "other": "{count} سفينة غارقة"
+    "one": "سفينة غارقة واحدة ({count})",
+    "other": "{count} سفينة غارقة",
+    "two": "سفينتان غارقتان ({count})",
+    "zero": "{count} سفينة غارقة"
   },
   "{count} {kind}": "{kind}: {count}",
   "{count}D AGO": "قبل {count} ي",
@@ -4896,114 +4908,114 @@
   "{name}: {state}": "{name}: {state}",
   "{n} MW": "{n} ميغاواط",
   "{n} acquisitions searched": {
-    "zero": "الصور المفحوصة: {n}",
-    "one": "الصور المفحوصة: {n}",
-    "two": "الصور المفحوصة: {n}",
     "few": "الصور المفحوصة: {n}",
     "many": "الصور المفحوصة: {n}",
-    "other": "الصور المفحوصة: {n}"
+    "one": "الصور المفحوصة: {n}",
+    "other": "الصور المفحوصة: {n}",
+    "two": "الصور المفحوصة: {n}",
+    "zero": "الصور المفحوصة: {n}"
   },
   "{n} acres": "{n} فدان",
   "{n} air quality": {
-    "zero": "{n} محطة جودة هواء",
-    "one": "محطة جودة هواء واحدة ({n})",
-    "two": "محطتا جودة هواء ({n})",
     "few": "{n} محطات جودة هواء",
     "many": "{n} محطة جودة هواء",
-    "other": "{n} محطة جودة هواء"
+    "one": "محطة جودة هواء واحدة ({n})",
+    "other": "{n} محطة جودة هواء",
+    "two": "محطتا جودة هواء ({n})",
+    "zero": "{n} محطة جودة هواء"
   },
   "{n} aircraft": {
-    "zero": "{n} طائرة",
-    "one": "طائرة واحدة ({n})",
-    "two": "طائرتان ({n})",
     "few": "{n} طائرات",
     "many": "{n} طائرة",
-    "other": "{n} طائرة"
+    "one": "طائرة واحدة ({n})",
+    "other": "{n} طائرة",
+    "two": "طائرتان ({n})",
+    "zero": "{n} طائرة"
   },
   "{n} bike share": {
-    "zero": "{n} محطة دراجات مشتركة",
-    "one": "محطة دراجات مشتركة واحدة ({n})",
-    "two": "محطتا دراجات مشتركة ({n})",
     "few": "{n} محطات دراجات مشتركة",
     "many": "{n} محطة دراجات مشتركة",
-    "other": "{n} محطة دراجات مشتركة"
+    "one": "محطة دراجات مشتركة واحدة ({n})",
+    "other": "{n} محطة دراجات مشتركة",
+    "two": "محطتا دراجات مشتركة ({n})",
+    "zero": "{n} محطة دراجات مشتركة"
   },
   "{n} buses": {
-    "zero": "{n} حافلة",
-    "one": "حافلة واحدة ({n})",
-    "two": "حافلتان ({n})",
     "few": "{n} حافلات",
     "many": "{n} حافلة",
-    "other": "{n} حافلة"
+    "one": "حافلة واحدة ({n})",
+    "other": "{n} حافلة",
+    "two": "حافلتان ({n})",
+    "zero": "{n} حافلة"
   },
   "{n} cyclones": {
-    "zero": "{n} إعصار",
-    "one": "إعصار واحد ({n})",
-    "two": "إعصاران ({n})",
     "few": "{n} أعاصير",
     "many": "{n} إعصارًا",
-    "other": "{n} إعصار"
+    "one": "إعصار واحد ({n})",
+    "other": "{n} إعصار",
+    "two": "إعصاران ({n})",
+    "zero": "{n} إعصار"
   },
   "{n} d ago": "قبل {n} يوم",
   "{n} dams": {
-    "zero": "{n} سد",
-    "one": "سد واحد ({n})",
-    "two": "سدّان ({n})",
     "few": "{n} سدود",
     "many": "{n} سدًا",
-    "other": "{n} سد"
+    "one": "سد واحد ({n})",
+    "other": "{n} سد",
+    "two": "سدّان ({n})",
+    "zero": "{n} سد"
   },
   "{n} datacenters": {
-    "zero": "{n} مركز بيانات",
-    "one": "مركز بيانات واحد ({n})",
-    "two": "مركزا بيانات ({n})",
     "few": "{n} مراكز بيانات",
     "many": "{n} مركز بيانات",
-    "other": "{n} مركز بيانات"
+    "one": "مركز بيانات واحد ({n})",
+    "other": "{n} مركز بيانات",
+    "two": "مركزا بيانات ({n})",
+    "zero": "{n} مركز بيانات"
   },
   "{n} earthquakes": {
-    "zero": "{n} زلزال",
-    "one": "زلزال واحد ({n})",
-    "two": "زلزالان ({n})",
     "few": "{n} زلازل",
     "many": "{n} زلزالًا",
-    "other": "{n} زلزال"
+    "one": "زلزال واحد ({n})",
+    "other": "{n} زلزال",
+    "two": "زلزالان ({n})",
+    "zero": "{n} زلزال"
   },
   "{n} fire perimeters": {
-    "zero": "{n} محيط حريق",
-    "one": "محيط حريق واحد ({n})",
-    "two": "محيطا حريق ({n})",
     "few": "{n} محيطات حرائق",
     "many": "{n} محيط حريق",
-    "other": "{n} محيط حريق"
+    "one": "محيط حريق واحد ({n})",
+    "other": "{n} محيط حريق",
+    "two": "محيطا حريق ({n})",
+    "zero": "{n} محيط حريق"
   },
   "{n} fires": {
-    "zero": "{n} حريق",
-    "one": "حريق واحد ({n})",
-    "two": "حريقان ({n})",
     "few": "{n} حرائق",
     "many": "{n} حريقًا",
-    "other": "{n} حريق"
+    "one": "حريق واحد ({n})",
+    "other": "{n} حريق",
+    "two": "حريقان ({n})",
+    "zero": "{n} حريق"
   },
   "{n} flock cameras": {
-    "zero": "{n} كاميرا ALPR",
-    "one": "كاميرا ALPR واحدة ({n})",
-    "two": "كاميرتا ALPR ({n})",
     "few": "{n} كاميرات ALPR",
     "many": "{n} كاميرا ALPR",
-    "other": "{n} كاميرا ALPR"
+    "one": "كاميرا ALPR واحدة ({n})",
+    "other": "{n} كاميرا ALPR",
+    "two": "كاميرتا ALPR ({n})",
+    "zero": "{n} كاميرا ALPR"
   },
   "{n} ft": "{n} قدم",
   "{n} ft/min": "{n} قدم/د",
   "{n} h ago": "قبل {n} س",
   "{n} hPa": "{n} hPa",
   "{n} images in this sequence · Esc clears": {
-    "zero": "{n} صورة في هذا التسلسل · Esc للمسح",
-    "one": "صورة واحدة ({n}) في هذا التسلسل · Esc للمسح",
-    "two": "صورتان ({n}) في هذا التسلسل · Esc للمسح",
     "few": "{n} صور في هذا التسلسل · Esc للمسح",
     "many": "{n} صورة في هذا التسلسل · Esc للمسح",
-    "other": "{n} صورة في هذا التسلسل · Esc للمسح"
+    "one": "صورة واحدة ({n}) في هذا التسلسل · Esc للمسح",
+    "other": "{n} صورة في هذا التسلسل · Esc للمسح",
+    "two": "صورتان ({n}) في هذا التسلسل · Esc للمسح",
+    "zero": "{n} صورة في هذا التسلسل · Esc للمسح"
   },
   "{n} in view": "{n} في العرض",
   "{n} km": "{n} كم",
@@ -5013,91 +5025,91 @@
   "{n} kt": "{n} عقدة",
   "{n} kt winds": "رياح {n} عقدة",
   "{n} launches": {
-    "zero": "{n} عملية إطلاق",
-    "one": "عملية إطلاق واحدة ({n})",
-    "two": "عمليتا إطلاق ({n})",
     "few": "{n} عمليات إطلاق",
     "many": "{n} عملية إطلاق",
-    "other": "{n} عملية إطلاق"
+    "one": "عملية إطلاق واحدة ({n})",
+    "other": "{n} عملية إطلاق",
+    "two": "عمليتا إطلاق ({n})",
+    "zero": "{n} عملية إطلاق"
   },
   "{n} loaded": "{n} محمّلة",
   "{n} m": "{n} م",
   "{n} m up": "على ارتفاع {n} م",
   "{n} military aircraft": {
-    "zero": "{n} طائرة عسكرية",
-    "one": "طائرة عسكرية واحدة ({n})",
-    "two": "طائرتان عسكريتان ({n})",
     "few": "{n} طائرات عسكرية",
     "many": "{n} طائرة عسكرية",
-    "other": "{n} طائرة عسكرية"
+    "one": "طائرة عسكرية واحدة ({n})",
+    "other": "{n} طائرة عسكرية",
+    "two": "طائرتان عسكريتان ({n})",
+    "zero": "{n} طائرة عسكرية"
   },
   "{n} military bases": {
-    "zero": "{n} قاعدة عسكرية",
-    "one": "قاعدة عسكرية واحدة ({n})",
-    "two": "قاعدتان عسكريتان ({n})",
     "few": "{n} قواعد عسكرية",
     "many": "{n} قاعدة عسكرية",
-    "other": "{n} قاعدة عسكرية"
+    "one": "قاعدة عسكرية واحدة ({n})",
+    "other": "{n} قاعدة عسكرية",
+    "two": "قاعدتان عسكريتان ({n})",
+    "zero": "{n} قاعدة عسكرية"
   },
   "{n} min": "{n} د",
   "{n} min ago": "قبل {n} د",
   "{n} mm": "{n} مم",
   "{n} of {count} stories": {
-    "zero": "{n} من {count} قصة",
-    "one": "{n} من {count} قصة",
-    "two": "{n} من {count} قصة",
     "few": "{n} من {count} قصص",
     "many": "{n} من {count} قصة",
-    "other": "{n} من {count} قصة"
+    "one": "{n} من {count} قصة",
+    "other": "{n} من {count} قصة",
+    "two": "{n} من {count} قصة",
+    "zero": "{n} من {count} قصة"
   },
   "{n} results": {
-    "zero": "{n} نتيجة",
-    "one": "نتيجة واحدة ({n})",
-    "two": "نتيجتان ({n})",
     "few": "{n} نتائج",
     "many": "{n} نتيجة",
-    "other": "{n} نتيجة"
+    "one": "نتيجة واحدة ({n})",
+    "other": "{n} نتيجة",
+    "two": "نتيجتان ({n})",
+    "zero": "{n} نتيجة"
   },
   "{n} s ago": "قبل {n} ث",
   "{n} satellites": {
-    "zero": "{n} قمر صناعي",
-    "one": "قمر صناعي واحد ({n})",
-    "two": "قمران صناعيان ({n})",
     "few": "{n} أقمار صناعية",
     "many": "{n} قمرًا صناعيًا",
-    "other": "{n} قمر صناعي"
+    "one": "قمر صناعي واحد ({n})",
+    "other": "{n} قمر صناعي",
+    "two": "قمران صناعيان ({n})",
+    "zero": "{n} قمر صناعي"
   },
   "{n} sequences in view · click a line for its nearest photo": {
-    "zero": "{n} تسلسل في نطاق العرض · انقر على خط لأقرب صورة له",
-    "one": "تسلسل واحد ({n}) في نطاق العرض · انقر على خط لأقرب صورة له",
-    "two": "تسلسلان ({n}) في نطاق العرض · انقر على خط لأقرب صورة له",
     "few": "{n} تسلسلات في نطاق العرض · انقر على خط لأقرب صورة له",
     "many": "{n} تسلسلًا في نطاق العرض · انقر على خط لأقرب صورة له",
-    "other": "{n} تسلسل في نطاق العرض · انقر على خط لأقرب صورة له"
+    "one": "تسلسل واحد ({n}) في نطاق العرض · انقر على خط لأقرب صورة له",
+    "other": "{n} تسلسل في نطاق العرض · انقر على خط لأقرب صورة له",
+    "two": "تسلسلان ({n}) في نطاق العرض · انقر على خط لأقرب صورة له",
+    "zero": "{n} تسلسل في نطاق العرض · انقر على خط لأقرب صورة له"
   },
   "{n} sequences in view · click a line for its photos": {
-    "zero": "{n} تسلسل في نطاق العرض · انقر على خط لعرض صوره",
-    "one": "تسلسل واحد ({n}) في نطاق العرض · انقر على خط لعرض صوره",
-    "two": "تسلسلان ({n}) في نطاق العرض · انقر على خط لعرض صوره",
     "few": "{n} تسلسلات في نطاق العرض · انقر على خط لعرض صوره",
     "many": "{n} تسلسلًا في نطاق العرض · انقر على خط لعرض صوره",
-    "other": "{n} تسلسل في نطاق العرض · انقر على خط لعرض صوره"
+    "one": "تسلسل واحد ({n}) في نطاق العرض · انقر على خط لعرض صوره",
+    "other": "{n} تسلسل في نطاق العرض · انقر على خط لعرض صوره",
+    "two": "تسلسلان ({n}) في نطاق العرض · انقر على خط لعرض صوره",
+    "zero": "{n} تسلسل في نطاق العرض · انقر على خط لعرض صوره"
   },
   "{n} ships": {
-    "zero": "{n} سفينة",
-    "one": "سفينة واحدة ({n})",
-    "two": "سفينتان ({n})",
     "few": "{n} سفن",
     "many": "{n} سفينة",
-    "other": "{n} سفينة"
+    "one": "سفينة واحدة ({n})",
+    "other": "{n} سفينة",
+    "two": "سفينتان ({n})",
+    "zero": "{n} سفينة"
   },
   "{n} streets in view · click a line for its nearest photo": {
-    "zero": "{n} شارع في نطاق العرض · انقر على خط لأقرب صورة له",
-    "one": "شارع واحد ({n}) في نطاق العرض · انقر على خط لأقرب صورة له",
-    "two": "شارعان ({n}) في نطاق العرض · انقر على خط لأقرب صورة له",
     "few": "{n} شوارع في نطاق العرض · انقر على خط لأقرب صورة له",
     "many": "{n} شارعًا في نطاق العرض · انقر على خط لأقرب صورة له",
-    "other": "{n} شارع في نطاق العرض · انقر على خط لأقرب صورة له"
+    "one": "شارع واحد ({n}) في نطاق العرض · انقر على خط لأقرب صورة له",
+    "other": "{n} شارع في نطاق العرض · انقر على خط لأقرب صورة له",
+    "two": "شارعان ({n}) في نطاق العرض · انقر على خط لأقرب صورة له",
+    "zero": "{n} شارع في نطاق العرض · انقر على خط لأقرب صورة له"
   },
   "{n}%": "{n}%",
   "{n}% contained": "احتواء {n}%",
@@ -5109,12 +5121,12 @@
   "{percent}% contained": "الاحتواء: {percent}%",
   "{percent}% scene cloud": "غيوم المشهد {percent}%",
   "{personnel} personnel": {
-    "zero": "{personnel} فرد",
-    "one": "فرد واحد ({personnel})",
-    "two": "فردان ({personnel})",
     "few": "{personnel} أفراد",
     "many": "{personnel} فردًا",
-    "other": "{personnel} فرد"
+    "one": "فرد واحد ({personnel})",
+    "other": "{personnel} فرد",
+    "two": "فردان ({personnel})",
+    "zero": "{personnel} فرد"
   },
   "{place} (placed by model)": "{place} (حدده النموذج)",
   "{place} has no position to look for imagery at": "{place}: لا موضع للبحث عن الصور فيه",
@@ -5128,12 +5140,12 @@
   "{publisher} / OPEN": "{publisher} / فتح",
   "{radius} m around the landmark": "{radius} م حول المعلم",
   "{range} NM": {
-    "zero": "{range} ميل بحري",
-    "one": "ميل بحري واحد ({range})",
-    "two": "ميلان بحريان ({range})",
     "few": "{range} أميال بحرية",
     "many": "{range} ميلًا بحريًا",
-    "other": "{range} ميل بحري"
+    "one": "ميل بحري واحد ({range})",
+    "other": "{range} ميل بحري",
+    "two": "ميلان بحريان ({range})",
+    "zero": "{range} ميل بحري"
   },
   "{rate} msg/s": "{rate} رسالة/ث",
   "{reason} (filters on: {filters})": "{reason} (المرشحات المفعّلة: {filters})",
@@ -5207,12 +5219,12 @@
   "{value}°W": "{value}° غ",
   "{vesselType} · {feedState} · EYE {height}": "{vesselType} · {feedState} · ارتفاع العين {height}",
   "{what} in {place}: {count} items": {
-    "zero": "{what} في {place}: ‏{count} عنصر",
-    "one": "{what} في {place}: ‏{count} عنصر",
-    "two": "{what} في {place}: ‏{count} عنصران",
     "few": "{what} في {place}: ‏{count} عناصر",
     "many": "{what} في {place}: ‏{count} عنصرًا",
-    "other": "{what} في {place}: ‏{count} عنصر"
+    "one": "{what} في {place}: ‏{count} عنصر",
+    "other": "{what} في {place}: ‏{count} عنصر",
+    "two": "{what} في {place}: ‏{count} عنصران",
+    "zero": "{what} في {place}: ‏{count} عنصر"
   },
   "{what} link copied": "تم نسخ رابط {what}",
   "{window} · SINCE {date}": "{window} · منذ {date}",

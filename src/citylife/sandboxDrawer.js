@@ -26,6 +26,7 @@ export function createSandboxDrawer({
   viewer = null,
   container = null,
   sandboxEngine = null,
+  mountLauncher = true,
 } = {}) {
   if (typeof document === 'undefined') {
     return {
@@ -219,7 +220,9 @@ export function createSandboxDrawer({
   const mountContainer =
     container || (typeof document !== 'undefined' ? document.body : null);
   if (mountContainer) {
-    mountContainer.appendChild(launcherButton);
+    if (mountLauncher) {
+      mountContainer.appendChild(launcherButton);
+    }
     mountContainer.appendChild(drawer);
   }
 
@@ -229,7 +232,7 @@ export function createSandboxDrawer({
     open: () => openDrawer(),
     close: () => closeDrawer(),
     isOpen: () => isOpen,
-    launcherEl: launcherButton,
+    launcherEl: mountLauncher ? launcherButton : null,
     accentColor: '#f59e0b',
   });
 

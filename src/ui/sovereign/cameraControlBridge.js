@@ -58,7 +58,7 @@ export function isEventInsideSovereignUi(eventOrTarget) {
   if (!target || typeof target.closest !== 'function') return false;
   return Boolean(
     target.closest(
-      '[data-sovereign-ui], #earth-sim-panel, #gev-active-sim-hud, #gev-experiences-explorer, #gev-experiences-entry, #gev-sovereign-hide-pill',
+      '[data-sovereign-ui], #earth-sim-panel, #gev-active-sim-hud, #gev-local-zoom-pill, #gev-experiences-explorer, #gev-experiences-entry, #gev-sovereign-hide-pill',
     ),
   );
 }

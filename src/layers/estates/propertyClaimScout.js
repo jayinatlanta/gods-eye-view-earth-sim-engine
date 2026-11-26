@@ -28,6 +28,7 @@ import {
 } from '../citylife/surfaceHeight.js';
 import { estimateWaypointElevation } from '../../drive/driveWaypoints.js';
 import { getGlobalDrawerCoordinator } from '../../ui/worldSimDock.js';
+import { butterGoogle3DTiles } from '../../ui/sovereign/tilesetButter.js';
 
 export function createPropertyClaimScout({ viewer = null } = {}) {
   let activeDomicileId = getAllDomiciles()[0]?.id || null;
@@ -543,6 +544,11 @@ export function createPropertyClaimScout({ viewer = null } = {}) {
     }
 
     try {
+      if (viewer.trackedEntity !== undefined) {
+        viewer.trackedEntity = undefined;
+      }
+      viewer.camera.cancelFlight?.();
+      viewer.camera.lookAtTransform?.(Cesium.Matrix4.IDENTITY);
       const heading = Number.isFinite(viewer.camera.heading)
         ? viewer.camera.heading
         : 0;
@@ -587,6 +593,11 @@ export function createPropertyClaimScout({ viewer = null } = {}) {
           duration,
         });
       }
+      butterGoogle3DTiles(
+        viewer?.scene?.primitives,
+        `domicile-visit-${domicile.id}`,
+        { maxMs: 2600 },
+      );
     } catch {
       // ignore camera animation errors in tests
     }

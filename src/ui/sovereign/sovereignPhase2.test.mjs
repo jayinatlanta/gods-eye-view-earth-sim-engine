@@ -128,7 +128,10 @@ test('Phase 2 moduleRegistry registers Vehicles & Corridors covering all 7 legac
       'freight',
       'corridor',
     ]) {
-      assert.ok(migrated.includes(id), `Expected migrated legacy drawer: ${id}`);
+      assert.ok(
+        migrated.includes(id),
+        `Expected migrated legacy drawer: ${id}`,
+      );
     }
   } finally {
     uninstall();
@@ -298,12 +301,10 @@ test('Phase 2 SearchablePlacePicker + VehiclesMobilityModule mount cleanly with 
     const { nextTick } = await import('vue');
     const { createUiRuntime } = await import('../vueRuntime.js');
     const { useSovereignUiStore } = await import('../stores/sovereignUi.js');
-    const { default: SearchablePlacePicker } = await import(
-      './components/SearchablePlacePicker.vue'
-    );
-    const { default: VehiclesMobilityModule } = await import(
-      './modules/VehiclesMobilityModule.vue'
-    );
+    const { default: SearchablePlacePicker } =
+      await import('./components/SearchablePlacePicker.vue');
+    const { default: VehiclesMobilityModule } =
+      await import('./modules/VehiclesMobilityModule.vue');
 
     document.body.innerHTML = '';
 
@@ -409,15 +410,12 @@ test('Phase 2 retired vehicle & corridor drawers mount zero legacy bottom-right 
     const { createRailDrawer } = await import('../../transit/railDrawer.js');
     const { createDriveDrawer } = await import('../../drive/driveDrawer.js');
     const { createBoatDrawer } = await import('../../vessels/boatDrawer.js');
-    const { createTransitControllerDrawer } = await import(
-      '../../citylife/transitControllerDrawer.js'
-    );
-    const { createFreightLogisticsDrawer } = await import(
-      '../../citylife/freightLogisticsDrawer.js'
-    );
-    const { createCorridorDrawer } = await import(
-      '../../corridor/corridorDrawer.js'
-    );
+    const { createTransitControllerDrawer } =
+      await import('../../citylife/transitControllerDrawer.js');
+    const { createFreightLogisticsDrawer } =
+      await import('../../citylife/freightLogisticsDrawer.js');
+    const { createCorridorDrawer } =
+      await import('../../corridor/corridorDrawer.js');
 
     document.body.innerHTML = '';
     const d1 = createFlightDrawer({ container: document.body });
@@ -444,6 +442,238 @@ test('Phase 2 retired vehicle & corridor drawers mount zero legacy bottom-right 
     d5.destroy();
     d6.destroy();
     d7.destroy();
+  } finally {
+    uninstall();
+  }
+});
+
+test('UX polish regressions: Earth Sim pointer-events/glass CSS, Back to GEV exit, LocalZoomPill actions, Domiciles tab & zero Sandbox charm', async () => {
+  const { readFileSync } = await import('node:fs');
+  const css = readFileSync(
+    new URL('../styles/sovereign-ui.css', import.meta.url),
+    'utf8',
+  );
+  assert.match(
+    css,
+    /#left-panel-stack\s*>\s*#earth-sim-panel[\s\S]*pointer-events:\s*auto;/,
+    '#earth-sim-panel must explicitly opt into pointer-events: auto inside #left-panel-stack',
+  );
+  assert.match(
+    css,
+    /#earth-sim-panel\s+\.earth-sim-panel-inner[\s\S]*backdrop-filter:/,
+    '.earth-sim-panel-inner must render a frosted glass surface',
+  );
+
+  const uninstall = installVueDom();
+  try {
+    const { nextTick } = await import('vue');
+    const { createUiRuntime } = await import('../vueRuntime.js');
+    const { useSovereignUiStore } = await import('../stores/sovereignUi.js');
+    const { default: EarthSimRailPanel } =
+      await import('./EarthSimRailPanel.vue');
+    const { default: ExperiencesExplorer } =
+      await import('./ExperiencesExplorer.vue');
+    const { default: LocalZoomPill } = await import('./LocalZoomPill.vue');
+    const { createSandboxDrawer } =
+      await import('../../citylife/sandboxDrawer.js');
+
+    document.body.innerHTML = '';
+    const sandbox = createSandboxDrawer({
+      container: document.body,
+      mountLauncher: false,
+    });
+    assert.equal(
+      document.querySelectorAll('.gev-sandbox-launcher-btn').length,
+      0,
+      'Sandbox drawer mounted inside Sovereign UI must not add a colliding lower-right floating charm',
+    );
+
+    const panelHost = document.createElement('div');
+    const expHost = document.createElement('div');
+    const zoomHost = document.createElement('div');
+    document.body.appendChild(panelHost);
+    document.body.appendChild(expHost);
+    document.body.appendChild(zoomHost);
+    const ui = createUiRuntime();
+    const store = useSovereignUiStore(ui.pinia);
+    let sandboxToggled = 0;
+    let wanderStarted = 0;
+    let cityStarted = 0;
+    store.connectRuntime({
+      sandboxDrawer: {
+        toggle: () => {
+          sandboxToggled += 1;
+        },
+      },
+      wanderEngine: {
+        startWandering: () => {
+          wanderStarted += 1;
+        },
+      },
+      cityEngine: {
+        stepIntoCurrentLocation: () => {
+          cityStarted += 1;
+        },
+      },
+      getCameraGroundTarget: () => ({
+        lat: 33.749,
+        lon: -84.388,
+        elev: 300,
+        heading: 0,
+      }),
+      syncActiveSimSnapshot: () => {},
+    });
+
+    const unmountPanel = ui.mount(EarthSimRailPanel, panelHost);
+    const unmountExp = ui.mount(ExperiencesExplorer, expHost);
+    const unmountZoom = ui.mount(LocalZoomPill, zoomHost);
+    await nextTick();
+
+    // 1. Earth Sim toolbar: Architect & Connect buttons work cleanly
+    const archBtn = panelHost.querySelector(
+      '[data-action="open-sandbox-architect"]',
+    );
+    assert.ok(archBtn, 'Earth Sim Architect toolbar button must render');
+    archBtn.click();
+    await nextTick();
+    assert.equal(sandboxToggled, 1);
+
+    const connectBtn = panelHost.querySelector(
+      '[data-action="open-connect-places"]',
+    );
+    assert.ok(connectBtn, 'Earth Sim Connect toolbar button must render');
+    connectBtn.click();
+    await nextTick();
+    assert.equal(store.activeModuleId, 'vehicles-mobility');
+    assert.equal(store.activeMobilityTab, 'corridors');
+
+    // 2. Experiences Explorer has Stories-style Back to GEV button that closes it
+    store.openExplorer({ intro: false });
+    await nextTick();
+    const backBtn = expHost.querySelector('#gev-experiences-back-btn');
+    assert.ok(
+      backBtn,
+      '#gev-experiences-back-btn must render when explorer opens',
+    );
+    backBtn.click();
+    await nextTick();
+    assert.equal(store.explorerOpen, false);
+
+    // 3. LocalZoomPill appears when zoomed close, triggers actions, and dismisses cleanly
+    store.setLocalZoomContext({
+      zoomedIn: true,
+      altitudeM: 880,
+      localityLabel: 'Downtown Atlanta',
+      lat: 33.749,
+      lon: -84.388,
+    });
+    await nextTick();
+    const pill = zoomHost.querySelector('#gev-local-zoom-pill');
+    assert.ok(pill, '#gev-local-zoom-pill must render when zoomed in');
+    assert.match(pill.textContent, /Downtown Atlanta/);
+
+    pill.querySelector('[data-zoom-action="wander"]').click();
+    pill.querySelector('[data-zoom-action="city"]').click();
+    assert.equal(wanderStarted, 1);
+    assert.equal(cityStarted, 1);
+
+    pill.querySelector('[data-zoom-action="connect"]').click();
+    await nextTick();
+    assert.equal(store.activeModuleId, 'vehicles-mobility');
+    assert.equal(store.activeMobilityTab, 'corridors');
+    assert.equal(store.corridorPrefillOrigin, '33.74900, -84.38800');
+
+    pill.querySelector('.es-zoom-dismiss').click();
+    await nextTick();
+    assert.equal(
+      zoomHost.querySelector('#gev-local-zoom-pill'),
+      null,
+      'Dismissing LocalZoomPill hides it for the current cell',
+    );
+
+    unmountPanel();
+    unmountExp();
+    unmountZoom();
+    ui.destroy();
+    sandbox.destroy();
+  } finally {
+    uninstall();
+  }
+});
+
+test('Domiciles Visit stops active Wander, cancels stale camera flights, and centers target via flyToDomicile', async () => {
+  const uninstall = installVueDom();
+  try {
+    const { nextTick } = await import('vue');
+    const { createUiRuntime } = await import('../vueRuntime.js');
+    const { useSovereignUiStore } = await import('../stores/sovereignUi.js');
+    const { default: ExplorePlayModule } = await import(
+      './modules/ExplorePlayModule.vue'
+    );
+
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    const ui = createUiRuntime();
+    const store = useSovereignUiStore(ui.pinia);
+    let tourStopped = 0;
+    let wanderStopped = 0;
+    let flyToDomicileCalls = [];
+    let fleetSpawned = [];
+    let notifiedSim = null;
+
+    store.connectRuntime({
+      coordinator: {
+        notifySimulationStarted: (id) => {
+          notifiedSim = id;
+        },
+      },
+      tourAndPlayEngine: {
+        stop: () => {
+          tourStopped += 1;
+        },
+      },
+      wanderEngine: {
+        isWandering: true,
+        stopWandering: () => {
+          wanderStopped += 1;
+        },
+      },
+      claimScout: {
+        selectDomicile: () => {},
+        flyToDomicile: (id, opts) => {
+          flyToDomicileCalls.push({ id, opts });
+        },
+      },
+      fleetEngine: {
+        spawnAtDomicile: (id) => {
+          fleetSpawned.push(id);
+        },
+      },
+      syncActiveSimSnapshot: () => {},
+    });
+    store.setActiveExploreTab('estate');
+
+    const unmount = ui.mount(ExplorePlayModule, host);
+    await nextTick();
+
+    const visitBtn = host.querySelector('.es-quick-item button');
+    assert.ok(visitBtn, 'Saved Domicile Visit button must render');
+    visitBtn.click();
+    await nextTick();
+
+    assert.equal(tourStopped, 1, 'Visit must stop any active tour');
+    assert.equal(wanderStopped, 1, 'Visit must stop active wander');
+    assert.equal(notifiedSim, 'estate', 'Visit must notify coordinator of estate sim');
+    assert.equal(
+      flyToDomicileCalls.length,
+      1,
+      'Visit must frame domicile dead-center via claimScout.flyToDomicile',
+    );
+    assert.equal(flyToDomicileCalls[0].opts.mode, 'overview');
+    assert.equal(fleetSpawned.length, 1);
+
+    unmount();
+    ui.destroy();
   } finally {
     uninstall();
   }

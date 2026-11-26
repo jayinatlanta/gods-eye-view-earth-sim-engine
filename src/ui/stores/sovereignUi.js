@@ -109,6 +109,22 @@ export const useSovereignUiStore = defineStore('gev-sovereign-ui', () => {
   /** Whether the `ActiveSimMicroHud` pill is auto-folded. */
   const microHudFolded = ref(false);
 
+  /** Zoomed-in local context pill state (fed by renderer-agnostic camera observer). */
+  const localZoomContext = ref({
+    zoomedIn: false,
+    altitudeM: null,
+    localityLabel: '',
+    lat: null,
+    lon: null,
+    dismissedKey: '',
+  });
+
+  /** Signals ExplorePlayModule to open its Quick Stop Creator form. */
+  const quickStopRequested = ref(0);
+
+  /** Optional origin prefill when jumping into Corridors from local zoom pill. */
+  const corridorPrefillOrigin = ref('');
+
   /** Raw engine / shell runtime handles attached by `src/app/sovereignTools.js`. */
   const runtime = shallowRef(null);
 
@@ -373,6 +389,74 @@ export const useSovereignUiStore = defineStore('gev-sovereign-ui', () => {
     }
   }
 
+  function setLocalZoomContext(next = null) {
+    if (!next || !next.zoomedIn) {
+      if (localZoomContext.value.zoomedIn) {
+        localZoomContext.value = {
+          zoomedIn: false,
+          altitudeM: null,
+          localityLabel: '',
+          lat: null,
+          lon: null,
+          dismissedKey: '',
+        };
+      }
+      return;
+    }
+    const label = String(next.localityLabel || '').trim();
+    const cellKey =
+      Number.isFinite(next.lat) && Number.isFinite(next.lon)
+        ? `${next.lat.toFixed(2)},${next.lon.toFixed(2)}`
+        : label;
+    const prev = localZoomContext.value;
+    const dismissedKey =
+      prev.dismissedKey && prev.dismissedKey === cellKey
+        ? prev.dismissedKey
+        : '';
+    if (
+      prev.zoomedIn === true &&
+      prev.localityLabel === label &&
+      prev.dismissedKey === dismissedKey &&
+      Math.abs((prev.altitudeM ?? 0) - (next.altitudeM ?? 0)) < 50
+    ) {
+      return;
+    }
+    localZoomContext.value = {
+      zoomedIn: true,
+      altitudeM: Number.isFinite(next.altitudeM)
+        ? Math.round(next.altitudeM)
+        : null,
+      localityLabel: label,
+      lat: Number.isFinite(next.lat) ? next.lat : null,
+      lon: Number.isFinite(next.lon) ? next.lon : null,
+      dismissedKey,
+    };
+  }
+
+  function dismissLocalZoomPill() {
+    const cur = localZoomContext.value;
+    const cellKey =
+      Number.isFinite(cur.lat) && Number.isFinite(cur.lon)
+        ? `${cur.lat.toFixed(2)},${cur.lon.toFixed(2)}`
+        : cur.localityLabel || 'local';
+    localZoomContext.value = { ...cur, dismissedKey: cellKey };
+  }
+
+  function requestQuickStopCreator() {
+    quickStopRequested.value += 1;
+    openModule('explore-play', { expandPanel: true, exploreTab: 'tour' });
+  }
+
+  function openConnectPlacesFromHere(originText = '') {
+    if (originText) {
+      corridorPrefillOrigin.value = String(originText).trim();
+    }
+    openModule('vehicles-mobility', {
+      expandPanel: true,
+      mobilityTab: 'corridors',
+    });
+  }
+
   function disconnectRuntime() {
     unsubCoordinatorCollapse?.();
     unsubCoordinatorCollapse = null;
@@ -382,6 +466,14 @@ export const useSovereignUiStore = defineStore('gev-sovereign-ui', () => {
     explorerIntroMode.value = false;
     activeSim.value = null;
     activeForgeJob.value = null;
+    localZoomContext.value = {
+      zoomedIn: false,
+      altitudeM: null,
+      localityLabel: '',
+      lat: null,
+      lon: null,
+      dismissedKey: '',
+    };
     syncBodyHiddenClass(false);
   }
 
@@ -403,6 +495,9 @@ export const useSovereignUiStore = defineStore('gev-sovereign-ui', () => {
     activeSim,
     activeForgeJob,
     microHudFolded,
+    localZoomContext,
+    quickStopRequested,
+    corridorPrefillOrigin,
     runtime,
     telemetryRevision,
     connectRuntime,
@@ -423,6 +518,10 @@ export const useSovereignUiStore = defineStore('gev-sovereign-ui', () => {
     patchActiveSimCameraMode,
     clearActiveSim,
     setActiveForgeJob,
+    setLocalZoomContext,
+    dismissLocalZoomPill,
+    requestQuickStopCreator,
+    openConnectPlacesFromHere,
     bumpTelemetry,
   };
 });

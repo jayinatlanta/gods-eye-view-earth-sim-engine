@@ -40,6 +40,19 @@ function openExperiences() {
   store.openExplorer({ intro: false });
 }
 
+function openConnectPlaces() {
+  store.openModule('vehicles-mobility', {
+    expandPanel: true,
+    mobilityTab: 'corridors',
+  });
+}
+
+function toggleSandboxArchitect() {
+  const sandbox =
+    store.runtime?.sandboxDrawer || globalThis?.window?.__gevSandboxDrawer;
+  sandbox?.toggle?.();
+}
+
 function toggleAiForge() {
   const agentPanel =
     store.runtime?.agentForgePanel || globalThis?.window?.__gevAgentForgePanel;
@@ -82,31 +95,56 @@ onBeforeUnmount(() => {
     @pointerdown.stop="isolatePointerEvent"
     @mousedown.stop="isolatePointerEvent"
   >
-    <template #actions>
-      <div class="es-panel-header-actions">
-        <UiButton
-          variant="action"
-          size="compact"
-          class="es-header-btn"
-          data-action="open-experiences"
-          :label="t('Browse Experiences')"
-          @click="openExperiences"
-        >
-          <UiIcon name="travel_explore" :size="null" />
-          <span>{{ t('Experiences') }}</span>
-        </UiButton>
-        <UiButton
-          variant="action"
-          size="compact"
-          class="es-header-btn"
-          data-action="open-ai-forge"
-          :label="t('AI Assistant & Dev Forge')"
-          @click="toggleAiForge"
-        >
-          <UiIcon name="bolt" :size="null" />
-        </UiButton>
-      </div>
-    </template>
+    <div
+      class="es-quick-actions"
+      role="toolbar"
+      :aria-label="t('Earth Sim Quick Tools')"
+    >
+      <UiButton
+        variant="action"
+        size="compact"
+        class="es-quick-tool-btn"
+        data-action="open-experiences"
+        :label="t('Browse Experiences')"
+        @click="openExperiences"
+      >
+        <UiIcon name="travel_explore" :size="null" />
+        <span>{{ t('Experiences') }}</span>
+      </UiButton>
+      <UiButton
+        variant="action"
+        size="compact"
+        class="es-quick-tool-btn"
+        data-action="open-connect-places"
+        :label="t('Connect Places & Launch Transport')"
+        @click="openConnectPlaces"
+      >
+        <UiIcon name="timeline" :size="null" />
+        <span>{{ t('Connect') }}</span>
+      </UiButton>
+      <UiButton
+        variant="action"
+        size="compact"
+        class="es-quick-tool-btn"
+        data-action="open-sandbox-architect"
+        :label="t('World Architect & Sandbox (B)')"
+        @click="toggleSandboxArchitect"
+      >
+        <UiIcon name="view_in_ar" :size="null" />
+        <span>{{ t('Architect') }}</span>
+      </UiButton>
+      <UiButton
+        variant="action"
+        size="compact"
+        class="es-quick-tool-btn"
+        data-action="open-ai-forge"
+        :label="t('AI Assistant & Dev Forge')"
+        @click="toggleAiForge"
+      >
+        <UiIcon name="bolt" :size="null" />
+        <span>{{ t('AI Forge') }}</span>
+      </UiButton>
+    </div>
 
     <div v-if="EARTH_SIM_MODULES.length > 1" class="es-module-switcher">
       <UiButton
@@ -114,6 +152,7 @@ onBeforeUnmount(() => {
         :key="mod.id"
         variant="action"
         size="compact"
+        class="es-module-tab-btn"
         :pressed="activeModule?.id === mod.id"
         pressed-class="active"
         :label="t(mod.label)"

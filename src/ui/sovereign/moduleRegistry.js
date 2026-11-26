@@ -31,7 +31,7 @@ export const EARTH_SIM_MODULES = Object.freeze([
     icon: 'travel_explore',
     label: msg('Explore & Play'),
     summary: msg(
-      'Guided tours, theme parks, resorts, living cities, estates & wilderness trails.',
+      'Guided tours, theme parks, resorts, living cities, domiciles & wilderness trails.',
     ),
     hotkey: 'W',
     component: defineAsyncComponent(
@@ -43,7 +43,7 @@ export const EARTH_SIM_MODULES = Object.freeze([
       'estate',
       'wilderness',
     ]),
-    badges: Object.freeze(['Tours v2', 'Cities', 'Estates', 'Trails']),
+    badges: Object.freeze(['Tours v2', 'Cities', 'Domiciles', 'Trails']),
   }),
   Object.freeze({
     id: 'vehicles-mobility',

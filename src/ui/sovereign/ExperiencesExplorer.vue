@@ -31,6 +31,13 @@ import { isolatePointerEvent } from './cameraControlBridge.js';
  * - Mobile Phone (<=720px): 3-snap bottom sheet (`map` / `split` / `list`).
  * - Replaces `earthSimTourOverlay.js` with optional dismissible `?intro=1` banner.
  */
+const props = defineProps({
+  backBtnPos: {
+    type: Object,
+    default: () => ({ top: 14, right: 14, compact: false }),
+  },
+});
+
 const store = useSovereignUiStore();
 const {
   explorerQuery,
@@ -322,6 +329,26 @@ onBeforeUnmount(() => {
       </UiButton>
     </div>
 
+    <!-- Stories-Style Top-Right Exit Button (Aligned in data-stories-corner slot, zero overlap with ACTIVE STYLE or STORIES) -->
+    <UiButton
+      id="gev-experiences-back-btn"
+      data-stories-corner=""
+      variant="ghost"
+      class="es-exp-back-btn"
+      :style="{
+        top: `${props.backBtnPos?.top ?? 14}px`,
+        right: `${props.backBtnPos?.right ?? 14}px`,
+      }"
+      data-action="back-to-gev"
+      :label="t('Back to GEV')"
+      @pointerdown.stop="isolatePointerEvent"
+      @mousedown.stop="isolatePointerEvent"
+      @click="closeExplorer"
+    >
+      <UiIcon name="chevron_left" :size="null" />
+      <span>{{ t('Back to GEV') }}</span>
+    </UiButton>
+
     <!-- Split-Screen Desktop Feed / Mobile 3-Snap Sheet -->
     <div
       class="es-exp-feed"
@@ -360,7 +387,20 @@ onBeforeUnmount(() => {
 
       <header class="es-exp-header">
         <div class="es-exp-brand">
-          <span class="es-exp-eyebrow">{{ t('EARTH SIM ENGINE') }}</span>
+          <div class="es-exp-crumb-row">
+            <UiButton
+              variant="ghost"
+              size="compact"
+              class="es-exp-crumb-btn"
+              :label="t('Back to GEV')"
+              @click="closeExplorer"
+            >
+              <UiIcon name="chevron_left" :size="null" />
+              <span>{{ t('Globe') }}</span>
+            </UiButton>
+            <span class="es-exp-eyebrow" aria-hidden="true">/</span>
+            <span class="es-exp-eyebrow">{{ t('EARTH SIM ENGINE') }}</span>
+          </div>
           <h2 class="es-exp-title">
             {{ t('Experiences') }} ({{ countLabel }})
           </h2>

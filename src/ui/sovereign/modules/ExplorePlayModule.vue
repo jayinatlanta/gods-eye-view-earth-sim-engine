@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { t } from '../../../i18n/index.js';
 import UiButton from '../../kit/UiButton.vue';
@@ -41,12 +41,13 @@ import { isolatePointerEvent } from '../cameraControlBridge.js';
  * - Wilderness Trailheads (`wildernessDrawer.js`)
  */
 const store = useSovereignUiStore();
-const { activeExploreTab, telemetryRevision } = storeToRefs(store);
+const { activeExploreTab, telemetryRevision, quickStopRequested } =
+  storeToRefs(store);
 
 const subTabOptions = computed(() => [
   { value: 'tour', label: t('Tour') },
   { value: 'city', label: t('City') },
-  { value: 'estate', label: t('Estates') },
+  { value: 'estate', label: t('Domiciles') },
   { value: 'wilderness', label: t('Trails') },
 ]);
 
@@ -347,18 +348,31 @@ function onCitySoundVolume(val) {
 
 function visitDomicile(domicile) {
   if (!domicile) return;
+  // Release any active Wander / Tour / City camera lock before flying to domicile
+  rt.value.tourAndPlayEngine?.stop?.();
+  if (rt.value.wanderEngine?.isWandering) {
+    rt.value.wanderEngine.stopWandering();
+  }
+  rt.value.coordinator?.notifySimulationStarted?.('estate');
+  rt.value.claimScout?.selectDomicile?.(domicile.id);
   rt.value.fleetEngine?.spawnAtDomicile?.(domicile.id);
-  rt.value.fleetEngine?.setCameraMode?.('chase');
-  rt.value.flyToCoords?.(
-    domicile.lat,
-    domicile.lon,
-    (domicile.elev || 20) + 120,
-    {
-      pitchDeg: -38,
-      duration: 1.4,
-      reason: `estate-visit-${domicile.id}`,
-    },
-  );
+  if (typeof rt.value.claimScout?.flyToDomicile === 'function') {
+    rt.value.claimScout.flyToDomicile(domicile.id, {
+      mode: 'overview',
+      duration: 1.5,
+    });
+  } else {
+    rt.value.flyToCoords?.(
+      domicile.lat,
+      domicile.lon,
+      (domicile.elev || 20) + 260,
+      {
+        pitchDeg: -45,
+        duration: 1.5,
+        reason: `estate-visit-${domicile.id}`,
+      },
+    );
+  }
   rt.value.syncActiveSimSnapshot?.('estate');
   store.bumpTelemetry();
 }
@@ -427,6 +441,12 @@ function onStargazingToggle(on) {
   stargazingOn.value = Boolean(on);
   rt.value.wildernessAudio?.setStargazingMode?.(stargazingOn.value);
 }
+
+watch(quickStopRequested, (count) => {
+  if (count > 0) {
+    showQuickStopForm.value = true;
+  }
+});
 
 onMounted(() => {
   unsubDomiciles = onDomicileRegistryChange(() => {

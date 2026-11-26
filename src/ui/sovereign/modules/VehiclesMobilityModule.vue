@@ -56,7 +56,8 @@ const FREIGHT_STATE_LABELS = Object.freeze({
  * - Connect Places & Corridors (`corridorDrawer.js`)
  */
 const store = useSovereignUiStore();
-const { activeMobilityTab, telemetryRevision } = storeToRefs(store);
+const { activeMobilityTab, telemetryRevision, corridorPrefillOrigin } =
+  storeToRefs(store);
 
 const rt = computed(() => store.runtime || {});
 
@@ -1055,6 +1056,18 @@ const corridorState = computed(() => {
   void liveTick.value;
   return rt.value.corridorDrawer?.getState?.() || null;
 });
+
+watch(
+  corridorPrefillOrigin,
+  (val) => {
+    const trimmed = String(val || '').trim();
+    if (trimmed) {
+      corridorFrom.value = trimmed;
+      corridorPrefillOrigin.value = '';
+    }
+  },
+  { immediate: true },
+);
 
 async function runConnectPlaces(
   from = corridorFrom.value,

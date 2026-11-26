@@ -5693,6 +5693,7 @@
       "src/ui/sovereign/EarthSimRailPanel.vue",
       "src/ui/sovereign/ExperiencesExplorer.vue",
       "src/ui/sovereign/ActiveSimMicroHud.vue",
+      "src/ui/sovereign/LocalZoomPill.vue",
       "src/ui/sovereign/components/SearchablePlacePicker.vue",
       "src/ui/sovereign/modules/ExplorePlayModule.vue",
       "src/ui/sovereign/modules/VehiclesMobilityModule.vue",
